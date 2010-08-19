@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+import socket, sys, readline
+from snakes.pnml import dumps, loads
+from snakes.plugins.query import Query
+
+env = {}
+
+def public (fun) :
+    env[fun.__name__] = fun
+    return fun
+
+@public
+def set (*larg, **karg) :
+    """set(name, value) -> None
+    assign value (object) to name (str) on the server"""
+    return Query("set", *larg, **karg)
+
+@public
+def get (*larg, **karg) :
+    """get(name) -> object
+    return the last value assigned to name (str)"""
+    return Query("get", *larg, **karg)
+
+@public
+def delete (*larg, **karg) :
+    """delete(name) -> None
+    discard name (str)"""
+    return Query("del", *larg, **karg)
+
+@public
+def call (*larg, **karg) :
+    """call(obj, ...) -> object
+    call obj (str or result from another call) with the additional arguments
+    return whatever the called object returns"""
+    return Query("call", *larg, **karg)
+
+@public
+def help (command=None) :
+    """help(command) -> None
+    print help about command, if no command is given, list available commands"""
+    if command is None:
+        print "commands:", ", ".join(repr(cmd) for cmd in env
+                                     if not cmd.startswith("_"))
+        print "  type 'help(cmd)' to ge help about a command"
+    elif command in env :
+        print env[command].__doc__
+    elif command.__name__ in env :
+        print command.__doc__
+    else :
+        print "unknown command %r" % command
+
+@public
+def quit () :
+    """quit() -> None
+    terminate the client"""
+    print "bye"
+    sys.exit(0)
+
+@public
+def load (path) :
+    """net(path) -> object
+    load a PNML file from path (str) and return the object is represents"""
+    return loads(open(path).read())
+
+@public
+def show (query) :
+    """show(obj) -> None
+    show the PNML representation of obj (object), for instance of a query"""
+    print dumps(query)
+
+_verbose = False
+
+@public
+def verbose (state=None) :
+    """verbose(state) -> None
+    turn on (state=True), off (state=False) or toggle (state not
+    given) the printing of queries before they are sent to the
+    server"""
+    global _verbose
+    if state is None :
+        _verbose = not _verbose
+    else :
+        _verbose = state
+    if _verbose :
+        print "dump of queries enabled"
+    else :
+        print "dump of queries disabled"
+
+try :
+    if sys.argv[1] in ("-t", "--tcp") :
+        proto = "TCP"
+        del sys.argv[1]
+    else :
+        proto = "UDP"
+    host, port = sys.argv[1:]
+    port = int(port)
+except :
+    print >>sys.stderr, "Usage: snkc [--tcp] HOST PORT"
+    sys.exit(1)
+
+sock = None
+
+def sendto (data, address) :
+    global sock
+    if proto == "UDP" :
+        if sock is None :
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(2)
+        sock.sendto(data, address)
+    else :
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        sock.connect(address)
+        sock.send(data)
+
+def recvfrom (size) :
+    global sock
+    if proto == "UDP" :
+        data, address = sock.recvfrom(size)
+    else :
+        parts = []
+        while True :
+            parts.append(sock.recv(size))
+            if len(parts[-1]) < size :
+                break
+        address = sock.getpeername()
+        sock.close()
+        data = "".join(parts)
+    return data, address
+
+while True :
+    try :
+        data = raw_input("? ")
+        q = eval(data.strip(), env)
+    except (EOFError, KeyboardInterrupt) :
+        quit()
+    except SystemExit :
+        raise
+    except Exception, e :
+        print "query error:", e
+        continue
+    if q is not None :
+        q = dumps(q)
+        if _verbose :
+            print "# query to %s:%u" % (host, port)
+            print q
+        sendto(q, (host, port))
+        try :
+            data, address = recvfrom(2**20)
+            if _verbose :
+                print "# answer from %s:%u" % address
+            print data.strip()
+        except socket.timeout :
+            print "# no answer received (timeout)"
+    print

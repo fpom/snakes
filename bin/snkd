@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+import sys
+import snakes.plugins
+snakes.plugins.load("query", "snakes.nets", "nets")
+
+port = 1234
+size = 2**20
+verbose = 0
+proto = "UDP"
+
+def help () :
+    print "Usage: snkd [OPTION]"
+    print "Options:"
+    print "  -p PORT, --port PORT    listen on port number PORT"
+    print "  -t, --tcp               use TCP instead of UDP"
+    print "  -s SIZE, --size SIZE    set buffer size for inputs"
+    print "  -v, --verbose           display information about queries"
+    print "                          (use '-v' twice to dump queries/answers)"
+    print "  -h, --help              print this help and exit"
+
+args = sys.argv[1:]
+try :
+    while len(args) > 0 :
+        arg = args.pop(0)
+        if arg in ("-p", "--port") :
+            port = int(args.pop(0))
+        elif arg in ("-v", "--verbose") :
+            verbose += 1
+        elif arg in ("-t", "--tcp") :
+            proto = "TCP"
+        elif arg in ("-s", "--size") :
+            size = int(args.pop(0))
+        elif arg in ("-h", "--help") :
+            help()
+            sys.exit(0)
+        else :
+            print >>sys.stderr("snkd: invalid command %r" % arg)
+            sys.exit(1)
+except SystemExit :
+    raise
+except :
+    cls, val, tb = sys.exc_info()
+    print >>sys.stderr, "snkd: %s, %s" % (cls.__name__, val)
+    sys.exit(1)
+
+if verbose :
+    print "# starting"
+    print "# listen on: %s:%u" % (proto, port)
+    print "# buffer size: %uMb" % (size/1024)
+    print "# verbosity:", verbose
+
+try :
+    if proto == "UDP" :
+        nets.UDPServer(port, size=size, verbose=verbose).run()
+    else :
+        nets.TCPServer(port, size=size, verbose=verbose).run()
+except KeyboardInterrupt :
+    print "# bye"
+except :
+    cls, val, tb = sys.exc_info()
+    if verbose > 1 :
+        raise
+    elif verbose :
+        print "# fatal error"
+    print >>sys.stderr, "snkd: %s, %s" % (cls.__name__, val)
+    sys.exit(2)

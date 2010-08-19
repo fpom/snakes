@@ -1,0 +1,13 @@
+def bag : int = ()
+
+net prod :
+    def count : int = 0
+    [count-(x), count+(x+1), bag+(x) if x < 10] * [count-(x) if x == 10]
+
+net odd :
+    [bag-(x) if (x % 2) == 1] * [False]
+
+net even :
+    [bag-(x) if (x % 2) == 0] * [False]
+
+odd | even | prod

@@ -1,0 +1,152 @@
+SNAKES is the Net Algebra Kit for Editors and Simulators
+========================================================
+
+////////////////////////////////////////////////////////////////
+This file is formatted in order to be processed by AsciiDoc
+(http://www.methods.co.nz/asciidoc). It will be more comfortable
+to render it or to read the HTML version available at:
+http://www.univ-paris12.fr/pommereau/soft/snakes/index.html
+////////////////////////////////////////////////////////////////
+
+SNAKES is a Python library that provides all then necessary to define
+and execute many sorts of Petri nets, in particular those of the PBC
+and M-nets family. Its main aim is to be a general Petri net library,
+being able to cope with most Petri nets models, and providing the
+researcher with a tool to quickly prototype its new ideas. SNAKES
+should be suitable to provide the data model for editors or
+simulators; actually, any editor that use SNAKES may also be a
+simulator as SNAKES can execute any net.
+
+A key feature of SNAKES is the ability to use arbitrary Python objects
+as tokens and arbitrary Python expressions in many points, for
+instance in transitions guards or arcs outgoing of transitions. This
+is what makes SNAKES that general. This relies on the capability of
+Python to run dynamically provided Python code (the $eval$ function).
+This feature may not be efficient enough for model-checking: speed is
+the price to pay for the wide generality. However, in the case of a
+new model, SNAKES may happen to be the only available tool.
+
+Another important feature of SNAKES is the plugin system that allows
+to extend the features and work with specialised classes of Petri
+nets. Currently, the following plugins are provided:
+
+pos:: adds to nodes the capability of holding their position. Nodes
+can be moved or shifted, Petri nets can be shifted globally and their
+bounding box can be computed.
+
+gv:: adds a method to draw a Petri net or a state graph using the tool
+http://www.graphviz.org[GraphViz] (through the Python binding
+http://networkx.lanl.gov/wiki/pygraphviz[PyGraphViz]). This module
+replaces the previous plugin called _graphviz_ and provides more
+flexibility and security, _graphviz_ is still provided but deprecated.
+
+status:: extends the Petri net model by adding status to the nodes.
+This is similar to what is used in the models of the PBC or Mnets
+family. Nodes can then merged automatically according to their status.
+
+ops:: this plugins defines control flow operations on Petri nets
+usually found in the PBC and Mnets family. Nets can be composed in
+parallel, sequence, choice and iteration. These operations rely on the
+places status.
+
+labels:: allows to add arbitrary labels to most objects (places,
+transitions, nets, ...)
+
+posops:: combines the features of pos and ops plugins: the control
+flow operations are modified in order to rearrange the nodes position
+in order to provide well shaped nets. This plugin is deprecated
+because the new _gv_ does the work much better.
+
+synchro:: it defines the label-based transition synchronisation
+defined in the Mnets model.
+
+// export:: allows to save Petri nets objects in the format of the tools
+// http://pep.sourceforge.net[PEP], http://helena.cnam.fr[Helena] and
+// http://maria[Maria]. http://pnml[PNML] is also supported as it is
+// built-in SNAKES.
+
+lashdata:: allows to define data that is not handled in the places of
+the Petri net but stored instead in the special structures handled by
+the http://www.montefiore.ulg.ac.be/~boigelot/research/lash/[library
+Lash]. This allows in particular to aggregate possibly infinite states
+into one meta-state.
+
+clusters:: this is an auxiliary plugin that allows to group nodes in a
+Petri net. This feature is used by _ops_ in order to record how a net
+is constructed, which is exploited by _gv_ in order to build a nice
+layout of composed nets.
+
+
+Getting SNAKES and installing it
+--------------------------------
+
+Download http://www.univ-paris12.fr/lacl/pommereau/soft/snakes/snakes-{VERSION}.tar.gz[$snakes-{VERSION}.tar.gz$]
+({sys:../stat snakes-{VERSION}.tar.gz})
+
+To install SNAKES, uncompress the archive and copy the directory
+snakes in a location where Python can find it (_i.e._, in a directory
+listed in your $PYTHONPATH$ environment variable).
+
+SNAKES should work with a Python version at least 2.5 but will _not_
+work for an older version. Optionally, you may want to install
+additional software required by some plugins:
+
+gv:: depends on http://www.graphviz.org[GraphViz] and its Python
+   binding http://networkx.lanl.gov/wiki/pygraphviz[PyGraphViz]. The
+   plugin _graphviz_ depends on GraphViz only but is now deprecated.
+
+lashdata:: requires
+   http://www.montefiore.ulg.ac.be/~boigelot/research/lash[Lash] and
+   the
+   http://www.univ-paris12.fr/lacl/pommereau/soft/index.html#PyLash[Python
+   Lash binding].
+
+[NOTE]
+=====================
+(C) 2007 Franck Pommereau <pommereau@univ-paris12.fr>
+
+This library is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation; either version 2.1 of the
+License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
+USA
+=====================
+
+
+Contact
+-------
+
+Please feel free to send me comments, questions, bug reports or
+contributions by mailto:pommereau@univ-paris12.fr[email].
+
+If you wish to be notified of the new releases of SNAKES, please
+register at the http://freshmeat.net/projects/snakes[FreshMeat page].
+
+You may contribute to SNAKES by either send patches by email, or by
+using the https://launchpad.net/snakes[SNAKES Launchpad page].
+
+
+Documentation
+-------------
+
+A good starting point may be the link:tutorial.html[tutorial]. Then,
+you may find the link:api/index.html[API reference manual] useful, it
+documents all the API and gives number of examples of how to use the
+various classes and functions.
+
+If you do not program Python, you can learn it in a few hours thanks
+to the very good http://docs.python.org/tut/tut.html[Python tutorial].
+
+In order to know more about the PBC and M-nets family or the Petri net
+compositions defined in the plugins, you may read papers from
+http://www.univ-paris12.fr/lacl/pommereau/publis[my publications page]
+(in particular those with _calculus_ in the title).

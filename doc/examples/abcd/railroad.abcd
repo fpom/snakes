@@ -1,0 +1,19 @@
+buffer light : in('red', 'green') = 'green'
+buffer command : in('up', 'down') = ()
+
+net gate () :
+    buffer state : in('open', 'moving', 'closed') = 'open'
+    ([command-('down'), state-('open'), state+('moving')] ;
+     [state-('moving'), state+('closed'), light-('red'), light+('green')] ;
+     [command-('up'), state-('closed'), state+('moving')] ;
+     [state-('moving'), state+('open')])
+    * [False]
+
+net track () :
+    buffer crossing : bool = False
+    ([command+('down'), light-('green'), light+('red')] ;
+     [light?('green'), crossing-(False), crossing+(True)] ;
+     [crossing-(True), crossing+(False), command+('up')])
+    * [False]
+
+gate() | track()

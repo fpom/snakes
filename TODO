@@ -1,0 +1,5 @@
+To do:
+ ! snakes.plugins.clusters.Cluster._cluster does not have all nodes
+ + snakes.plugins.export
+ ! apix gets wrong full name for classmethods
+ ! respect PNML definition for basic types (str, int, ...)
