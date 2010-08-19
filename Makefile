@@ -27,7 +27,11 @@ release: committed test doc tgz
 	hg push
 
 tgz: committed
-	hg archive --prefix=snakes-$$(cat VERSION)-$$(cat debian/VERSION) snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
+	hg archive snakes-$$(cat VERSION)-$$(cat debian/VERSION)
+	cd snakes-$$(cat VERSION)-$$(cat debian/VERSION) && make doc
+	tar cf snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar snakes-$$(cat VERSION)-$$(cat debian/VERSION)
+	rm -rf snakes-$$(cat VERSION)-$$(cat debian/VERSION)
+	gzip -9 snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar
 	gpg --armor --sign --detach-sig snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
 
 doc: snakes/*.py snakes/plugins/*.py snakes/utils/*.py snakes/compyler/*.py
