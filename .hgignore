@@ -1,0 +1,5 @@
+syntax: glob
+
+doc/api/*
+dist/*
+dput.sh

@@ -37,11 +37,12 @@ def build_package (dist_dir, dist) :
         os.makedirs(dist_dir)
     if os.path.isdir(deb_dir) :
         system("rm -rf %s" % deb_dir)
-    system("bzr export %s" % deb_dir)
+    system("hg archive %s" % deb_dir)
     changelog(deb_dir, dist)
     system("sed -i -e 's/DATE/$(date -R)/' %s/debian/copyright" % deb_dir)
     system("sed -i -e 's/UNRELEASED/%s/' %s/debian/changelog" % (dist, deb_dir))
     chdir(deb_dir)
+    system("make doc")
     system("dpkg-buildpackage")
     system("dpkg-buildpackage -S -sa")
     chdir(base_dir)
@@ -51,7 +52,7 @@ main_version = "%s-%s" % (snakes_version, package_version)
 if main_version != changelog_version :
     system("debchange --newversion %s --distribution UNRELEASED 'see NEWS'"
            % main_version)
-    system("bzr commit -m 'updated debian/changelog' debian/changelog")
+    system("hg commit -m 'updated debian/changelog' debian/changelog")
 
 for dist in distribs :
     build_package(base_dist_dir, dist)
