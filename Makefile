@@ -10,7 +10,7 @@ all:
 	@echo "  next-ppa   increments debian/PPA"
 
 committed:
-	hg summary|grep -q '^commit: (clean)$'
+	hg summary|grep -q '^commit: (clean)$$'
 
 next-deb:
 	echo 1 > debian/PPA
