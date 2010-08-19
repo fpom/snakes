@@ -10,7 +10,7 @@ all:
 	@echo "  next-ppa   increments debian/PPA"
 
 committed:
-	bzr status -SV|wc -l|grep -q '^0$$'
+	hg summary|grep -q '^commit: (clean)$'
 
 next-deb:
 	echo 1 > debian/PPA
@@ -20,16 +20,14 @@ next-ppa:
 	echo $$((1+$$(cat debian/PPA))) > debian/PPA
 
 release: committed test doc tgz
-	bzr tag --delete $$(bzr tags|head -n 1|awk '{print $$1}')
-	bzr tag version-$$(cat VERSION)
+	hg tag version-$$(cat VERSION)
 	echo 1 > debian/PPA
 	echo 1 > debian/VERSION
-	bzr add doc/api/*
-	bzr commit -m "version $$(cat VERSION)"
-	bzr push
+	hg commit -m "version $$(cat VERSION)"
+	hg push
 
 tgz: committed
-	bzr export --root=snakes-$$(cat VERSION)-$$(cat debian/VERSION) snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
+	hg archive --prefix=snakes-$$(cat VERSION)-$$(cat debian/VERSION) snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
 	gpg --armor --sign --detach-sig snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
 
 doc: snakes/*.py snakes/plugins/*.py snakes/utils/*.py snakes/compyler/*.py
