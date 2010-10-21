@@ -1,5 +1,5 @@
 import sys
-if sys.version_info[:2] == (2, 6) :
+if sys.version_info[:2] in ((2, 6), (2, 7)) :
     import ast
 elif hasattr(sys, "pypy_version_info") :
     import astpypy as ast

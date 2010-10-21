@@ -52,6 +52,7 @@ clean:
 test:
 	python2.5 test.py
 	python2.6 test.py
+	python2.7 test.py
 	unladen test.py
 	pypy test.py
 	spypy test.py
