@@ -19,6 +19,11 @@ def extend (module) :
                 return result
             elif len(set) == 0 :
                 return self._labels.copy()
+        def has_label (self, name, *names) :
+            if len(names) == 0 :
+                return name in self._labels
+            else :
+                return tuple(n in self._labels for n in (name,) + names)
         def copy (self, name=None, **options) :
             if not hasattr(self, "_labels") :
                 self._labels = {}
@@ -83,6 +88,11 @@ def extend (module) :
                 return result
             elif len(set) == 0 :
                 return self._labels.copy()
+        def has_label (self, name, *names) :
+            if len(names) == 0 :
+                return name in self._labels
+            else :
+                return tuple(n in self._labels for n in (name,) + names)
         def copy (self, name=None, **options) :
             if not hasattr(self, "_labels") :
                 self._labels = {}
@@ -151,6 +161,11 @@ def extend (module) :
                 return result
             elif len(set) == 0 :
                 return self._labels.copy()
+        def has_label (self, name, *names) :
+            if len(names) == 0 :
+                return name in self._labels
+            else :
+                return tuple(n in self._labels for n in (name,) + names)
         def copy (self, name=None, **options) :
             if not hasattr(self, "_labels") :
                 self._labels = {}
