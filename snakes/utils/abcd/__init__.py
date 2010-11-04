@@ -414,7 +414,13 @@ class Compiler (object) :
         elif isinstance(tree, compiler.ast.Node) :
             args = []
             for argname in inspect.getargspec(tree.__class__.__init__)[0][1:] :
-                if isinstance(argname, str) :
+                handler = getattr(self,
+                                  "_bind_%s_%s" % (tree.__class__.__name__,
+                                                   argname),
+                                  None)
+                if handler is not None :
+                    args.append(handler(tree, bind))
+                elif isinstance(argname, str) :
                     args.append(self._bind(getattr(tree, argname), bind))
                 else :
                     args.append([self._bind(getattr(tree, a), bind) for a in argname])
@@ -427,6 +433,8 @@ class Compiler (object) :
                                   for k, v in tree.iteritems())
         else :
             return tree
+    def _bind_Add_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
     def build_action (self, tree, env) :
         if tree.net is not None :
             try :
