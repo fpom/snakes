@@ -435,6 +435,22 @@ class Compiler (object) :
             return tree
     def _bind_Add_leftright (self, tree, bind) :
         return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_Div_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_FloorDiv_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_LeftShift_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_Mod_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_Mul_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_Power_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_RightShift_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
+    def _bind_Sub_leftright (self, tree, bind) :
+        return [self._bind(tree.left, bind), self._bind(tree.right, bind)]
     def build_action (self, tree, env) :
         if tree.net is not None :
             try :
