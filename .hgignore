@@ -4,3 +4,4 @@ doc/api/*
 dist/*
 dput.sh
 *.pyc
+,*

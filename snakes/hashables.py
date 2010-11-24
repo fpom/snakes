@@ -98,17 +98,26 @@ def hashable (cls) :
         "Raise C{ValueError} if the %s has been hashed."
         if self.hashed() :
             raise ValueError, "hashed '%s' object is not mutable" % classname
-    __mutable__.__doc__ = __mutable__.__doc__ % classname
+    try :
+        __mutable__.__doc__ = __mutable__.__doc__ % classname
+    except :
+        pass
     cls.__mutable__ = __mutable__
     def hashed (self) :
         "Return 'True' if the %s has been hashed, 'False' otherwise."
         return hasattr(self, "_hash")
-    hashed.__doc__ = hashed.__doc__ % classname
+    try :
+        hashed.__doc__ = hashed.__doc__ % classname
+    except :
+        pass
     cls.hashed = hashed
     def mutable (self) :
         "Return 'True' if the %s is not hashed, 'False' otherwise."
         return not self.hashed()
-    mutable.__doc__ = mutable.__doc__ % classname
+    try :
+        mutable.__doc__ = mutable.__doc__ % classname
+    except :
+        pass
     cls.mutable = mutable
     return cls
 

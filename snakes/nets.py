@@ -1203,7 +1203,7 @@ class MultiArc (ArcAnnotation) :
         result = set()
         for x in self :
             result.update(set(var for var in x.vars()))
-        return result
+        return list(result)
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the C{old}
         annotation has been replaced by the C{new} one.
@@ -1517,7 +1517,7 @@ class Inhibitor (Test) :
         self._condition.substitute(binding)
     def vars (self) :
         "Return the list of variables involved in the annotation."
-        return self._annotation.vars() | self._condition.vars()
+        return list(set(self._annotation.vars()) | set(self._condition.vars()))
     def __eq__ (self, other) :
         "Check for equality."
         try :
