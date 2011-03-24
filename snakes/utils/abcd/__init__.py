@@ -531,7 +531,7 @@ class Compiler (object) :
     def build_arc (self, label, mode, env) :
         cls = label.__class__.__name__
         if cls == "Name" :
-            if label.name in ("False", "True") :
+            if label.name in ("False", "True", "dot") :
                 cls = "Const"
             elif label.name in self.symbols :
                 cls = "Const"

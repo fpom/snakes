@@ -3545,7 +3545,7 @@ class PetriNet (object) :
         p.post[trans] = label
         t.pre[place] = label
         if hasattr(label, "globals") :
-            label.lock.globals.attach(self.globals)
+            label.globals.attach(self.globals)
     def remove_input (self, place, trans) :
         """Remove an input arc between C{place} and C{trans} (nodes names).
 
