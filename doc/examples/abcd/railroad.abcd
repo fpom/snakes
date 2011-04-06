@@ -1,8 +1,13 @@
-buffer light : in('red', 'green') = 'green'
-buffer command : in('up', 'down') = ()
+# stores green light state
+buffer light : enum('red', 'green') = 'green'
+# commands send by the track to the gate
+buffer command : enum('up', 'down') = ()
+# states of the gate
+typedef gatestate : enum('open', 'moving', 'closed')
 
 net gate () :
-    buffer state : in('open', 'moving', 'closed') = 'open'
+    # a pair of gates
+    buffer state : gatestate = 'open'
     ([command-('down'), state-('open'), state+('moving')] ;
      [state-('moving'), state+('closed'), light-('red'), light+('green')] ;
      [command-('up'), state-('closed'), state+('moving')] ;
@@ -10,10 +15,12 @@ net gate () :
     * [False]
 
 net track () :
+    # a track with trains passing on it
     buffer crossing : bool = False
     ([command+('down'), light-('green'), light+('red')] ;
      [light?('green'), crossing-(False), crossing+(True)] ;
      [crossing-(True), crossing+(False), command+('up')])
     * [False]
 
+# main process
 gate() | track()
