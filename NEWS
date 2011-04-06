@@ -1,3 +1,4 @@
+ + emacs mode for ABCD
  ! fixex nodes merge in plugin labels
  ! fixed nets.MultiArc.flow (thanks to Jan Ciger's report)
 

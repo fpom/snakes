@@ -44,10 +44,6 @@ class PluginError (SnakesError) :
     "Error when adding a plugin"
     pass
 
-class ParseError (SnakesError) :
-    "Error while parsing a piece of text"
-    pass
-
 class UnificationError (SnakesError) :
     "Error while unifying parameters"
     pass

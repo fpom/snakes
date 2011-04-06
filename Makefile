@@ -8,6 +8,8 @@ all:
 	@echo "  test       run tests through supported Python implementations"
 	@echo "  next-deb   increments debian/VERSION"
 	@echo "  next-ppa   increments debian/PPA"
+	@echo "  lang       build generated files in snakes/lang"
+	@echo "  emacs      compile Emacs files"
 
 committed:
 	hg summary|grep -q '^commit: (clean)$$'
@@ -15,6 +17,9 @@ committed:
 next-deb:
 	echo 1 > debian/PPA
 	echo $$((1+$$(cat debian/VERSION))) > debian/VERSION
+
+emacs:
+	emacs -batch -f batch-byte-compile utils/abcd-mode.el
 
 next-ppa:
 	echo $$((1+$$(cat debian/PPA))) > debian/PPA
@@ -26,6 +31,9 @@ release: committed test doc tgz
 	hg commit -m "version $$(cat VERSION)"
 	hg push
 
+lang:
+	python mklang.py
+
 tgz: committed
 	hg archive snakes-$$(cat VERSION)-$$(cat debian/VERSION)
 	cd snakes-$$(cat VERSION)-$$(cat debian/VERSION) && make doc
@@ -34,7 +42,7 @@ tgz: committed
 	gzip -9 snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar
 	gpg --armor --sign --detach-sig snakes-$$(cat VERSION)-$$(cat debian/VERSION).tar.gz
 
-doc: snakes/*.py snakes/plugins/*.py snakes/utils/*.py snakes/compyler/*.py
+doc: snakes/*.py snakes/plugins/*.py snakes/utils/*.py snakes/lang/*.py
 	make -C doc
 
 dput.sh: VERSION debian/*

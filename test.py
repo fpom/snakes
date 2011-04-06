@@ -18,7 +18,8 @@ def test (module) :
                            | doctest.ELLIPSIS)
     return f
 
-modules = ["snakes", "snakes.hashables", "snakes.compyler",
+modules = ["snakes", "snakes.hashables", "snakes.lang",
+           "snakes.lang.python.parser",
            "snakes.data", "snakes.typing", "snakes.nets", "snakes.pnml",
            "snakes.plugins", "snakes.plugins.pos", "snakes.plugins.graphviz",
            "snakes.plugins.status", "snakes.plugins.ops",

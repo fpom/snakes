@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys, os
 from distutils.core import setup
 
 def doc_files() :
@@ -19,6 +20,9 @@ def doc_files() :
                                          ]
     return result.items()
 
+print "Compiling Emacs files..."
+os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el")
+
 setup(name="SNAKES",
       version=open("VERSION").read().strip(),
       description="SNAKES is the Net Algebra Kit for Editors and Simulators",
@@ -37,10 +41,12 @@ setup(name="SNAKES",
                "bin/snkd",
                ],
       packages=["snakes",
-                "snakes.compyler",
+                "snakes.lang",
                 "snakes.plugins",
                 "snakes.utils",
                 "snakes.utils.abcd",
                 ],
-      data_files=doc_files(),
+      data_files=(doc_files()
+                  + [("share/emacs/site-lisp", ["utils/abcd-mode.el",
+                                                "utils/abcd-mode.elc"])]),
       )

@@ -8,7 +8,7 @@ import re, operator
 from snakes import *
 from snakes.pnml import *
 from snakes.data import *
-from snakes.compyler import *
+from snakes.lang import *
 from snakes.hashables import *
 from snakes.typing import *
 
@@ -1217,6 +1217,8 @@ class MultiArc (ArcAnnotation) :
         """
         return self.__class__([x.replace(old, new) for x in self])
 
+#FIXME: should not be a subclass of MultiArc because it carries only
+#one token
 class Tuple (MultiArc) :
     """
     >>> t = Tuple((Variable('x'), Value(3))).__pnmldump__()
@@ -1259,6 +1261,15 @@ class Tuple (MultiArc) :
         if len(result) == 0 :
             raise ModeError, "no mode found"
         return result
+    def __str__ (self) :
+        """
+        >>> str(Tuple((Value(1), Variable('x'))))
+        '(1, x)'
+        """
+        if len(self._components) == 1 :
+            return "(%s,)" % str(self._components[0])
+        else :
+            return "(%s)" % ", ".join(str(c) for c in self)
     def flow (self, binding) :
         return MultiSet([tuple(p) for p in cross([x.flow(binding)
                                                   for x in self._components])])
@@ -4087,7 +4098,8 @@ class PetriNet (object) :
             for place, label in trans.pre.items() :
                 if place not in pre :
                     pre[place] = []
-                if isinstance(label, MultiArc) :
+                #FIXME: not good! but breaks on Tuple
+                if label.__class__ is MultiArc :
                     pre[place].extend([x.copy() for x in label])
                 else :
                     pre[place].append(label.copy())
@@ -4101,7 +4113,8 @@ class PetriNet (object) :
             for place, label in trans.post.items() :
                 if place not in post :
                     post[place] = []
-                if isinstance(label, MultiArc) :
+                #FIXME: not good! but breaks on Tuple
+                if label.__class__ is MultiArc :
                     post[place].extend([x.copy() for x in label])
                 else :
                     post[place].append(label.copy())
