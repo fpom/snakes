@@ -23,8 +23,6 @@ for name, cls in inspect.getmembers(_ast, inspect.isclass) :
                 for name, arg in zip(self._fields, larg) + karg.items() :
                     if name in self._fields :
                         setattr(self, name, arg)
-                    else :
-                        getattr(self, name)
         try :
             _Ast._fields = tuple(cls._fields)
         except :

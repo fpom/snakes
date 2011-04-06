@@ -1,5 +1,5 @@
 import sys
-if sys.version_info[:2] in ((2, 6), (2, 7)) :
+if sys.version_info[:2] == (2, 6) :
     import ast
 elif hasattr(sys, "pypy_version_info") :
     import astpypy as ast
@@ -51,10 +51,12 @@ class Unparser(_unparse.Unparser) :
                 self.write(", ")
             self.write(")")
         self.enter()
+        self.dispatch(tree.body)
+        self.leave()
 
-def unparse (node) :
+def unparse (st) :
     output = StringIO.StringIO()
-    Unparser(node, output)
+    Unparser(st, output)
     return output.getvalue().strip()
 
 class Renamer (ast.NodeTransformer) :

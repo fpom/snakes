@@ -1,0 +1,2 @@
+crash on [foo>>(s), foo<<(s+s)]
+[foo(x,y,z)] creates a multi-arc instead of a tuple
