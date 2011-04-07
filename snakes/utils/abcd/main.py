@@ -2,6 +2,7 @@ import sys, optparse, os.path, pdb
 import snakes.plugins
 from snakes.utils.abcd.build import Builder
 from snakes.lang.abcd.parser import parse
+from snakes.lang.pgen import ParseError
 
 ##
 ## error messages
@@ -13,6 +14,8 @@ ERR_IO = 3
 ERR_PARSE = 4
 ERR_PLUGIN = 5
 ERR_COMPILE = 6
+ERR_OUTPUT = 7
+ERR_BUG = 255
 
 def err (message) :
     sys.stderr.write("abcd: %s\n" % message.strip())
@@ -20,7 +23,10 @@ def err (message) :
 def die (code, message=None) :
     if message :
         err(message)
-    sys.exit(code)
+    if options.debug :
+        pdb.post_mortem(sys.exc_info()[2])
+    else :
+        sys.exit(code)
 
 ##
 ## options parsing
@@ -135,19 +141,25 @@ def arc_attr (label, attr) :
         attr["label"] = " %s " % label._annotation
 
 def draw (net, engine, target) :
-    net.draw(target, engine=engine,
-             place_attr=place_attr,
-             trans_attr=trans_attr,
-             arc_attr=arc_attr)
+    try :
+        net.draw(target, engine=engine,
+                 place_attr=place_attr,
+                 trans_attr=trans_attr,
+                 arc_attr=arc_attr)
+    except :
+        die(ERR_OUTPUT, str(sys.exc_info()[1]))
 
 ##
 ## save pnml
 ##
 
 def save_pnml (net, target) :
-    out = open(target, "w")
-    out.write(snk.dumps(net))
-    out.close()
+    try :
+        out = open(target, "w")
+        out.write(snk.dumps(net))
+        out.close()
+    except :
+        die(ERR_OUTPUT, str(sys.exc_info()[1]))
 
 ##
 ## main
@@ -155,39 +167,40 @@ def save_pnml (net, target) :
 
 def main (args=sys.argv[1:]) :
     global snk
+    # get options
     try:
         getopts(args)
     except SystemExit :
         raise
     except :
-        raise
+        die(ERR_OPT, str(sys.exc_info()[1]))
+    # read source
     try :
         source = open(abcd).read()
     except :
         die(ERR_IO, "could not read input file %r" % abcd)
+    # parse
     try :
-        node = parse(source)
+        node = parse(source, filename=abcd)
+    except ParseError :
+        die(ERR_PARSE, str(sys.exc_info()[1]))
     except :
-        if options.debug :
-            pdb.post_mortem(sys.exc_info()[2])
-        raise
+        die(ERR_BUG)
+    # compile
     dirname = os.path.dirname(abcd)
     if dirname and dirname not in sys.path :
         sys.path.append(dirname)
     try :
         snk = snakes.plugins.load(options.plugins, "snakes.nets", "snk")
     except :
-        if options.debug :
-            pdb.post_mortem(sys.exc_info()[2])
-        raise
+        die(ERR_PLUGIN, str(sys.exc_info()[1]))
     build = Builder(snk)
     try :
         net = build.build(node)
         net.label(srcfile=abcd)
     except :
-        if options.debug :
-            pdb.post_mortem(sys.exc_info()[2])
-        raise
+        die(ERR_COMPILE, str(sys.exc_info()[1]))
+    # output
     if options.pnml :
         save_pnml(net, options.pnml)
     for engine in gv_engines :

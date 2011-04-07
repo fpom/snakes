@@ -1772,8 +1772,9 @@ class Translator (object) :
             return ast.Yield(lineno=st.srow, col_offset=st.scol,
                              value=None)
     @classmethod
-    def parse (cls, expr, mode="exec") :
-        tree = cls(cls.parser.parseString(expr.strip() + "\n")).ast
+    def parse (cls, expr, mode="exec", filename="<string>") :
+        tree = cls(cls.parser.parseString(expr.strip() + "\n",
+                                          filename=filename)).ast
         if mode == "exec" :
             return tree
         elif mode == "eval" :

@@ -592,7 +592,7 @@ class Parser (object) :
         """
         self.tokens = self.tokenizer.tokenize(stream)
         return self._parse(start)
-    def parseString (self, text, start=None) :
+    def parseString (self, text, start=None, filename="<string>") :
         """Parse text given as a string.
 
         Expected arguments:
@@ -603,7 +603,9 @@ class Parser (object) :
         The start symbol may be provided by its number (int) or its
         name (str) as specified in the grammar.
         """
-        self.tokens = self.tokenizer.tokenize(StringIO.StringIO(text))
+        data = StringIO.StringIO(text)
+        data.name = filename
+        self.tokens = self.tokenizer.tokenize(data)
         return self._parse(start)
     def _parse (self, start=None) :
         """Main parsing method.
