@@ -3,7 +3,7 @@
 # timestamp: 2010-06-02 11:21:08.948802
 
 from snakes.lang import ast
-from ast import *
+from snkast import *
 
 class _AST (ast.AST):
     def __init__ (self, **ARGS):

@@ -1,9 +1,13 @@
 """Backport of Python 2.6 'ast' module.
 """
 
+import _ast
 from _ast import *
 
-PyCF_ONLY_AST = PyCF_AST_ONLY
+try :
+    PyCF_ONLY_AST
+except NameError :
+    PyCF_ONLY_AST = PyCF_AST_ONLY
 
 def parse(expr, filename='<unknown>', mode='exec'):
     """
@@ -11,7 +15,6 @@ def parse(expr, filename='<unknown>', mode='exec'):
     Equivalent to compile(expr, filename, mode, PyCF_ONLY_AST).
     """
     return compile(expr, filename, mode, PyCF_ONLY_AST)
-
 
 def literal_eval(node_or_string):
     """
