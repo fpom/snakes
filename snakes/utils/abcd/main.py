@@ -1,8 +1,10 @@
-import sys, optparse, os.path, pdb
+import sys, optparse, os.path
+import pdb, traceback
 import snakes.plugins
 from snakes.utils.abcd.build import Builder
 from snakes.lang.abcd.parser import parse
 from snakes.lang.pgen import ParseError
+from snakes.utils.abcd import CompilationError, DeclarationError
 
 ##
 ## error messages
@@ -27,6 +29,23 @@ def die (code, message=None) :
         pdb.post_mortem(sys.exc_info()[2])
     else :
         sys.exit(code)
+
+def bug () :
+    sys.stderr.write("""
+    ********************************************************************
+    *** An unexpected error ocurred. Please report this bug to       ***
+    *** <franck.pommereau@gmail.com>, together with the execution    ***
+    *** trace below and, if possible, a stripped-down version of the ***
+    *** ABCD source code that caused this bug. Thank you for your    ***
+    *** help in improving SNAKES!                                    ***
+    ********************************************************************
+
+""")
+    traceback.print_exc()
+    if options.debug :
+        pdb.post_mortem(sys.exc_info()[2])
+    else :
+        sys.exit(ERR_BUG)
 
 ##
 ## options parsing
@@ -198,8 +217,10 @@ def main (args=sys.argv[1:]) :
     try :
         net = build.build(node)
         net.label(srcfile=abcd)
-    except :
+    except (CompilationError, DeclarationError) :
         die(ERR_COMPILE, str(sys.exc_info()[1]))
+    except :
+        bug()
     # output
     if options.pnml :
         save_pnml(net, options.pnml)

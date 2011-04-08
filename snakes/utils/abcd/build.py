@@ -37,6 +37,33 @@ class Decl (object) :
         for key, val in data.iteritems() :
             setattr(self, key, val)
 
+class GetInstanceArgs (object) :
+    """Bind arguments for a net instance"""
+    def __init__ (self, node) :
+        self.argspec = []
+        self.arg = {}
+        self.buffer = {}
+        self.net = {}
+        self.task = {}
+        seen = set()
+        for a in node.args.args + node.args.kwonlyargs :
+            if a.arg in seen :
+                self._raise(CompilationError,
+                            "duplicate argument %r" % a.arg)
+            seen.add(a.arg)
+            if a.annotation is None :
+                self.argspec.append((a.arg, "arg"))
+            else :
+                self.argspec.append((a.arg, a.annotation.id))
+    def __call__ (self, *args) :
+        self.arg.clear()
+        self.buffer.clear()
+        self.net.clear()
+        self.task.clear()
+        for (name, kind), value in zip(self.argspec, args) :
+            getattr(self, kind)[name] = value
+        return self.arg, self.buffer, self.net, self.task
+
 class Builder (object) :
     def __init__ (self, snk, path=[], up=None) :
         self.snk = snk
@@ -241,24 +268,7 @@ class Builder (object) :
         self[node.name] = Decl(node, value=value)
         self.globals[node.name] = value
     def build_AbcdNet (self, node) :
-        src = re.sub(r"\s*:\s*(buffer|net|task)\b\s*",
-                     "", node.args.st.source())
-        bind = ["def _get_%s_args %s:" % (node.name, src),
-                "    args, buffers, nets, tasks = {}, {}, {}, {}"]
-        args = set()
-        for a in node.args.args + node.args.kwonlyargs :
-            if a.arg in args :
-                self._raise(CompilationError, "duplicate argument %r" % a.arg)
-            args.add(a.arg)
-            if a.annotation is None :
-                bind.append("    args['%s'] = %s" % (a.arg, a.arg))
-            else :
-                bind.append("    %ss['%s'] = %s"
-                            % (a.annotation.id, a.arg, a.arg))
-        bind.append("    return args, buffers, nets, tasks")
-        env = {}
-        exec("\n".join(bind), env)
-        self[node.name] = Decl(node, getargs=env["_get_%s_args" % node.name])
+        self[node.name] = Decl(node, getargs=GetInstanceArgs(node))
     def build_AbcdTask (self, node) :
         self._raise(NotImplementedError, "tasks not (yet) supported")
         self[node.name] = Decl(node, used=False)
@@ -450,7 +460,7 @@ class Builder (object) :
     def build_arc_Name (self, node) :
         if node.id in self :
             decl = self[node.id]
-            if decl.kind == Decl.CONST :
+            if decl.kind in (Decl.CONST, Decl.SYMBOL) :
                 return self.snk.Value(decl.value)
         return self.snk.Variable(node.id)
     def build_arc_Num (self, node) :
@@ -476,7 +486,7 @@ class Builder (object) :
         return arc
     def build_Fill (self, node) :
         def arc (net, place, trans, label) :
-            net.add_output(place, trans, self.snk.Flush(label._str))
+            net.add_output(place, trans, self.snk.Flush(str(label)))
         return arc
     # types
     def build_UnionType (self, node) :

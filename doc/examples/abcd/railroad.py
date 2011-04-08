@@ -1,8 +1,10 @@
+import sys
+
 import snakes.plugins
 snakes.plugins.load("gv", "snakes.nets", "snk")
 from snk import *
 
-n = loads(",railroad.pnml")
+n = loads(sys.argv[1])
 g = StateGraph(n)
 for s in g :
     m = g.net.get_marking()
@@ -12,4 +14,5 @@ for s in g :
         and "closed" not in m["gate().state"]) :
         print s, m
 print "checked", len(g), "states"
-g.draw(",rr-states.png")
+
+g.draw(sys.argv[1].rsplit(".", 1)[0] + "-states.png")

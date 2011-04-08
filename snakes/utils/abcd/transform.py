@@ -34,7 +34,7 @@ class ArgsBinder (NodeCopier) :
         self.tasks = tasks
     def visit_Name (self, node) :
         if node.id in self.args :
-            return self.args[node.id]
+            return self.copy(self.args[node.id])
         else :
             return self.copy(node)
     def visit_Instance (self, node) :
@@ -71,8 +71,8 @@ class ArgsBinder (NodeCopier) :
         buffers = self.buffers.copy()
         nets = self.nets.copy()
         tasks = self.tasks.copy()
-        netargs = ([a.arg for a in node.args + node.kwonlyargs]
-                   + [node.vararg, node.kwarg])
+        netargs = ([a.arg for a in node.args.args + node.args.kwonlyargs]
+                   + [node.args.vararg, node.args.kwarg])
         copy = True
         for a in netargs :
             for d in (args, buffers, nets, tasks) :
