@@ -297,11 +297,17 @@ class Tokenizer (object) :
                 except :
                     raise ParseError(Token(token, self))
             elif token[0] in self._skip :
+                try:
+                    self.skip_token(Token(token, self))
+                except :
+                    pass
                 continue
             elif token[0] == self.OP :
                 token = (self.opmap[token[1]],) + token[1:]
             self.last = Token(token, self)
             yield self.last
+    def skip_token (self, token) :
+        pass
 
 class PgenParser (object) :
     """A parser for pgen files.

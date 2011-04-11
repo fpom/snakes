@@ -39,7 +39,7 @@ class ParseTree (list) :
         else :
             lines[0] = lines[0][self.scol:]
             lines[-1] = lines[-1][:self.ecol]
-        return "\n".join(l.rstrip("\n") for l in lines)
+        return str("\n".join(l.rstrip("\n") for l in lines))
 
 class Translator (object) :
     ParseTree = ParseTree

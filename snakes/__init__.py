@@ -19,6 +19,7 @@ compositions defined for the Petri Box Calculus and its successors.
 """
 
 version = "0.9.13"
+defaultencoding = "utf-8"
 
 class SnakesError (Exception) :
     "An error in SNAKES"

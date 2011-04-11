@@ -4,7 +4,7 @@ This module holds the various Petri net elements: arcs, places,
 transitions, markings, nets themselves and marking graphs.
 """
 
-import re, operator
+import re, operator, inspect
 from snakes import *
 from snakes.pnml import *
 from snakes.data import *

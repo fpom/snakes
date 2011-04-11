@@ -193,7 +193,7 @@ class Builder (object) :
             # copy global declarations
             net.globals.update(self.globals)
             # add info about source file
-            net.label(srcfile=node.st.text.filename)
+            net.label(srcfile=str(node.st.text.filename))
         return net
     def _build_TaskNet (self, node) :
         self._raise(NotImplementedError, "tasks not (yet) supported")
@@ -390,7 +390,7 @@ class Builder (object) :
         binder = transform.ArgsBinder(args, buffers, nets, tasks)
         spec = binder.visit(decl.node.body)
         if node.asname :
-            path = self.path + [node.asname]
+            path = self.path + [str(node.asname)]
         else :
             path = self.path + [node.st.source()]
         builder = self.__class__(self.snk, path, self)

@@ -3,6 +3,7 @@
 """
 
 import operator, sys
+import snakes
 from snakes.lang.python.parser import (ParseTree, ParseTestParser,
                                        Translator as PyTranslator,
                                        ParseTree as PyParseTree,
@@ -15,6 +16,19 @@ _symbols = parser.tokenizer.tok_name.copy()
 # next statement overrides 'NT_OFFSET' entry with 'single_input'
 # (this is desired)
 _symbols.update(parser.symbolMap)
+
+def skip (token) :
+    if token.kind == token.lexer.COMMENT :
+        words = token.strip().split()
+        if words[:2] == ["#", "coding="] :
+            coding = words[2]
+        elif words[:3] == ["#", "-*-", "coding:"] :
+            coding = words[3]
+        else :
+            return
+        snakes.defaultencoding = coding
+
+parser.tokenizer.skip_token = skip
 
 class ParseTree (PyParseTree) :
     _symbols = _symbols
@@ -285,8 +299,8 @@ class Translator (PyTranslator) :
                 args = ast.Tuple(lineno=st.srow, col_offset=st.scol,
                                  elts=elts, ctx=ctx())
             else :
-                args = ast.GeneratorExp(lineno=st.srow, col_offset=st.scol,
-                                        elt=loop, generators=elts)
+                args = ast.ListComp(lineno=st.srow, col_offset=st.scol,
+                                    elt=loop, generators=elts)
             return ast.SimpleAccess(lineno=st.srow, col_offset=st.scol,
                                     buffer=st[0].text,
                                     arc=self._arc[st[1].text](),

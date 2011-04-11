@@ -253,7 +253,7 @@ class Tree (object) :
         tree._update_node(doc, doc.documentElement)
         if len(plugins) > 0 :
             del tree.children[0]
-        return doc.toprettyxml(indent=" ", encoding="utf-8").strip()
+        return doc.toprettyxml(indent=" ", encoding=snakes.defaultencoding).strip()
     @classmethod
     def from_dom (cls, node) :
         """Load a PNML tree from an XML DOM representation
