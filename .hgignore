@@ -5,3 +5,4 @@ dist/*
 dput.sh
 *.pyc
 ,*
+*.class
