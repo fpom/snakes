@@ -18,7 +18,7 @@ already provided, in particular two plugins implement the Petri nets
 compositions defined for the Petri Box Calculus and its successors.
 """
 
-version = "0.9.13"
+version = "0.9.14"
 defaultencoding = "utf-8"
 
 class SnakesError (Exception) :
