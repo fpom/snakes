@@ -4,6 +4,15 @@ ABCD specification language
 This document presents the ABCD language and compiler that is provided
 with SNAKES.
 
+WARNING: this documentation needs update since ABCD syntax has changed
+a bit. A precise (but not user-friendly) syntax can be found in the
+source:
+
+ - snakes/lang/abcd/abcd.pgen is the concrete grammar and
+
+ - snakes/lang/abcd/abcd/asdl is the abstract syntax
+
+
 Introduction
 ------------
 
@@ -120,7 +129,7 @@ Python classes
     etc., including user defined classes.
 
 Enumerated types
-    for instance ``in(1, 3, 'foo', True)`` allows all the value listed
+    for instance ``enum(1, 3, 'foo', True)`` allows all the value listed
     between the parenthesis but no other value.
 
 Union types
