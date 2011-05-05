@@ -460,7 +460,7 @@ class _Nothing (Type) :
     def __pnmldump__ (self) :
         return Tree(self.__pnmltag__, None, domain=self.__pnmltype__)
     @classmethod
-    def __pnmlload__ (self, tree) :
+    def __pnmlload__ (cls, tree) :
         return cls()
 
 class Instance (Type) :
