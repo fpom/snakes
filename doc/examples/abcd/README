@@ -1,0 +1,12 @@
+prod-cons.abcd
+    a simple producer/consumer
+
+railroad.abcd
+    a (not so) simple railroad crossing system
+railroad.py
+    checks basic property of railroad.abcd
+
+ns/ns.abcd
+    Needham-Schroeder public key authentication protocol
+ns/ns.py
+    checks mutual authentication

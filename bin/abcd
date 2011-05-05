@@ -1,0 +1,3 @@
+#!/usr/bin/env python
+import snakes.utils.abcd.main as abcdmain
+abcdmain.main()

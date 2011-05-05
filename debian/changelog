@@ -1,0 +1,101 @@
+python-snakes (0.9.14-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Mon, 11 Apr 2011 16:45:50 +0200
+
+python-snakes (0.9.13-2) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 23 Jul 2010 20:06:53 +0200
+
+python-snakes (0.9.13-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 16 Jul 2010 17:09:14 +0200
+
+python-snakes (0.9.12-2) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Sat, 03 Apr 2010 21:06:50 +0200
+
+python-snakes (0.9.12-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Thu, 01 Apr 2010 19:46:02 +0200
+
+python-snakes (0.9.11-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Thu, 25 Mar 2010 19:39:47 +0100
+
+python-snakes (0.9.10-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 19 Jun 2009 13:40:36 +0200
+
+python-snakes (0.9.9-2) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Tue, 19 May 2009 09:29:46 +0200
+
+python-snakes (0.9.8-2) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Tue, 14 Apr 2009 20:02:32 +0200
+
+python-snakes (0.9.8-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Mon, 23 Mar 2009 17:34:06 +0100
+
+python-snakes (0.9.7-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Tue, 20 Jan 2009 13:07:09 +0100
+
+python-snakes (0.9.6-2) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Tue, 02 Dec 2008 17:47:43 +0100
+
+python-snakes (0.9.6-1) UNRELEASED; urgency=low
+
+  * see NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 28 Nov 2008 15:24:05 +0100
+
+python-snakes (0.9.5-2) UNRELEASED; urgency=low
+
+  * Fixed doc installation path
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 21 Nov 2008 13:20:55 +0100
+
+python-snakes (0.9.5-1) UNRELEASED; urgency=low
+
+  * Trying to fix build on Launchpad
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Fri, 21 Nov 2008 08:19:04 +0100
+
+python-snakes (0.9.5) UNRELEASED; urgency=low
+
+  * See NEWS
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Wed, 19 Nov 2008 21:47:52 +0100
+
+python-snakes (0.9.4) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- Franck Pommereau <pommereau@univ-paris12.fr>  Tue, 18 Nov 2008 12:09:16 +0100

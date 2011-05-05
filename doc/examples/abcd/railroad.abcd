@@ -1,0 +1,29 @@
+# symbols
+symbol RED, GREEN, UP, DOWN, OPEN, MOVING, CLOSED
+# states of the gate
+typedef gatestate : enum(OPEN, MOVING, CLOSED)
+
+# stores green light state
+buffer light : enum(RED, GREEN) = GREEN
+# commands send by the track to the gate
+buffer command : enum(UP, DOWN) = ()
+
+net gate () :
+    # a pair of gates
+    buffer state : gatestate = OPEN
+    ([command-(DOWN), state-(OPEN), state+(MOVING)] ;
+     [state-(MOVING), state+(CLOSED), light-(RED), light+(GREEN)] ;
+     [command-(UP), state-(CLOSED), state+(MOVING)] ;
+     [state-(MOVING), state+(OPEN)])
+    * [False]
+
+net track () :
+    # a track with trains passing on it
+    buffer crossing : bool = False
+    ([command+(DOWN), light-(GREEN), light+(RED)] ;
+     [light?(GREEN), crossing-(False), crossing+(True)] ;
+     [crossing-(True), crossing+(False), command+(UP)])
+    * [False]
+
+# main process
+gate() | track()
