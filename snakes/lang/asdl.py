@@ -11,14 +11,14 @@ class CodeGen (asdl.VisitorBase) :
                      "class _AST (ast.AST):",
                      ["def __init__ (self, **ARGS):",
                       ["ast.AST.__init__(self)",
-                       "for k, v in ARGS.iteritems():",
+                       "for k, v in ARGS.items():",
                        ["setattr(self, k, v)"]]],
                      ""]
         self.base = ["_AST"]
         self.fields = []
         self.attributes = []
     def visitModule (self, node) :
-        for name, child in node.types.iteritems() :
+        for name, child in node.types.items() :
             self.base.append(name)
             self.visit(child)
             self.base.pop()
@@ -107,14 +107,14 @@ if __name__ == "__main__":
         elif len(args) > 1 :
             raise getopt.GetoptError("more than one input file provided")
     except getopt.GetoptError :
-        print >>sys.stderr, "%s: %s" % (__file__, sys.exc_info()[1])
+        sys.stderr.write("%s: %s\n" % (__file__, sys.exc_info()[1]))
         sys.exit(1)
     for (flag, arg) in opts :
         if flag in ("-h", "--help") :
-            print """usage: %s [OPTIONS] INFILE
+            print("""usage: %s [OPTIONS] INFILE
     Options:
         -h, --help         print this help and exit
-        --output=OUTPUT    set output file""" % __file__
+        --output=OUTPUT    set output file""" % __file__)
             sys.exit(0)
         elif flag in ("-o", "--output") :
             outfile = open(arg, "w")

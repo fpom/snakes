@@ -8,7 +8,7 @@ import snakes.lang.pgen as pgen
 import collections
 
 if len(sys.argv) < 2 :
-    print "Usage: python pgen2dot.py INFILE"
+    print("Usage: python pgen2dot.py INFILE")
     sys.exit(1)
 
 root = None
@@ -46,4 +46,4 @@ while not next.issubset(reached) :
         next.update(edges[n])
 
 for node in sorted(nodes - reached) :
-    print node
+    print(node)

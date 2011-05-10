@@ -53,11 +53,11 @@ True
 True
 >>> n.synchronise('a')
 >>> for t in sorted(n.transition(), key=str) :
-...     print t, t.guard
+...     print('%s %s' % (t, t.guard))
 ...     for place, label in sorted(t.input(), key=str) :
-...         print '   ', place, '>>', label
+...         print('   %s >> %s' % (place, label))
 ...     for place, label in sorted(t.output(), key=str) :
-...         print '   ', place, '<<', label
+...         print('   %s << %s' % (place, label))
 ((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)] (...)
 ...
 t2 z>0
@@ -75,6 +75,7 @@ from snakes.nets import Value, Variable
 from snakes.pnml import Tree
 import snakes.plugins
 from snakes.plugins import new_instance
+from snakes.compat import *
 
 class Action (object) :
     def __init__ (self, name, send, params) :
@@ -271,25 +272,21 @@ class Action (object) :
 
         >>> s = Action('a', True, [Value(2), Variable('x'), Variable('y'), Variable('x')])
         >>> r = Action('a', False, [Value(3), Value(2), Variable('t'), Variable('z')])
-        >>> s & r
-        Traceback (most recent call last):
-          ...
-        ConstraintError: incompatible values
+        >>> try : s & r
+        ... except ConstraintError : print(sys.exc_info()[1])
+        incompatible values
         >>> r = Action('a', False, [Value(2), Value(2), Variable('t')])
-        >>> s & r
-        Traceback (most recent call last):
-          ...
-        ConstraintError: arities do not match
+        >>> try : s & r
+        ... except ConstraintError : print(sys.exc_info()[1])
+        arities do not match
         >>> r = Action('b', False, [Value(3), Value(2), Variable('t'), Variable('z')])
-        >>> s & r
-        Traceback (most recent call last):
-          ...
-        ConstraintError: actions not conjugated
+        >>> try : s & r
+        ... except ConstraintError : print(sys.exc_info()[1])
+        actions not conjugated
         >>> r = Action('a', True, [Value(3), Value(2), Variable('t'), Variable('z')])
-        >>> s & r
-        Traceback (most recent call last):
-          ...
-        ConstraintError: actions not conjugated
+        >>> try : s & r
+        ... except ConstraintError : print(sys.exc_info()[1])
+        actions not conjugated
 
         @param other: the other action to unify with
         @type other: C{Action}
@@ -297,9 +294,9 @@ class Action (object) :
         @rtype: C{Substitution}
         """
         if (self.name != other.name) or (self.send == other.send) :
-            raise ConstraintError, "actions not conjugated"
+            raise ConstraintError("actions not conjugated")
         elif len(self) != len(other) :
-            raise ConstraintError, "arities do not match"
+            raise ConstraintError("arities do not match")
         result = Substitution()
         for x, y in zip(self.params, other.params) :
             # apply the unifier already computed
@@ -310,7 +307,7 @@ class Action (object) :
             # unify the current pair of parameters
             if isinstance(x, Value) and isinstance(y, Value) :
                 if x.value != y.value :
-                    raise ConstraintError, "incompatible values"
+                    raise ConstraintError("incompatible values")
             elif isinstance(x, Variable) and isinstance(y, Value) :
                 result += Substitution({x.name : y.copy()})
             elif isinstance(x, Value) and isinstance(y, Variable) :
@@ -319,17 +316,16 @@ class Action (object) :
                 if x.name != y.name :
                     result += Substitution({x.name : y.copy()})
             else :
-                raise ConstraintError, "unexpected action parameter"
+                raise ConstraintError("unexpected action parameter")
         return result
 
 class MultiAction (object) :
     def __init__ (self, actions) :
         """
-        >>> MultiAction([Action('a', True, [Variable('x')]),
-        ...              Action('a', False, [Value(2)])])
-        Traceback (most recent call last):
-          ...
-        ConstraintError: conjugated actions in the same multiaction
+        >>> try : MultiAction([Action('a', True, [Variable('x')]),
+        ...                    Action('a', False, [Value(2)])])
+        ... except ConstraintError : print(sys.exc_info()[1])
+        conjugated actions in the same multiaction
 
         @param actions: a collection of actions with no conjugated
           actions in it
@@ -419,7 +415,7 @@ class MultiAction (object) :
         @type action: C{Action}
         """
         if self._sndrcv.get(action.name, action.send) != action.send :
-            raise ConstraintError, "conjugated actions in the same multiaction"
+            raise ConstraintError("conjugated actions in the same multiaction")
         self._sndrcv[action.name] = action.send
         self._count[action.name] = self._count.get(action.name, 0) + 1
         self._actions.append(action)
@@ -521,7 +517,7 @@ class MultiAction (object) :
         elif isinstance(action, str) :
             return action in self._count
         else :
-            raise ValueError, "invalid action specification"
+            raise ValueError("invalid action specification")
     def __add__ (self, other) :
         """Create a multiaction by adding the actions of two others.
 
@@ -619,7 +615,7 @@ class MultiAction (object) :
         >>> n = MultiAction([Action('a', False, [Variable('w'), Variable('y')]),
         ...                  Action('c', False, [Variable('y')])])
         >>> for a, x, u, v in m.synchronise(n, 'a') :
-        ...    print str(a), str(x), list(sorted(u.items())), list(sorted(v.items()))
+        ...    print('%s %s %s %s' % (str(a), str(x), list(sorted(u.items())), list(sorted(v.items()))))
         a!(w,2) [a!(3,y), b?(w,y), c?(a)] [('a', Value(2)), ('x', Variable('w'))] [('a', Value(2)), ('x', Variable('w')), ('y', Variable('a'))]
         a!(3,a) [a!(x,2), b?(x,a), c?(a)] [('w', Value(3)), ('y', Variable('a'))] [('w', Value(3)), ('y', Variable('a'))]
 

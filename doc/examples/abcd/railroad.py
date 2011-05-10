@@ -12,7 +12,7 @@ for s in g :
     if ("train().crossing" in m
         and True in m["train().crossing"]
         and "closed" not in m["gate().state"]) :
-        print s, m
-print "checked", len(g), "states"
+        print("%s %s" % (s, m))
+print("checked %s states" % len(g))
 
 g.draw(sys.argv[1].rsplit(".", 1)[0] + "-states.png")

@@ -16,7 +16,7 @@ for s in states :
     ap = list(m["alice.peer"])[0]
     # violation of mutual authentication
     if bp == 1 and ap != 2 :
-        print s, "A(1) <=> %s ; B(2) <=> %s" % (ap, bp)
-        print m
+        print(s, "A(1) <=> %s ; B(2) <=> %s" % (ap, bp))
+        print(m)
 
-print len(states), "states"
+print(len(states), "states")
