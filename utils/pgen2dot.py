@@ -9,7 +9,7 @@ import pygraphviz as gv
 import snakes.lang.pgen as pgen
 
 if len(sys.argv) < 3 :
-    print "Usage: python pgen2dot.py INFILE OUTFILE [ENGINE [OPTION=VAL]...]"
+    print("Usage: python pgen2dot.py INFILE OUTFILE [ENGINE [OPTION=VAL]...]")
     sys.exit(1)
 elif len(sys.argv) >= 4 :
     engine = sys.argv[3]

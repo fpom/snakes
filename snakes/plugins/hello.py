@@ -60,5 +60,5 @@ def extend (module) :
             >>> n.hello()
             Hello from N
             """
-            print self._hello % self.name
+            print(self._hello % self.name)
     return PetriNet

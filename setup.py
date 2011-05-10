@@ -20,7 +20,7 @@ def doc_files() :
                                          ]
     return result.items()
 
-print "Compiling Emacs files..."
+print("Compiling Emacs files...")
 os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el")
 
 setup(name="SNAKES",

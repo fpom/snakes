@@ -6,6 +6,7 @@ import doctest, traceback, sys, re, operator, inspect
 from snakes.lang.pgen import ParseError
 from snakes.lang.python.pgen import parser
 import snakes.lang.python.asdl as ast
+from snakes import *
 
 _symbols = parser.tokenizer.tok_name.copy()
 # next statement overrides 'NT_OFFSET' entry with 'single_input'
@@ -45,7 +46,7 @@ class Translator (object) :
     ParseTree = ParseTree
     parser = parser
     def __init__ (self, st) :
-        for value, name in self.parser.tokenizer.tok_name.iteritems() :
+        for value, name in self.parser.tokenizer.tok_name.items() :
             setattr(self, name, value)
         self.ast = self.do(self.ParseTree(st))
     def do (self, st, ctx=ast.Load) :
@@ -1821,12 +1822,12 @@ class ParseTestParser (doctest.DocTestParser) :
                 try :
                     tree = self.Translator.ParseTree(self.Translator.parser.parseString(source))
                 except :
-                    print "could not parse %r at %s:%s" % (source, name,
-                                                           exple.lineno)
+                    print("could not parse %r at %s:%s" % (source, name,
+                                                           exple.lineno))
                     raise
                 if not tree.involve(self.Translator.parser.stringMap[rule]) :
-                    print ("test at %s:%s does not involve rule %s"
-                           % (name, exple.lineno, rule))
+                    print(("test at %s:%s does not involve rule %s"
+                           % (name, exple.lineno, rule)))
                     examples[i] = "<test skipped>"
                     continue
             examples[i] = doctest.Example(
@@ -1843,13 +1844,13 @@ def testparser (translator) :
         try :
             assert "<<<" in getattr(translator, "do_" + rule).__doc__
         except AttributeError :
-            print "missing handler for rule %r" % rule
+            print("missing handler for rule %r" % rule)
             continue
         except TypeError :
-            print "missing doc for rule %r" % rule
+            print("missing doc for rule %r" % rule)
             continue
         except AssertionError :
-            print "missing test for rule %r" % rule
+            print("missing test for rule %r" % rule)
             continue
     finder = doctest.DocTestFinder(parser=ParseTestParser(translator))
     runner = doctest.DocTestRunner(optionflags=doctest.NORMALIZE_WHITESPACE

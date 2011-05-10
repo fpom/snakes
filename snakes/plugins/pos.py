@@ -47,6 +47,7 @@ Position(-3, 1)
 """
 
 from snakes import SnakesError
+from snakes.compat import *
 from snakes.plugins import plugin, new_instance
 from snakes.pnml import Tree
 
@@ -61,7 +62,7 @@ class Position (object) :
         return "Position(%s, %s)" % (str(self.x), str(self.y))
     def __setattr__ (self, name, value) :
         if name in ("x", "y") :
-            raise AttributeError, "readonly attribute"
+            raise AttributeError("readonly attribute")
         else :
             self.__dict__[name] = value
     def moveto (self, x, y) :
@@ -74,7 +75,7 @@ class Position (object) :
         elif rank == 1 :
             return self.y
         else :
-            raise IndexError, "Position index out of range"
+            raise IndexError("Position index out of range")
     def __iter__ (self) :
         yield self.x
         yield self.y
@@ -228,8 +229,8 @@ def extend (module) :
             if len(self._node) == 0 :
                 return (0, 0), (0, 0)
             else :
-                nodes = self._node.itervalues()
-                xmin, ymin = nodes.next().pos()
+                nodes = iter(self._node.values())
+                xmin, ymin = next(nodes).pos()
                 xmax, ymax = xmin, ymin
                 for n in nodes :
                     x, y = n.pos()

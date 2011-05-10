@@ -6,7 +6,8 @@ the Basil framework (http://code.google.com/p/basil).
 
 from snakes import SnakesError
 from snakes.lang import ast
-import tokenize, string, StringIO, pprint, warnings, inspect, os.path
+import tokenize, string, pprint, warnings, inspect, os.path
+from snakes.compat import *
 
 def warn (message) :
     """Issue a warning message.
@@ -174,7 +175,6 @@ class Tokenizer (object) :
         '.' : tokenize.DOT,
         '%' : tokenize.PERCENT,
         '%=' : tokenize.PERCENTEQUAL,
-        '`' : tokenize.BACKQUOTE,
         '{' : tokenize.LBRACE,
         '}' : tokenize.RBRACE,
         '^' : tokenize.CIRCUMFLEX,
@@ -221,19 +221,19 @@ class Tokenizer (object) :
         self.tok_name = {}
         self._extra = {}
         if python :
-            for kind, name in tokenize.tok_name.iteritems() :
+            for kind, name in tokenize.tok_name.items() :
                 self.tok_name[kind] = name
                 setattr(self, name, kind)
         if not hasattr(self, "NT_OFFSET") :
             self.NT_OFFSET = 256
         last = max(n for n in self.tok_name if n != self.NT_OFFSET)
-        for shift, (name, txt) in enumerate(sorted(extra.iteritems())) :
+        for shift, (name, txt) in enumerate(sorted(extra.items())) :
             #WARNING: sorted above is required to guaranty that extra
             # tokens will always get the same number (dict order is
             # not guaranteed)
             kind = last + shift
             if kind >= self.NT_OFFSET :
-                raise TypeError, "too many new tokens"
+                raise TypeError("too many new tokens")
             self.tok_name[kind] = name
             setattr(self, name, kind)
             self._extra[txt] = kind
@@ -263,7 +263,7 @@ class Tokenizer (object) :
         if self._skip != set([self.COMMENT, self.NL]) :
             args.append("skip=%r" % list(self._skip))
         args.extend("%s=%r" % (self.tok_name[kind], txt) for txt, kind
-                    in self._extra.iteritems())
+                    in self._extra.items())
         return "%s(%s)" % (self.__class__.__name__, ", ".join(args))
     def tokenize (self, stream) :
         """Break an input stream into tokens.
@@ -308,6 +308,11 @@ class Tokenizer (object) :
             yield self.last
     def skip_token (self, token) :
         pass
+
+try :
+    Tokenizer._pyopmap['`'] = tokenize.BACKQUOTE
+except AttributeError :
+    pass
 
 class PgenParser (object) :
     """A parser for pgen files.
@@ -385,7 +390,7 @@ class PgenParser (object) :
         self.tokens = self.lexer.tokenize(self.infile)
         extra = {}
         children = []
-        current = self.tokens.next()
+        current = next(self.tokens)
         while current.kind != self.lexer.ENDMARKER :
             if current.kind == self.lexer.NEWLINE :
                 children.append((current, []))
@@ -398,7 +403,7 @@ class PgenParser (object) :
                 ruleResult, current = self.handleRule(current)
                 children.append(ruleResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
         children.append((current, []))
         return (self.MSTART, children), Tokenizer(**extra)
     def handleNewtok (self, current=None) :
@@ -411,13 +416,13 @@ class PgenParser (object) :
          - S is the token string value
         """
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         self.expect(self.lexer.NEWTOK, current)
-        name = self.tokens.next()
+        name = next(self.tokens)
         self.expect(self.lexer.NAME, name)
-        text = self.tokens.next()
+        text = next(self.tokens)
         self.expect(self.lexer.STRING, text)
-        nl = self.tokens.next()
+        nl = next(self.tokens)
         self.expect(self.lexer.NEWLINE, nl)
         return name, compile(text, "<string>", "eval",
                              ast.PyCF_ONLY_AST).body.s
@@ -426,16 +431,16 @@ class PgenParser (object) :
         """
         children = []
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         self.expect(self.lexer.NAME, current)
         children.append((current, []))
-        current = self.tokens.next()
+        current = next(self.tokens)
         self.expect(self.lexer.COLON, current)
         children.append((current, []))
         rhsResult, current = self.handleRhs()
         children.append(rhsResult)
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         self.expect(self.lexer.NEWLINE, current)
         children.append((current, []))
         result = (self.RULE, children)
@@ -447,13 +452,13 @@ class PgenParser (object) :
         altResult, current = self.handleAlt(current)
         children.append(altResult)
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         while current.kind == self.lexer.VBAR :
             children.append((current, []))
             altResult, current = self.handleAlt()
             children.append(altResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
         result = (self.RHS, children)
         return result, current
     def handleAlt (self, current=None) :
@@ -463,26 +468,26 @@ class PgenParser (object) :
         itemResult, current = self.handleItem(current)
         children.append(itemResult)
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         while current.kind in (self.lexer.LSQB, self.lexer.LPAR,
                                self.lexer.NAME, self.lexer.STRING) :
             itemResult, current = self.handleItem(current)
             children.append(itemResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
         return (self.ALT, children), current
     def handleItem (self, current=None) :
         """Recognize item : LSQB rhs RSQB | atom ( STAR | PLUS )?
         """
         children = []
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         if current.kind == self.lexer.LSQB :
             children.append((current, []))
             rhsResult, current = self.handleRhs()
             children.append(rhsResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
             self.expect(self.lexer.RSQB, current)
             children.append((current, []))
             current = None
@@ -490,7 +495,7 @@ class PgenParser (object) :
             atomResult, current = self.handleAtom(current)
             children.append(atomResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
             if current.kind in (self.lexer.STAR, self.lexer.PLUS) :
                 children.append((current, []))
                 current = None
@@ -500,14 +505,14 @@ class PgenParser (object) :
         """
         children = []
         if current is None :
-            current = self.tokens.next()
+            current = next(self.tokens)
         tokType = current.kind
         if tokType == self.lexer.LPAR :
             children.append((current, []))
             rhsResult, current = self.handleRhs()
             children.append(rhsResult)
             if current is None :
-                current = self.tokens.next()
+                current = next(self.tokens)
             self.expect(self.lexer.RPAR, current)
             children.append((current, []))
         elif tokType == self.lexer.STRING :
@@ -609,7 +614,7 @@ class Parser (object) :
         The start symbol may be provided by its number (int) or its
         name (str) as specified in the grammar.
         """
-        data = StringIO.StringIO(text)
+        data = io.StringIO(text)
         data.name = filename
         self.tokens = self.tokenizer.tokenize(data)
         return self._parse(start)
@@ -637,7 +642,7 @@ class Parser (object) :
         # parse all of it
         result = self._LL1_OK
         while result == self._LL1_OK :
-            result, expected = self.addToken(tokens.next())
+            result, expected = self.addToken(next(tokens))
         if result == self._LL1_DONE :
             return self._fix_locations(rootNode)
         elif result == self._LL1_SYNTAX :
@@ -698,7 +703,7 @@ class Parser (object) :
                         warn("nonterminal too high (%d >= %d)!" %
                              (kind, 128 + self.tokenizer.NT_OFFSET))
                         continue
-                    for ibit in xrange(labelCount) :
+                    for ibit in range(labelCount) :
                         if self.testbit(targetFirstSet, ibit) :
                             accelVal = (arrow | 128 |
                                         ((kind - self.tokenizer.NT_OFFSET) << 8))
@@ -729,8 +734,8 @@ class Parser (object) :
             return (arcs, (accelUpper, accelLower, accelArray), accept)
         def handleDFA (dfa) :
             kind, name, initial, states, first = dfa
-            return (kind, name, initial, map(handleState, states))
-        self.grammar = (map(handleDFA, dfas), labels, start, 1)
+            return (kind, name, initial, list(map(handleState, states)))
+        self.grammar = (list(map(handleDFA, dfas)), labels, start, 1)
     _LL1_OK = 0   # replaced E_ prefix with _LL1_ to prevent potential
     _LL1_DONE = 1 # conflicts with grammar symbols
     _LL1_SYNTAX = 2
@@ -840,7 +845,7 @@ class PyPgen (object) :
         grammar = self.generateDfaGrammar(nfaGrammar)
         self.translateLabels(grammar)
         self.generateFirstSets(grammar)
-        grammar[0] = map(tuple, grammar[0])
+        grammar[0] = list(map(tuple, grammar[0]))
         # Trick to add accelerators at generation time: it's easier to
         # do it this way than to extract the required elements from
         # class Parser.
@@ -1029,7 +1034,7 @@ class PyPgen (object) :
         index = 0
         while index < len(tempStates) :
             crntTempState = tempStates[index]
-            for componentState in xrange(len(nfa[2])) :
+            for componentState in range(len(nfa[2])) :
                 if not crntTempState[0][componentState] :
                     continue
                 nfaArcs = nfa[2][componentState]
@@ -1045,7 +1050,7 @@ class PyPgen (object) :
                         tempArc = [label, -1, [False] * len(nfa[2])]
                         crntTempState[1].append(tempArc)
                     self.addClosure(tempArc[2], nfa, nfaArrow)
-            for arcIndex in xrange(len(crntTempState[1])) :
+            for arcIndex in range(len(crntTempState[1])) :
                 label, arrow, targetStateList = crntTempState[1][arcIndex]
                 targetFound = False
                 arrow = 0
@@ -1067,7 +1072,7 @@ class PyPgen (object) :
     def sameState (self, s1, s2) :
         if len(s1[1]) != len(s2[1]) or s1[2] != s2[2] :
             return False
-        for arcIndex in xrange(len(s1[1])) :
+        for arcIndex in range(len(s1[1])) :
             arc1 = s1[1][arcIndex]
             arc2 = s2[1][arcIndex]
             if arc1[:-1] != arc2[:-1] :
@@ -1078,15 +1083,15 @@ class PyPgen (object) :
         deletedStates = []
         while changes :
             changes = False
-            for i in xrange(1, len(tempStates)) :
+            for i in range(1, len(tempStates)) :
                 if i in deletedStates :
                     continue
-                for j in xrange(i) :
+                for j in range(i) :
                     if j in deletedStates :
                         continue
                     if self.sameState(tempStates[i], tempStates[j]) :
                         deletedStates.append(i)
-                        for k in xrange(len(tempStates)) :
+                        for k in range(len(tempStates)) :
                             if k in deletedStates :
                                 continue
                             for arc in tempStates[k][1] :
@@ -1117,10 +1122,10 @@ class PyPgen (object) :
                 dfaState[0].append((self.EMPTY, dfaStateIndex))
         return dfa
     def translateLabels (self, grammar) :
-        tokenNames = self.tokenizer.tok_name.values()
+        tokenNames = list(self.tokenizer.tok_name.values())
         # Recipe 252143 (remixed for laziness)
         tokenValues = dict(([v, k] for k, v in
-                            self.tokenizer.tok_name.iteritems()))
+                            self.tokenizer.tok_name.items()))
         labelList = grammar[1]
         for labelIndex, (kind, name) in enumerate(labelList) :
             if kind == self.tokenizer.NAME :
@@ -1140,7 +1145,7 @@ class PyPgen (object) :
                 sname = name[1:-1]
                 if (sname[0] in string.letters) or (sname[0] == "_") :
                     labelList[labelIndex] = (self.tokenizer.NAME, sname)
-                elif self.operatorMap.has_key(sname) :
+                elif sname in self.operatorMap :
                     labelList[labelIndex] = (self.operatorMap[sname],
                                              None)
                 else :
@@ -1211,16 +1216,16 @@ if __name__ == '__main__' :
         elif len(args) > 1 :
             raise getopt.GetoptError("more than one input file provided")
     except getopt.GetoptError :
-        print >>sys.stderr, "%s: %s" % (__file__, sys.exc_info()[1])
+        sys.stderr.write("%s: %s\n" % (__file__, sys.exc_info()[1]))
         sys.exit(1)
     for (flag, arg) in opts :
         if flag in ("-h", "--help") :
-            print """usage: %s [OPTIONS] INFILE
+            print("""usage: %s [OPTIONS] INFILE
     Options:
         -h, --help         print this help and exit
         --inline           inline 'pgen.py' in the generated file
         --output=OUTPUT    set output file
-        --pgen=PGEN        name of 'pgen' module in output file""" % __file__
+        --pgen=PGEN        name of 'pgen' module in output file""" % __file__)
             sys.exit(0)
         elif flag == "--inline" :
             inline = True

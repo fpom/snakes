@@ -50,6 +50,7 @@ True
 
 import inspect
 from operator import xor
+from snakes.compat import *
 
 def unhash (obj) :
     """Make the object hashable again.
@@ -86,18 +87,17 @@ def hashable (cls) :
                                           doc])
         except :
             pass
-    if "__hash__" in classdict :
-        def __hash__ (self) :
-            if not hasattr(self, "_hash") :
-                self._hash = self.__hash__.HASH(self)
-            return self._hash
-        __hash__.HASH = classdict["__hash__"]
-        __hash__.__doc__ = classdict["__hash__"].__doc__
-        cls.__hash__ = __hash__
+    def __hash__ (self) :
+        if not hasattr(self, "_hash") :
+            self._hash = self.__hash__.HASH(self)
+        return self._hash
+    __hash__.HASH = classdict["__hash__"]
+    __hash__.__doc__ = classdict["__hash__"].__doc__
+    cls.__hash__ = __hash__
     def __mutable__ (self) :
         "Raise C{ValueError} if the %s has been hashed."
         if self.hashed() :
-            raise ValueError, "hashed '%s' object is not mutable" % classname
+            raise ValueError("hashed '%s' object is not mutable" % classname)
     try :
         __mutable__.__doc__ = __mutable__.__doc__ % classname
     except :
@@ -148,6 +148,11 @@ class hlist (list) :
         list.__delslice__(self, *l, **d)
     def __getslice__ (self, first, last) :
         return self.__class__(list.__getslice__(self, first, last))
+    def __getitem__ (self, item) :
+        ret = list.__getitem__(self, item)
+        if ret.__class__ is list :
+            return self.__class__(ret)
+        return ret
     def __hash__ (self) :
         return hash(tuple(self))
     def __iadd__ (self, other) :
@@ -319,7 +324,8 @@ class hset (set) :
         >>> repr(hset([1]))
         'hset([1])'
         """
-        return self.__class__.__name__ + "(" + set.__repr__(self).split("(", 1)[1]
+        return "%s([%s])" % (self.__class__.__name__,
+                             set.__repr__(self)[6:-2])
     def __ror__ (self, other) :
         return self.__class__(set.__ror__(self, other))
     def __rsub__ (self, other) :

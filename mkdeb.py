@@ -10,14 +10,14 @@ base_dist_dir = "dist"
 dput_sh = open("dput.sh", "w")
 
 def system (command) :
-    print "***", command
+    print("*** %s" % command)
     retcode = os.system(command)
     if retcode != 0 :
-        print "*** error return status (%s)" % retcode
+        print("*** error return status (%s)" % retcode)
         sys.exit(retcode)
 
 def chdir (path) :
-    print "*** cd", path
+    print("*** cd %s" path)
     os.chdir(path)
 
 def changelog (path, dist) :
@@ -33,7 +33,7 @@ def build_package (dist_dir, dist) :
                                         ppa_version, dist)
     deb_dir = os.path.join(dist_dir, "python-snakes_%s" % full_version)
     if not os.path.isdir(dist_dir) :
-        print "*** make dir %r" % dist_dir
+        print("*** make dir %r" % dist_dir)
         os.makedirs(dist_dir)
     if os.path.isdir(deb_dir) :
         system("rm -rf %s" % deb_dir)

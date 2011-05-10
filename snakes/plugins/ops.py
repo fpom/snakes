@@ -171,4 +171,6 @@ def extend (module) :
                 if status._value == name :
                     result.hide(status, status.__class__(status._name, None))
             return result
+        def __truediv__ (self, other) :
+            return self.__div__(other)
     return PetriNet

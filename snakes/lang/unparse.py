@@ -1,15 +1,14 @@
 "Usage: unparse.py <path to source file>"
 import sys
 import _ast
-import cStringIO
-import os
+from snakes.compat import *
 
 def interleave(inter, f, seq):
     """Call f on each item in seq, calling inter() in between.
     """
     seq = iter(seq)
     try:
-        f(seq.next())
+        f(next(seq))
     except StopIteration:
         pass
     else:
@@ -28,12 +27,12 @@ class Unparser:
         self.f = file
         self._indent = 0
         self.dispatch(tree)
-        print >>self.f,""
+        self.f.write("\n")
         self.f.flush()
 
     def fill(self, text = ""):
         "Indent a piece of text, according to the current indentation level"
-        self.f.write("\n"+"    "*self._indent + text)
+        self.f.write("\n" + "    "*self._indent + text)
 
     def write(self, text):
         "Append a piece of text to the current line."
@@ -336,7 +335,8 @@ class Unparser:
 
     def _Dict(self, t):
         self.write("{")
-        def writem((k, v)):
+        def writem(arg):
+            (k, v) = arg
             self.dispatch(k)
             self.write(": ")
             self.dispatch(v)
@@ -492,17 +492,18 @@ def testdir(a):
     try:
         names = [n for n in os.listdir(a) if n.endswith('.py')]
     except OSError:
-        print >> sys.stderr, "Directory not readable: %s" % a
+        sys.stderr.write("Directory not readable: %s\n" % a)
     else:
         for n in names:
             fullname = os.path.join(a, n)
             if os.path.isfile(fullname):
-                output = cStringIO.StringIO()
-                print 'Testing %s' % fullname
+                output = io.StringIO()
+                print('Testing %s' % fullname)
                 try:
                     roundtrip(fullname, output)
-                except Exception, e:
-                    print '  Failed to compile, exception is %s' % repr(e)
+                except Exception:
+                    e = sys.exc_info()[1]
+                    print('  Failed to compile, exception is %r' % e)
             elif os.path.isdir(fullname):
                 testdir(fullname)
 

@@ -8,7 +8,7 @@ from snkast import *
 class _AST (ast.AST):
     def __init__ (self, **ARGS):
         ast.AST.__init__(self)
-        for k, v in ARGS.iteritems():
+        for k, v in ARGS.items():
             setattr(self, k, v)
 
 class abcd (_AST):

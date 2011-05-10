@@ -3,6 +3,7 @@ from snakes.utils.abcd import CompilationError, DeclarationError
 from snakes.lang.abcd.parser import ast
 from snakes.lang import unparse
 import snakes.utils.abcd.transform as transform
+from snakes import *
 
 class Decl (object) :
     OBJECT = "object"
@@ -34,7 +35,7 @@ class Decl (object) :
             self.kind = self.IMPORT
         else :
             self.kind = self.OBJECT
-        for key, val in data.iteritems() :
+        for key, val in data.items() :
             setattr(self, key, val)
 
 class GetInstanceArgs (object) :
@@ -172,11 +173,11 @@ class Builder (object) :
         for decl in node.context :
             self.build(decl)
         tasks = [self._build_TaskNet(decl.node)
-                 for name, decl in self.env.iteritems()
+                 for name, decl in self.env.items()
                  if decl.kind == Decl.TASK and decl.used]
         net = reduce(operator.or_, tasks, self.build(node.body))
         # set local buffers marking, and hide them
-        for name, decl in ((n, d) for n, d in self.env.iteritems()
+        for name, decl in ((n, d) for n, d in self.env.items()
                            if d.kind == Decl.BUFFER) :
             status = self.snk.buffer(name)
             for place in net.status(status) :
@@ -380,7 +381,7 @@ class Builder (object) :
         for d, kind in ((buffers, Decl.BUFFER),
                         (nets, Decl.NET),
                         (tasks, Decl.TASK)) :
-            for k, v in d.iteritems() :
+            for k, v in d.items() :
                 if v.kind != kind :
                     self._raise(DeclarationError,
                                 "%r declared as %s but used as %s"

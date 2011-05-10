@@ -86,7 +86,7 @@ class Query (object) :
         for arg in self._larg :
             children.append(Tree("argument", None,
                                  Tree.from_obj(arg)))
-        for name, value in self._karg.iteritems() :
+        for name, value in self._karg.items() :
             children.append(Tree("keyword", None,
                                  Tree.from_obj(value),
                                  name=name))
@@ -127,12 +127,12 @@ class Query (object) :
         try :
             handler = getattr(self, "_run_%s" % self._name)
         except AttributeError :
-            raise QueryError, "unknown query %r" % self._name
+            raise QueryError("unknown query %r" % self._name)
         self._envt = envt
         larg = tuple(a.run(envt) if isinstance(a, self.__class__) else a
                      for a in self._larg)
         karg = dict((n, v.run(envt) if isinstance(v, self.__class__) else v)
-                    for n, v in self._karg.iteritems())
+                    for n, v in self._karg.items())
         try :
             return handler(*larg, **karg)
         except TypeError :
@@ -142,7 +142,7 @@ class Query (object) :
             except :
                 raise val
             if fun.startswith("_run_") and hasattr(self, fun) :
-                raise TypeError, fun[5:] + "()" + msg
+                raise TypeError(fun[5:] + "()" + msg)
             raise val
     def _get_object (self, path) :
         obj = self._envt
@@ -220,10 +220,10 @@ def extend (module) :
                 data, address = self.recvfrom()
                 data = data.strip()
                 if self._verbose :
-                    print "# query from %s:%u" % address
+                    print("# query from %s:%u" % address)
                 try :
                     if self._verbose > 1 :
-                        print data
+                        print(data)
                     res = loads(data).run(self._env)
                     if res is None :
                         res = Tree("answer", None, status="ok")
@@ -235,18 +235,18 @@ def extend (module) :
                     res = Tree("answer", str(val).strip(),
                                error=cls.__name__, status="error")
                     if self._verbose > 1 :
-                        print "# error"
+                        print("# error")
                         for entry in traceback.format_exception(cls, val, tb) :
                             for line in entry.splitlines() :
-                                print "##", line
+                                print("## %s" % line)
                 if self._verbose :
                     if self._verbose > 1 :
-                        print "# answer"
-                        print res.to_pnml()
+                        print("# answer")
+                        print(res.to_pnml())
                     elif res["status"] == "error" :
-                        print "# answer:", "%s: %s" % (res["error"], res.data)
+                        print("# answer: %s: %s" % (res["error"], res.data))
                     else :
-                        print "# answer:", res["status"]
+                        print("# answer: %s" % res["status"])
                 self.sendto(res.to_pnml(), address)
     class TCPServer (UDPServer) :
         def __init__ (self, port, size=2**20, verbose=0) :

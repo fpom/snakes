@@ -56,11 +56,13 @@ clean:
 	rm -f $$(find . -name "*.pyc")
 	rm -f $$(find . -name "*~")
 	rm -f $$(find . -name "*.class")
+	rm -rf $$(find . -type d -name __pycache__)
 
 test:
 	python2.5 test.py
 	python2.6 test.py
 	python2.7 test.py
+	python3 test.py
 	unladen test.py
 	pypy test.py
 	spypy test.py

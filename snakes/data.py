@@ -1,6 +1,7 @@
 """Basic data types and functions used in SNAKES"""
 
 import operator, inspect
+from snakes.compat import *
 from snakes import DomainError
 from snakes.hashables import hdict
 from snakes.pnml import Tree
@@ -222,7 +223,7 @@ class MultiSet (hdict) :
         @type times: non negative C{int}
         """
         if times < 0 :
-            raise ValueError, "negative values are forbidden"
+            raise ValueError("negative values are forbidden")
         try :
             self[value] += times
         except KeyError :
@@ -256,9 +257,9 @@ class MultiSet (hdict) :
         @type times: non negative C{int}
         """
         if times < 0 :
-            raise ValueError, "negative values are forbidden"
+            raise ValueError("negative values are forbidden")
         if times > self.get(value, 0) :
-            raise ValueError, "not enough occurrences"
+            raise ValueError("not enough occurrences")
         self[value] -= times
         if self[value] == 0 :
             del self[value]
@@ -408,7 +409,7 @@ class MultiSet (hdict) :
         @rtype: C{MultiSet}
         """
         if other < 0 :
-            raise ValueError, "negative values are forbidden"
+            raise ValueError("negative values are forbidden")
         elif other == 0 :
             return MultiSet()
         else :
@@ -416,6 +417,7 @@ class MultiSet (hdict) :
             for value in self.keys() :
                 result[value] *= other
             return result
+    __hash__ = hdict.__hash__
     def __eq__ (self, other) :
         """Test for equality.
 
@@ -545,8 +547,8 @@ class MultiSet (hdict) :
     def domain (self) :
         """Return the domain of the multiset
 
-        >>> (MultiSet([1, 2, 3, 4]) + MultiSet([1, 2, 3])).domain()
-        set([...])
+        >>> list(sorted((MultiSet([1, 2, 3, 4]) + MultiSet([1, 2, 3])).domain()))
+        [1, 2, 3, 4]
 
         @return: the set of values in the domain
         @rtype: C{set}
@@ -587,7 +589,7 @@ class Substitution (object) :
         """
         # 153913524 = hash('snakes.data.Substitution')
         return reduce(operator.xor,
-                      (hash(i) for i in self._dict.iteritems()),
+                      (hash(i) for i in self._dict.items()),
                       153913524)
     def __eq__ (self, other) :
         """
@@ -677,12 +679,12 @@ class Substitution (object) :
         @return: a list of pairs (name, value) for each mapped name
         @rtype: C{list}
         """
-        return self._dict.items()
+        return list(self._dict.items())
     def domain (self) :
         """Return the set of mapped names.
 
-        >>> Substitution(x=1, y=2).domain()
-        set([...])
+        >>> list(sorted(Substitution(x=1, y=2).domain()))
+        ['x', 'y']
 
         @return: the set of mapped names
         @rtype: C{set}
@@ -691,8 +693,8 @@ class Substitution (object) :
     def image (self) :
         """Return the set of values associated to the names.
 
-        >>> Substitution(x=1, y=2).image()
-        set([...])
+        >>> list(sorted(Substitution(x=1, y=2).image()))
+        [1, 2]
 
         @return: the set of values associated to names
         @rtype: C{set}
@@ -789,10 +791,9 @@ class Substitution (object) :
         >>> s = Substitution(x=1, y=2)
         >>> s['x']
         1
-        >>> s['z']
-        Traceback (most recent call last):
-        ...
-        DomainError: unbound variable 'z'
+        >>> try : s['z']
+        ... except DomainError : print(sys.exc_info()[1])
+        unbound variable 'z'
 
         @param var: the name of the variable
         @type var: C{str} (usually)
@@ -803,7 +804,7 @@ class Substitution (object) :
         try :
             return self._dict[var]
         except KeyError :
-            raise DomainError, "unbound variable '%s'" % str(var)
+            raise DomainError("unbound variable '%s'" % var)
     def __call__ (self, var) :
         """Return the mapped value.
 
@@ -834,10 +835,9 @@ class Substitution (object) :
         >>> s = Substitution(x=1, y=2) + Substitution(y=2, z=3)
         >>> s('x'), s('y'), s('z')
         (1, 2, 3)
-        >>> Substitution(x=1, y=2) + Substitution(y=4, z=3)
-        Traceback (most recent call last):
-        ...
-        DomainError: conflict on 'y'
+        >>> try : Substitution(x=1, y=2) + Substitution(y=4, z=3)
+        ... except DomainError : print(sys.exc_info()[1])
+        conflict on 'y'
 
         @param other: another substitution
         @type other: C{Substitution}
@@ -847,7 +847,7 @@ class Substitution (object) :
         """
         for var in self :
             if var in other and (self[var] != other[var]) :
-                raise DomainError, "conflict on '%s'" % str(var)
+                raise DomainError("conflict on '%s'" % var)
         s = self.__class__(self.dict())
         s._dict.update(other.dict())
         return s
@@ -888,13 +888,13 @@ class Symbol (object) :
         @type export: C{str} or C{bool} or C{None}
 
         >>> Symbol('foo')
-        foo
+        Symbol('foo')
         >>> foo
-        foo
+        Symbol('foo')
         >>> Symbol('egg', 'spam')
-        egg
+        Symbol('egg', 'spam')
         >>> spam
-        egg
+        Symbol('egg', 'spam')
         >>> Symbol('bar', False)
         Symbol('bar', False)
         >>> bar
@@ -945,9 +945,9 @@ class Symbol (object) :
     def __pnmlload__ (cls, tree) :
         """
         >>> Symbol.__pnmlload__(Symbol('foo', 'bar').__pnmldump__())
-        foo
+        Symbol('foo', 'bar')
         >>> Symbol.__pnmlload__(Symbol('foo').__pnmldump__())
-        foo
+        Symbol('foo')
         >>> Symbol.__pnmlload__(Symbol('foo', False).__pnmldump__())
         Symbol('foo', False)
         """
@@ -992,15 +992,13 @@ class Symbol (object) :
     def __repr__ (self) :
         """
         >>> Symbol('foo')
-        foo
+        Symbol('foo')
         >>> Symbol('egg', 'spam')
-        egg
+        Symbol('egg', 'spam')
         >>> Symbol('bar', False)
         Symbol('bar', False)
         """
-        if self._export and inspect.stack()[1][0].f_globals.get(self._export, None) == self :
-            return str(self)
-        elif self._export == self.name :
+        if self._export == self.name :
             return "%s(%r)" % (self.__class__.__name__, self.name)
         else :
             return "%s(%r, %r)" % (self.__class__.__name__, self.name,
