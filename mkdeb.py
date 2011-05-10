@@ -17,7 +17,7 @@ def system (command) :
         sys.exit(retcode)
 
 def chdir (path) :
-    print("*** cd %s" path)
+    print("*** cd %s" % path)
     os.chdir(path)
 
 def changelog (path, dist) :
