@@ -33,8 +33,8 @@ False
 
 import os, os.path, subprocess, collections
 import snakes.plugins
-
 from snakes.plugins.clusters import Cluster
+from snakes.compat import *
 
 class Graph (Cluster) :
     def __init__ (self, attr) :
@@ -62,7 +62,7 @@ class Graph (Cluster) :
             tag = "%s " % tag
         return (["%s[" % tag,
                  ["%s=%s" % (key, self.escape(str(val)))
-                  for key, val in attr.iteritems()],
+                  for key, val in attr.items()],
                  "];"])
     def _dot (self) :
         body = []
@@ -73,7 +73,7 @@ class Graph (Cluster) :
             body.append(self._dot_attr(self.attributes[node]))
         for child in self.children() :
             body.extend(child._dot())
-        for (src, dst), lst in self.edges.iteritems() :
+        for (src, dst), lst in self.edges.items() :
             for attr in lst :
                 body.append("%s -> %s" % (src, dst))
                 body.append(self._dot_attr(attr))
@@ -88,7 +88,7 @@ class Graph (Cluster) :
     def dot (self) :
         self.done = set()
         return "\n".join(self._dot_text(["digraph {",
-                                         ['node [label="\N",'
+                                         ['node [label="N",'
                                           ' fillcolor="#FFFFFF",'
                                           ' fontcolor="#000000",'
                                           ' style=filled];',
@@ -101,7 +101,7 @@ class Graph (Cluster) :
         return '"%s"' % text.replace('"', r'\"')
     def render (self, filename, engine="dot", debug=False) :
         if engine not in ("dot", "neato", "twopi", "circo", "fdp") :
-            raise ValueError, "unknown GraphViz engine %r" % engine
+            raise ValueError("unknown GraphViz engine %r" % engine)
         outfile = open(filename + ".dot", "w")
         outfile.write(self.dot())
         outfile.close()
@@ -122,7 +122,7 @@ class Graph (Cluster) :
             raise IOError("%s exited with status %s" % (engine, dot.returncode))
     def layout (self, engine="dot", debug=False) :
         if engine not in ("dot", "neato", "twopi", "circo", "fdp") :
-            raise ValueError, "unknown GraphViz engine %r" % engine
+            raise ValueError("unknown GraphViz engine %r" % engine)
         if debug :
             dot = subprocess.Popen([engine, "-Tplain"],
                                    stdin=subprocess.PIPE,
@@ -132,9 +132,15 @@ class Graph (Cluster) :
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = dot.communicate(self.dot())
+        if PY3 :
+            out, err = dot.communicate(bytes(self.dot(),
+                                             snakes.defaultencoding))
+            out = out.decode(snakes.defaultencoding)
+        else :
+            out, err = dot.communicate(self.dot())
         if dot.returncode != 0 :
-            raise IOError("%s exited with status %s" % (engine, dot.returncode))
+            raise IOError("%s exited with status %s"
+                          % (engine, dot.returncode))
         for line in (l.strip() for l in out.splitlines()
                      if l.strip().startswith("node")) :
             node, name, x, y, rest = line.split(None, 4)
@@ -232,9 +238,10 @@ def extend (module) :
                     place_attr=None, trans_attr=None, arc_attr=None) :
             g = self.draw(None, engine, debug, graph_attr, cluster_attr,
                           place_attr, trans_attr, arc_attr)
-            node = dict((v, k) for k, v in g.nodemap.iteritems())
+            node = dict((v, k) for k, v in g.nodemap.items())
             for n, x, y in g.layout(engine, debug) :
                 self.node(node[n]).pos.moveto(x*xscale, y*yscale)
+
     class StateGraph (module.StateGraph) :
         "An extension with a method C{draw}"
         def draw (self, filename=None, engine="dot", debug=False,
@@ -275,7 +282,7 @@ def extend (module) :
                 if node_attr :
                     node_attr(state, self, attr)
                 graph.add_node(str(state), attr)
-                for succ, (trans, mode) in self.successors().iteritems() :
+                for succ, (trans, mode) in self.successors().items() :
                     attr = dict(arrowhead="normal",
                                 label="%s\\n%s" % (trans.name, mode))
                     if edge_attr :

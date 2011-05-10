@@ -1,6 +1,8 @@
 import sys
 if sys.version_info[:2] in ((2, 6), (2, 7)) :
     import ast
+elif sys.version_info[0] == 3 :
+    import ast
 elif hasattr(sys, "pypy_version_info") :
     import astpypy as ast
 elif hasattr(sys, "JYTHON_JAR") :
@@ -12,8 +14,8 @@ else :
 
 sys.modules["snkast"] = ast
 
-import unparse as _unparse
-import StringIO
+from . import unparse as _unparse
+from snakes.compat import *
 
 class Names (ast.NodeVisitor) :
     def __init__ (self) :
@@ -57,7 +59,7 @@ class Unparser(_unparse.Unparser) :
         self.leave()
 
 def unparse (st) :
-    output = StringIO.StringIO()
+    output = io.StringIO()
     Unparser(st, output)
     return output.getvalue().strip()
 

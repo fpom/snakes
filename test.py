@@ -5,27 +5,36 @@ retcode = 0
 import snakes
 version = open("VERSION").read().strip()
 if snakes.version != version :
-    print "Mismatched versions:"
-    print "  snakes.version = %r" % snakes.version
-    print "  VERSION = %r" % version
+    print("Mismatched versions:")
+    print("  snakes.version = %r" % snakes.version)
+    print("  VERSION = %r" % version)
     sys.exit(1)
 
 def test (module) :
-    print "  Testing '%s'" % module.__name__
+    print("  Testing '%s'" % module.__name__)
     f, t = doctest.testmod(module, #verbose=True,
                            optionflags=doctest.NORMALIZE_WHITESPACE
                            | doctest.REPORT_ONLY_FIRST_FAILURE
                            | doctest.ELLIPSIS)
     return f
 
-modules = ["snakes", "snakes.hashables", "snakes.lang",
+modules = ["snakes",
+           "snakes.hashables",
+           "snakes.lang",
            "snakes.lang.python.parser",
-           "snakes.data", "snakes.typing", "snakes.nets", "snakes.pnml",
-           "snakes.plugins", "snakes.plugins.pos", "snakes.plugins.graphviz",
-           "snakes.plugins.status", "snakes.plugins.ops",
-           "snakes.plugins.posops", "snakes.plugins.synchro",
-           "snakes.plugins.hello", "snakes.plugins.gv",
-           "snakes.plugins.clusters", "snakes.plugins.labels"]
+           "snakes.data",
+           "snakes.typing",
+           "snakes.nets",
+           "snakes.pnml",
+           "snakes.plugins",
+           "snakes.plugins.pos",
+           "snakes.plugins.status",
+           "snakes.plugins.ops",
+           "snakes.plugins.synchro",
+           "snakes.plugins.hello",
+           "snakes.plugins.gv",
+           "snakes.plugins.clusters",
+           "snakes.plugins.labels"]
 
 stop = False
 if len(sys.argv) > 1 :
@@ -45,14 +54,14 @@ for modname in modules :
         if retcode and stop :
             break
     except :
-        print "  Could not test %r:" % modname
+        print("  Could not test %r:" % modname)
         c, e, t = sys.exc_info()
-        print "    %s: %s" % (c.__name__, e)
+        print("    %s: %s" % (c.__name__, e))
 
 if doscripts :
     for script in (glob.glob("test-scripts/test*.sh")
                    + glob.glob("test-scripts/test*.py")) :
-        print "  Running '%s'" % script
+        print("  Running '%s'" % script)
         retcode = max(retcode, os.system(script))
         if retcode and stop :
             break

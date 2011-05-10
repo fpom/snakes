@@ -5,12 +5,19 @@ in a readable format when possible and pickled as a last solution.
 This should result in a complete PNML serialization of any object.
 """
 
-import __builtin__
 import xml.dom.minidom
-import cPickle as pickle
+import pickle
 import sys, inspect, os, os.path, imp, pkgutil
 import snakes, snakes.plugins
 from snakes import SnakesError
+from snakes.compat import *
+if PY3 :
+    import ast
+
+try :
+    builtins = sys.modules["__builtin__"]
+except KeyError :
+    builtins = sys.modules["builtins"]
 
 def _snk_import (name) :
     "Properly import a module, including a plugin"
@@ -97,7 +104,7 @@ class _set (object) :
         >>> list(_set([4, 5, 1, 2, 4]))
         [4, 5, 1, 2]
         """
-        return (k for k, v in sorted(self._data.iteritems(), key=self._2nd))
+        return (k for k, v in sorted(self._data.items(), key=self._2nd))
     def discard (self, element) :
         """
         >>> s = _set([4, 5, 1, 2, 4])
@@ -219,7 +226,7 @@ class Tree (object) :
     def to_pnml (self) :
         """Dumps a PNML tree to an XML string
 
-        >>> print Tree('tag', 'data', Tree('child', None), attr='value').to_pnml()
+        >>> print(Tree('tag', 'data', Tree('child', None), attr='value').to_pnml())
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
          <tag attr="value">
@@ -253,7 +260,12 @@ class Tree (object) :
         tree._update_node(doc, doc.documentElement)
         if len(plugins) > 0 :
             del tree.children[0]
-        return doc.toprettyxml(indent=" ", encoding=snakes.defaultencoding).strip()
+        r = doc.toprettyxml(indent=" ",
+                            encoding=snakes.defaultencoding).strip()
+        if PY3 :
+            return r.decode()
+        else :
+            return r
     @classmethod
     def from_dom (cls, node) :
         """Load a PNML tree from an XML DOM representation
@@ -354,7 +366,7 @@ class Tree (object) :
         ...          Tree('egg', None,
         ...               Tree('spam', None)))
         >>> for node in t.nodes() :
-        ...     print str(node)
+        ...     print(str(node))
         <PNML tree 'foo'>
         <PNML tree 'bar'>
         <PNML tree 'egg'>
@@ -396,17 +408,16 @@ class Tree (object) :
         >>> o = Tree('oops', None,
         ...          Tree('hello', None),
         ...          attr='value')
-        >>> t.update(o)
-        Traceback (most recent call last):
-         ...
-        SnakesError: tag mismatch 'foo', 'oops'
+        >>> try : t.update(o)
+        ... except SnakesError : print(sys.exc_info()[1])
+        tag mismatch 'foo', 'oops'
 
         @param other: the other tree to get data from
         @type other: C{Tree}
         @raise SnakesError: when C{other} has not the same tag as C{self}
         """
         if self.name != other.name :
-            raise SnakesError, "tag mismatch '%s', '%s'" % (self.name, other.name)
+            raise SnakesError("tag mismatch '%s', '%s'" % (self.name, other.name))
         self.children.extend(other.children)
         self.attributes.update(other.attributes)
         self.add_data(other.data)
@@ -558,22 +569,18 @@ class Tree (object) :
           <bar/>
          </spam>
         </pnml>
-        >>> t.child('python')
-        Traceback (most recent call last):
-          ...
-        SnakesError: no child 'python'
-        >>> t.child('bar')
-        Traceback (most recent call last):
-          ...
-        SnakesError: no child 'bar'
-        >>> t.child('egg')
-        Traceback (most recent call last):
-          ...
-        SnakesError: multiple children 'egg'
-        >>> t.child()
-        Traceback (most recent call last):
-          ...
-        SnakesError: multiple children
+        >>> try : t.child('python')
+        ... except SnakesError : print(sys.exc_info()[1])
+        no child 'python'
+        >>> try : t.child('bar')
+        ... except SnakesError : print(sys.exc_info()[1])
+        no child 'bar'
+        >>> try : t.child('egg')
+        ... except SnakesError : print(sys.exc_info()[1])
+        multiple children 'egg'
+        >>> try : t.child()
+        ... except SnakesError : print(sys.exc_info()[1])
+        multiple children
 
         @param name: name of the tag to search for, if C{None}, the
           fisrt child is returned if it is the only child
@@ -590,11 +597,11 @@ class Tree (object) :
                 if result is None :
                     result = child
                 elif name is None :
-                    raise SnakesError, "multiple children"
+                    raise SnakesError("multiple children")
                 else :
-                    raise SnakesError, "multiple children '%s'" % name
+                    raise SnakesError("multiple children '%s'" % name)
         if result is None :
-            raise SnakesError, "no child '%s'" % name
+            raise SnakesError("no child '%s'" % name)
         return result
     def get_children (self, name=None) :
         """Iterates over direct children having the given tag
@@ -638,7 +645,7 @@ class Tree (object) :
         This is actually the XML text that corresponds to the C{Tree},
         as returned by C{Tree.to_pnml}.
 
-        >>> print repr(Tree('foo', None, Tree('child', None)))
+        >>> print(repr(Tree('foo', None, Tree('child', None))))
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
          <foo>
@@ -758,13 +765,13 @@ class Tree (object) :
     def _get_elementary (self) :
         if self["type"] == "bool" :
             return self.data.strip() == "True"
-        return getattr(__builtin__, self["type"])(self.data)
+        return getattr(builtins, self["type"])(self.data)
     def _set_collection (self, value) :
         for v in value :
             self.add_child(self.from_obj(v))
     def _get_collection (self) :
-        return getattr(__builtin__, self["type"])(child.to_obj()
-                                                   for child in self)
+        return getattr(builtins, self["type"])(child.to_obj()
+                                               for child in self)
     def _set_dict (self, value) :
         for k, v in value.items() :
             self.add_child(Tree("item", None,
@@ -776,7 +783,7 @@ class Tree (object) :
                     for child in self)
     def _native (self, obj) :
         try :
-            if (obj.__module__ == "__builtin__"
+            if (obj.__module__ in ("__builtin__", "__builtins__", "builtins")
                 or obj.__module__ == "snakes"
                 or obj.__module__.startswith("snakes")
                 or inspect.isbuiltin(obj)) :
@@ -800,7 +807,7 @@ class Tree (object) :
             name = obj.__module__
         except :
             name = inspect.getmodule(obj).__name__
-        if name == "__builtin__" :
+        if name in ("__builtin__", "__builtins__", "builtins") :
             return obj.__name__
         else :
             return name + "." + obj.__name__
@@ -816,13 +823,12 @@ class Tree (object) :
             module, name = self["name"].rsplit(".", 1)
             return getattr(__import__(module, fromlist=[name]), name)
         else :
-            return getattr(__builtin__, self["name"])
+            return getattr(builtins, self["name"])
     def _set_function (self, value) :
         self._set_class(value)
     def _get_function (self) :
         return self._get_class()
     def _set_method (self, value) :
-        cls = value.im_class
         self._set_function(value)
         self["name"] = "%s.%s" % (self["name"], value.__name__)
     def _get_method (self) :
@@ -838,8 +844,13 @@ class Tree (object) :
     def _set_pickle (self, value) :
         self["type"] = "pickle"
         self.data = pickle.dumps(value)
+        if PY3 :
+            self.data = repr(self.data)
     def _get_pickle (self) :
-        return pickle.loads(self.data)
+        if PY3 :
+            return pickle.loads(ast.literal_eval(self.data))
+        else :
+            return pickle.loads(self.data)
     def to_obj (self) :
         """Build an object from its PNML representation
 
@@ -871,7 +882,7 @@ class Tree (object) :
         """
         if self.name == "pnml" :
             if len(self.children) == 0 :
-                raise SnakesError, "empty PNML content"
+                raise SnakesError("empty PNML content")
             elif len(self.children) == 1 :
                 return self.child().to_obj()
             else :
@@ -894,12 +905,12 @@ class Tree (object) :
                     return self._tag2obj[self.name].__pnmlload__(self)
             except AttributeError :
                 pass
-        raise SnakesError, "unsupported PNML tag '%s'" % self.name
+        raise SnakesError("unsupported PNML tag '%s'" % self.name)
 
 def dumps (obj) :
     """Dump an object to a PNML string
 
-    >>> print dumps(42)
+    >>> print(dumps(42))
     <?xml version="1.0" encoding="utf-8"?>
     <pnml>
      <object type="int">

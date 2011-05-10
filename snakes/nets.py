@@ -6,6 +6,7 @@ transitions, markings, nets themselves and marking graphs.
 
 import re, operator, inspect
 from snakes import *
+from snakes.compat import *
 from snakes.pnml import *
 from snakes.data import *
 from snakes.lang import *
@@ -70,7 +71,7 @@ class Evaluator (object) :
     def __iter__ (self) :
         """Iterate over namespace items (key/value pairs)
         """
-        return self._env.iteritems()
+        return iter(self._env.items())
     def __eq__ (self, other) :
         """Test for equality of namespaces
         """
@@ -79,6 +80,17 @@ class Evaluator (object) :
         """Test for inequality of namespaces
         """
         return not self.__eq__(other)
+    def __hashone__ (self, pair) :
+        try :
+            return hash(pair)
+        except :
+            return hash(pair[0])
+    def __hash__ (self) :
+        """Return hash value
+        """
+        return reduce(operator.xor,
+                      (self.__hashone__(i) for  i in self),
+                      113110355)
 
 ##
 ## net element
@@ -100,12 +112,11 @@ class NetElement (object) :
     def __init__ (self) :
         """Abstract method
 
-        >>> NetElement()
-        Traceback (most recent call last):
-         ...
-        NotImplementedError: abstract class
+        >>> try : NetElement()
+        ... except NotImplementedError : print(sys.exc_info()[1])
+        abstract class
         """
-        raise NotImplementedError, "abstract class"
+        raise NotImplementedError("abstract class")
     def lock (self, name, owner, value=None) :
         """Lock the attribute C{name} that becomes writeable only by
         C{owner}, set its value if C{value} is not C{None}.
@@ -168,7 +179,7 @@ class NetElement (object) :
         @type value: C{object}
         """
         if "_locks" in self.__dict__ and name in self._locks :
-            raise AttributeError, "'%s' locked" % name
+            raise AttributeError("'%s' locked" % name)
         else :
             self.__dict__[name] = value
     def __delattr__ (self, name) :
@@ -183,7 +194,7 @@ class NetElement (object) :
         @type name: C{str}
         """
         if "_locks" in self.__dict__ and name in self._locks :
-            raise AttributeError, "'%s' locked" % name
+            raise AttributeError("'%s' locked" % name)
         else :
             del self.__dict__[name]
 
@@ -353,14 +364,14 @@ class ArcAnnotation (NetElement) :
     input_allowed = False
     def copy (self) :
         "Return a copy of the annotation."
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def substitute (self, binding) :
         """Substitutes the variables in the annotation.
 
         @param binding: the substitution to apply
         @type binding: C{snakes.data.Substitution}
         """
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the C{old}
         annotation has been replaced by the C{new} one.
@@ -392,21 +403,21 @@ class ArcAnnotation (NetElement) :
             return self.copy()
     def vars (self) :
         "Return the list of variables involved in the annotation."
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def __eq__ (self, other) :
         """Check for equality.
 
         @param other: the other object to compare with
         @type other: C{ArcAnnotation}
         """
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def __hash__ (self) :
         """Computes a hash of the annotation
 
         Warning: must be consistent with equality, ie, two equal
         values must have the same hash.
         """
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def __ne__ (self, other) :
         """Check for difference.
 
@@ -425,7 +436,7 @@ class ArcAnnotation (NetElement) :
         @type binding: C{snakes.data.Substitution}
         @return: a value
         """
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
     def flow (self, binding) :
         """Return the flow of tokens implied by the annotation
         evaluated through C{binding}.
@@ -450,7 +461,7 @@ class ArcAnnotation (NetElement) :
         @type values: any collection like C{set}, C{list}, C{tuple}, ...
         @return: a list of substitutions
         """
-        raise NotImplementedError, "abstract method"
+        raise NotImplementedError("abstract method")
 
 class Value (ArcAnnotation) :
     """A single token value."""
@@ -509,9 +520,9 @@ class Value (ArcAnnotation) :
 
         This is the string representation of the encapsulated value.
 
-        >>> print str(Value(42))
+        >>> print(str(Value(42)))
         42
-        >>> print str(Value('hello'))
+        >>> print(str(Value('hello')))
         'hello'
 
         @return: concise string representation
@@ -524,9 +535,9 @@ class Value (ArcAnnotation) :
     def __repr__ (self) :
         """String representation suitable for C{eval}
 
-        >>> print repr(Value(42))
+        >>> print(repr(Value(42)))
         Value(42)
-        >>> print repr(Value('hello'))
+        >>> print(repr(Value('hello')))
         Value('hello')
 
         @return: precise string representation
@@ -582,10 +593,9 @@ class Value (ArcAnnotation) :
 
         >>> Value(1).modes([1, 2, 3])
         [Substitution()]
-        >>> Value(1).modes([2, 3, 4])
-        Traceback (most recent call last):
-          ...
-        ModeError: no match for value
+        >>> try : Value(1).modes([2, 3, 4])
+        ... except ModeError : print(sys.exc_info()[1])
+        no match for value
 
         @param values: a collection of values
         @type values: any collection like C{set}, C{list}, C{tuple}, ...
@@ -594,7 +604,7 @@ class Value (ArcAnnotation) :
         if self.value in values :
             return [Substitution()]
         else :
-            raise ModeError, "no match for value"
+            raise ModeError("no match for value")
     def substitute (self, binding) :
         """Bind the value (nothing to do).
 
@@ -618,16 +628,15 @@ class Variable (ArcAnnotation) :
 
         >>> Variable('x')
         Variable('x')
-        >>> Variable('_test')
-        Traceback (most recent call last):
-          ...
-        ValueError: not a variable name '_test'
+        >>> try : Variable('_test')
+        ... except ValueError: print(sys.exc_info()[1])
+        not a variable name '_test'
 
         @param name: the name of the variable
         @type name: C{str}
         """
         if not self.__class__.syntax.match(name) :
-            raise ValueError, "not a variable name '%s'" % name
+            raise ValueError("not a variable name '%s'" % name)
         self.name = name
     def copy (self) :
         """Return a copy of the variable.
@@ -716,7 +725,7 @@ class Variable (ArcAnnotation) :
         """
         result = [Substitution({self.name : v}) for v in values]
         if len(result) == 0 :
-            raise ModeError, "no value to bind"
+            raise ModeError("no value to bind")
         return result
     def bind (self, binding) :
         """Return the value of the variable evaluated through
@@ -724,10 +733,9 @@ class Variable (ArcAnnotation) :
 
         >>> Variable('x').bind(Substitution(x=3))
         Token(3)
-        >>> Variable('x').bind(Substitution(z=3))
-        Traceback (most recent call last):
-          ...
-        DomainError: unbound variable 'x'
+        >>> try : Variable('x').bind(Substitution(z=3))
+        ... except DomainError : print(sys.exc_info()[1])
+        unbound variable 'x'
 
         @param binding: a substitution
         @type binding: C{snakes.data.Substitution}
@@ -841,10 +849,11 @@ class Expression (ArcAnnotation) :
         >>> e = Expression('x*(y-1)')
         >>> e.bind(Substitution(x=2, y=3))
         Token(4)
-        >>> e.bind(Substitution(x=2))
-        Traceback (most recent call last):
-          ...
-        NameError: ...
+        >>> try :
+        ...     e.bind(Substitution(x=2))
+        ...     raise Exception()
+        ... except NameError:
+        ...     pass
 
         @param binding: a substitution
         @type binding: C{snakes.data.Substitution}
@@ -1003,7 +1012,7 @@ def let (**args) :
     """
     try :
         __binding__ = inspect.stack()[1][0].f_locals["__binding__"]
-        for name, value in args.iteritems() :
+        for name, value in args.items() :
             __binding__[name] = value
     except :
         return False
@@ -1031,7 +1040,7 @@ class MultiArc (ArcAnnotation) :
         @type components: an iterable collection of C{ArcAnnotation}
         """
         if len(components) == 0 :
-            raise ConstraintError, "missing tuple components"
+            raise ConstraintError("missing tuple components")
         self.input_allowed = reduce(operator.and_,
                                     [c.input_allowed for c in components])
         self._components = tuple(components)
@@ -1098,7 +1107,7 @@ class MultiArc (ArcAnnotation) :
                 return False
         except AttributeError :
             return False
-        return sorted(self._components) == sorted(other._components)
+        return set(self._components) == set(other._components)
     def __hash__ (self) :
         # 1575269934 = hash("snakes.nets.MultiArc")
         return reduce(operator.xor, (hash(c) for f in self._components),
@@ -1259,7 +1268,7 @@ class Tuple (MultiArc) :
             except ModeError :
                 pass
         if len(result) == 0 :
-            raise ModeError, "no mode found"
+            raise ModeError("no mode found")
         return result
     def __str__ (self) :
         """
@@ -1545,10 +1554,9 @@ class Inhibitor (Test) :
 
         >>> Inhibitor(Expression('x+1'), Expression('x>0')).bind(Substitution(x=2))
         Token(3)
-        >>> Inhibitor(Expression('x+1'), Expression('x<0')).bind(Substitution(x=2))
-        Traceback (most recent call last):
-        ...
-        ValueError: condition not True for {x -> 2}
+        >>> try : Inhibitor(Expression('x+1'), Expression('x<0')).bind(Substitution(x=2))
+        ... except ValueError : print(sys.exc_info()[1])
+        condition not True for {x -> 2}
 
         @param binding: a substitution
         @type binding: C{snakes.data.Substitution}
@@ -1563,23 +1571,20 @@ class Inhibitor (Test) :
         annotation may flow the tokens in C{values}. Each mode is a
         substitution indicating how to bind the annotation.
 
-        >>> Inhibitor(Value(1)).modes([1, 2, 3])
-        Traceback (most recent call last):
-        ...
-        ModeError: inhibited by {}
+        >>> try : Inhibitor(Value(1)).modes([1, 2, 3])
+        ... except ModeError : print(sys.exc_info()[1])
+        inhibited by {}
         >>> Inhibitor(Value(0)).modes([1, 2, 3])
         [Substitution()]
-        >>> Inhibitor(Variable('x')).modes([1, 2, 3])
-        Traceback (most recent call last):
-        ...
-        ModeError: inhibited by {x -> 1}
+        >>> try : Inhibitor(Variable('x')).modes([1, 2, 3])
+        ... except ModeError : print(sys.exc_info()[1])
+        inhibited by {x -> 1}
         >>> Inhibitor(Variable('x'), Expression('x>3')).modes([1, 2, 3])
         [Substitution()]
-        >>> Inhibitor(MultiArc([Variable('x'), Variable('y')]),
-        ...           Expression('x>y')).modes([1, 2, 3])
-        Traceback (most recent call last):
-        ...
-        ModeError: inhibited by {...}
+        >>> try : Inhibitor(MultiArc([Variable('x'), Variable('y')]),
+        ...                 Expression('x>y')).modes([1, 2, 3])
+        ... except ModeError : print(sys.exc_info()[1])
+        inhibited by {...}
         >>> Inhibitor(MultiArc([Variable('x'), Variable('y')]),
         ...           Expression('x==y')).modes([1, 2, 3])
         [Substitution()]
@@ -1946,10 +1951,9 @@ class Place (Node) :
 
         >>> p = Place('p', [], tInteger)
         >>> p.check([1, 2, 3])
-        >>> p.check(['forbidden!'])
-        Traceback (most recent call last):
-          ...
-        ValueError: forbidden token 'forbidden!'
+        >>> try : p.check(['forbidden!'])
+        ... except ValueError : print(sys.exc_info()[1])
+        forbidden token 'forbidden!'
 
         @param tokens: an iterable collection of tokens or a single value
         @type tokens: any type, iterable types (except C{str}) will be
@@ -1957,7 +1961,7 @@ class Place (Node) :
         """
         for t in tokens :
             if not self._check(t) :
-                raise ValueError, "forbidden token '%s'" % str(t)
+                raise ValueError("forbidden token '%s'" % t)
     def __str__ (self) :
         """
         Return the name of the place.
@@ -2003,7 +2007,7 @@ class Place (Node) :
     def remove (self, tokens) :
         """Remove tokens from the place.
 
-        >>> p = Place('p', range(3) * 2)
+        >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
         >>> p.remove(range(3))
@@ -2018,7 +2022,7 @@ class Place (Node) :
     def empty (self) :
         """Remove all the tokens.
 
-        >>> p = Place('p', range(3) * 2)
+        >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
         >>> p.empty()
@@ -2029,7 +2033,7 @@ class Place (Node) :
     def reset (self, tokens) :
         """Replace the marking with 'tokens'.
 
-        >>> p = Place('p', range(3) * 2)
+        >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
         >>> p.reset(['a', 'b'])
@@ -2151,10 +2155,9 @@ class Transition (Node) :
         >>> t.add_input(Place('p'), Variable('x'))
         >>> t.input()
         [(Place('p', MultiSet([]), tAll), Variable('x'))]
-        >>> t.add_input(Place('x'), Expression('x+y'))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: 'Expression' objects not allowed on input arcs
+        >>> try : t.add_input(Place('x'), Expression('x+y'))
+        ... except ConstraintError : print(sys.exc_info()[1])
+        'Expression' objects not allowed on input arcs
 
         @param place: the input place
         @type place: C{Place}
@@ -2162,9 +2165,9 @@ class Transition (Node) :
         @type label: C{ArcAnnotation}
         """
         if place in self._input :
-            raise ConstraintError, "already connected to '%s'" % place.name
+            raise ConstraintError("already connected to '%s'" % place.name)
         elif not label.input_allowed :
-            raise ConstraintError, ("'%s' objects not allowed on input arcs"
+            raise ConstraintError("'%s' objects not allowed on input arcs"
                                     % label.__class__.__name__)
         else :
             self._input[place] = label
@@ -2186,7 +2189,7 @@ class Transition (Node) :
         try :
             del self._input[place]
         except KeyError :
-            raise ConstraintError, "not connected to '%s'" % place.name
+            raise ConstraintError("not connected to '%s'" % place.name)
     def input (self) :
         """Return the list of input arcs.
 
@@ -2198,7 +2201,7 @@ class Transition (Node) :
         @return: a list of pairs (place, label).
         @rtype: C{[(Place, ArcAnnotation)]}
         """
-        return self._input.items()
+        return list(self._input.items())
     def add_output (self, place, label) :
         """Add an output arc from C{place} labelled by C{label}.
 
@@ -2213,7 +2216,7 @@ class Transition (Node) :
         @type label: C{ArcAnnotation}
         """
         if place in self._output :
-            raise ConstraintError, "already connected to '%s'" % place.name
+            raise ConstraintError("already connected to '%s'" % place.name)
         else :
             self._output[place] = label
     def remove_output (self, place) :
@@ -2234,7 +2237,7 @@ class Transition (Node) :
         try :
             del self._output[place]
         except KeyError :
-            raise ConstraintError, "not connected to '%s'" % place.name
+            raise ConstraintError("not connected to '%s'" % place.name)
     def output (self) :
         """Return the list of output arcs.
 
@@ -2246,7 +2249,7 @@ class Transition (Node) :
         @return: a list of pairs (place, label).
         @rtype: C{[(Place, ArcAnnotation)]}
         """
-        return self._output.items()
+        return list(self._output.items())
     def _check (self, binding, tokens, input) :
         """Check C{binding} against the guard and tokens flow.
 
@@ -2425,10 +2428,11 @@ class Transition (Node) :
         >>> t.add_input(px, Variable('x'))
         >>> py = Place('py')
         >>> t.add_output(py, Variable('y'))
-        >>> t.modes()
-        Traceback (most recent call last):
-          ...
-        NameError: ...
+        >>> try :
+        ...     t.modes()
+        ...     raise Exception()
+        ... except NameError :
+        ...     pass
 
         @return: a list of substitutions usable to fire the transition
         @rtype: a C{list} of C{Substitution}
@@ -2465,10 +2469,9 @@ class Transition (Node) :
         >>> t.add_output(py, Expression('x+1'))
         >>> t.flow(Substitution(x=0))
         (Marking({'px': MultiSet([0])}), Marking({'py': MultiSet([1])}))
-        >>> t.flow(Substitution(x=1))
-        Traceback (most recent call last):
-          ...
-        ValueError: transition not enabled for {x -> 1}
+        >>> try : t.flow(Substitution(x=1))
+        ... except ValueError : print(sys.exc_info()[1])
+        transition not enabled for {x -> 1}
         >>> t.flow(Substitution(x=2))
         (Marking({'px': MultiSet([2])}), Marking({'py': MultiSet([3])}))
 
@@ -2484,7 +2487,7 @@ class Transition (Node) :
                     Marking((place.name, label.flow(binding))
                             for place, label in self.output()))
         else :
-            raise ValueError, "transition not enabled for %s" % str(binding)
+            raise ValueError("transition not enabled for %s" % binding)
     def fire (self, binding) :
         """Fire the transition with C{binding}.
 
@@ -2498,10 +2501,9 @@ class Transition (Node) :
         True
         >>> py.tokens == MultiSet([1])
         True
-        >>> t.fire(Substitution(x=1))
-        Traceback (most recent call last):
-          ...
-        ValueError: transition not enabled for {x -> 1}
+        >>> try : t.fire(Substitution(x=1))
+        ... except ValueError : print(sys.exc_info()[1])
+        transition not enabled for {x -> 1}
         >>> t.fire(Substitution(x=2))
         >>> px.tokens == MultiSet([1])
         True
@@ -2517,7 +2519,7 @@ class Transition (Node) :
             for place, label in self.output() :
                 place.add(label.flow(binding))
         else :
-            raise ValueError, "transition not enabled for %s" % str(binding)
+            raise ValueError("transition not enabled for %s" % binding)
 
 ##
 ## marking
@@ -2651,14 +2653,12 @@ class Marking (hdict) :
 
         >>> Marking(p1=MultiSet([1]), p2=MultiSet([2, 2])) - Marking(p2=MultiSet([2]))
         Marking({'p2': MultiSet([2]), 'p1': MultiSet([1])})
-        >>> Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p2=MultiSet([2, 2]))
-        Traceback (most recent call last):
-          ...
-        ValueError: not enough occurrences
-        >>> Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p3=MultiSet([3]))
-        Traceback (most recent call last):
-          ...
-        DomainError: 'p3' absent from the marking
+        >>> try : Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p2=MultiSet([2, 2]))
+        ... except ValueError : print(sys.exc_info()[1])
+        not enough occurrences
+        >>> try : Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p3=MultiSet([3]))
+        ... except DomainError : print(sys.exc_info()[1])
+        'p3' absent from the marking
 
         @param other: another marking
         @type other: C{Marking}
@@ -2672,8 +2672,9 @@ class Marking (hdict) :
                 if result(place).size() == 0 :
                     del result[place]
             else :
-                raise DomainError, "'%s' absent from the marking" % place
+                raise DomainError("'%s' absent from the marking" % place)
         return result
+    __hash__ = hdict.__hash__
     def __eq__ (self, other) :
         """
         Test for equality (same places with the same tokens).
@@ -3035,10 +3036,10 @@ class PetriNet (object) :
         """
         result = Tree(self.__pnmltag__, None, id=self.name)
         decl = {}
-        exec "pass" in decl
+        exec("pass", decl)
         for stmt in self._declare :
             try :
-                exec stmt in decl
+                exec(stmt, decl)
                 result.add_child(Tree("declare", stmt))
             except :
                 pass
@@ -3099,7 +3100,7 @@ class PetriNet (object) :
          Transition('t1', Expression('True')),
          Transition('t2', Expression('True'))]
         >>> for t in sorted(new.transition(), key=lambda x: x.name) :
-        ...     print t.name, t.input()
+        ...     print('%s %s' % (t.name, t.input()))
         t0 [(Place('p0', MultiSet([]), tAll), Value(dot))]
         t1 [(Place('p1', MultiSet([]), tAll), MultiArc((Value(dot), Value(dot))))]
         t2 [(Place('p2', MultiSet([]), tAll), Value(1))]
@@ -3261,19 +3262,21 @@ class PetriNet (object) :
         >>> n = PetriNet('N')
         >>> t = Transition('t', Expression('x==0'))
         >>> n.add_transition(t)
-        >>> t.guard(Substitution())
-        Traceback (most recent call last):
-          ...
-        NameError: ...
+        >>> try :
+        ...     t.guard(Substitution())
+        ...     raise Exception
+        ... except NameError:
+        ...     pass
         >>> n.declare('x=0')
         >>> t.guard(Substitution())
         True
         >>> n.add_place(Place('p'))
         >>> n.add_output('p', 't', Expression('random.random()'))
-        >>> t.fire(Substitution())
-        Traceback (most recent call last):
-          ...
-        NameError: ...
+        >>> try :
+        ...     t.fire(Substitution())
+        ...     raise Exception
+        ... except NameError:
+        ...     pass
         >>> n.declare('import random ; random.seed()')
         >>> t.fire(Substitution())
         >>> n.place('p')
@@ -3294,27 +3297,25 @@ class PetriNet (object) :
         is checked when it is added.
 
         >>> n = PetriNet('N')
-        >>> n.place('p')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: place 'p' not found
+        >>> try : n.place('p')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        place 'p' not found
         >>> n.add_place(Place('p', range(3)))
         >>> n.place('p')
         Place('p', MultiSet([...]), tAll)
         >>> n.place('p').tokens == MultiSet([0, 1, 2])
         True
-        >>> n.add_place(Place('p'))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: place 'p' exists
+        >>> try : n.add_place(Place('p'))
+        ... except ConstraintError : print(sys.exc_info()[1])
+        place 'p' exists
 
         @param place: the place to add
         @type place: C{Place}
         """
         if place.name in self._place :
-            raise ConstraintError, "place '%s' exists" % place.name
+            raise ConstraintError("place '%s' exists" % place.name)
         elif place.name in self._trans :
-            raise ConstraintError, "a transition '%s' exists" % place.name
+            raise ConstraintError("a transition '%s' exists" % place.name)
         self._place[place.name] = place
         self._node[place.name] = place
         place.lock("name", self, place.name)
@@ -3325,18 +3326,16 @@ class PetriNet (object) :
         """Remove a place (given by its name) from the net.
 
         >>> n = PetriNet('N')
-        >>> n.remove_place('p')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: place 'p' not found
+        >>> try : n.remove_place('p')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        place 'p' not found
         >>> n.add_place(Place('p', range(3)))
         >>> n.place('p')
         Place('p', MultiSet([...]), tAll)
         >>> n.remove_place('p')
-        >>> n.place('p')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: place 'p' not found
+        >>> try : n.place('p')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        place 'p' not found
 
         @param name: the name of the place to remove
         @type name: C{str}
@@ -3344,10 +3343,10 @@ class PetriNet (object) :
         try :
             place = self._place[name]
         except KeyError :
-            raise ConstraintError, "place '%s' not found" % name
-        for trans in place.post.keys() :
+            raise ConstraintError("place '%s' not found" % name)
+        for trans in list(place.post.keys()) :
             self.remove_input(name, trans)
-        for trans in place.pre.keys() :
+        for trans in list(place.pre.keys()) :
             self.remove_output(name, trans)
         del self._place[name]
         del self._node[name]
@@ -3362,25 +3361,23 @@ class PetriNet (object) :
         is checked when it is added.
 
         >>> n = PetriNet('N')
-        >>> n.transition('t')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: transition 't' not found
+        >>> try : n.transition('t')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        transition 't' not found
         >>> n.add_transition(Transition('t', Expression('x==1')))
         >>> n.transition('t')
         Transition('t', Expression('x==1'))
-        >>> n.add_transition(Transition('t'))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: transition 't' exists
+        >>> try : n.add_transition(Transition('t'))
+        ... except ConstraintError : print(sys.exc_info()[1])
+        transition 't' exists
 
         @param trans: the transition to add
         @type trans: C{Transition}
         """
         if trans.name in self._trans :
-            raise ConstraintError, "transition '%s' exists" % trans.name
+            raise ConstraintError("transition '%s' exists" % trans.name)
         elif trans.name in self._place :
-            raise ConstraintError, "a place '%s' exists" % trans.name
+            raise ConstraintError("a place '%s' exists" % trans.name)
         self._trans[trans.name] = trans
         self._node[trans.name] = trans
         trans.lock("name", self, trans.name)
@@ -3392,18 +3389,16 @@ class PetriNet (object) :
         """Remove a transition (given by its name) from the net.
 
         >>> n = PetriNet('N')
-        >>> n.remove_transition('t')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: transition 't' not found
+        >>> try : n.remove_transition('t')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        transition 't' not found
         >>> n.add_transition(Transition('t', Expression('x==1')))
         >>> n.transition('t')
         Transition('t', Expression('x==1'))
         >>> n.remove_transition('t')
-        >>> n.transition('t')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: transition 't' not found
+        >>> try : n.transition('t')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        transition 't' not found
 
         @param name: the name of the transition to remove
         @type name: C{str}
@@ -3411,10 +3406,10 @@ class PetriNet (object) :
         try :
             trans = self._trans[name]
         except KeyError :
-            raise ConstraintError, "transition '%s' not found" % name
-        for place in trans.post.keys() :
+            raise ConstraintError("transition '%s' not found" % name)
+        for place in list(trans.post.keys()) :
             self.remove_output(place, name)
-        for place in trans.pre.keys() :
+        for place in list(trans.pre.keys()) :
             self.remove_input(place, name)
         del self._trans[name]
         del self._node[name]
@@ -3431,10 +3426,9 @@ class PetriNet (object) :
         >>> n.add_place(Place('p2'))
         >>> n.place('p1')
         Place('p1', MultiSet([]), tAll)
-        >>> n.place('p')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: place 'p' not found
+        >>> try : n.place('p')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        place 'p' not found
         >>> n.place()
         [Place('p2', MultiSet([]), tAll), Place('p1', MultiSet([]), tAll)]
 
@@ -3445,12 +3439,12 @@ class PetriNet (object) :
         @rtype: C{Place} or a C{list} of C{Place} instances
         """
         if name is None :
-            return self._place.values()
+            return list(self._place.values())
         else :
             try :
                 return self._place[name]
             except KeyError :
-                raise ConstraintError, "place '%s' not found" % name
+                raise ConstraintError("place '%s' not found" % name)
     def transition (self, name=None) :
         """Return one (if C{name} is not C{None}) or all the transitions.
 
@@ -3459,10 +3453,9 @@ class PetriNet (object) :
         >>> n.add_transition(Transition('t2'))
         >>> n.transition('t1')
         Transition('t1', Expression('True'))
-        >>> n.transition('t')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: transition 't' not found
+        >>> try : n.transition('t')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        transition 't' not found
         >>> n.transition()
         [Transition('t2', Expression('True')), Transition('t1', Expression('True'))]
 
@@ -3473,12 +3466,12 @@ class PetriNet (object) :
         @rtype: C{Transition} or a C{list} of C{Transition} instances
         """
         if name is None :
-            return self._trans.values()
+            return list(self._trans.values())
         else :
             try :
                 return self._trans[name]
             except KeyError :
-                raise ConstraintError, "transition '%s' not found" % name
+                raise ConstraintError("transition '%s' not found" % name)
     def node (self, name=None) :
         """Return one (if C{name} is not C{None}) or all the nodes.
 
@@ -3487,10 +3480,9 @@ class PetriNet (object) :
         >>> n.add_place(Place('p'))
         >>> n.node('t')
         Transition('t', Expression('True'))
-        >>> n.node('x')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: node 'x' not found
+        >>> try : n.node('x')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        node 'x' not found
         >>> list(sorted(n.node(), key=str))
         [Place('p', MultiSet([]), tAll), Transition('t', Expression('True'))]
 
@@ -3502,12 +3494,12 @@ class PetriNet (object) :
           C{Transition} or C{Place} instances
         """
         if name is None :
-            return self._node.values()
+            return list(self._node.values())
         else :
             try :
                 return self._node[name]
             except KeyError :
-                raise ConstraintError, "node '%s' not found" % name
+                raise ConstraintError("node '%s' not found" % name)
     def add_input (self, place, trans, label) :
         """Add an input arc between C{place} and C{trans} (nodes names).
 
@@ -3516,13 +3508,12 @@ class PetriNet (object) :
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', range(3)))
         >>> n.add_transition(Transition('t', Expression('x!=1')))
-        >>> n.add_input('p', 't', Expression('2*x'))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: 'Expression' not allowed on input arcs
+        >>> try : n.add_input('p', 't', Expression('2*x'))
+        ... except ConstraintError : print(sys.exc_info()[1])
+        'Expression' not allowed on input arcs
         >>> n.add_input('p', 't', Variable('x'))
-        >>> n.post('p'), n.pre('t')
-        (set(['t']), set(['p']))
+        >>> (n.post('p'), n.pre('t')) == (set(['t']), set(['p']))
+        True
         >>> n.transition('t').modes()
         [Substitution(x=0), Substitution(x=2)]
         >>> n.place('p').tokens == MultiSet([0, 1, 2])
@@ -3530,10 +3521,9 @@ class PetriNet (object) :
         >>> n.transition('t').fire(Substitution(x=0))
         >>> n.place('p').tokens == MultiSet([1, 2])
         True
-        >>> n.add_input('p', 't', Value(42))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: already connected to 'p'
+        >>> try : n.add_input('p', 't', Value(42))
+        ... except ConstraintError: print(sys.exc_info()[1])
+        already connected to 'p'
 
         @param place: the name of the place to connect
         @type place: C{str}
@@ -3543,15 +3533,15 @@ class PetriNet (object) :
         @type label: C{ArcAnnotation}
         """
         if not label.input_allowed :
-            raise ConstraintError, "'%s' not allowed on input arcs" % label.__class__.__name__
+            raise ConstraintError("'%s' not allowed on input arcs" % label.__class__.__name__)
         try :
             p = self._place[place]
         except KeyError :
-            raise NodeError, "place '%s' not found" % place
+            raise NodeError("place '%s' not found" % place)
         try :
             t = self._trans[trans]
         except KeyError :
-            raise NodeError, "transition '%s' not found" % trans
+            raise NodeError("transition '%s' not found" % trans)
         t.add_input(p, label)
         p.post[trans] = label
         t.pre[place] = label
@@ -3564,15 +3554,14 @@ class PetriNet (object) :
         >>> n.add_place(Place('p', range(3)))
         >>> n.add_transition(Transition('t', Expression('x!=1')))
         >>> n.add_input('p', 't', Variable('x'))
-        >>> n.post('p'), n.pre('t')
-        (set(['t']), set(['p']))
+        >>> (n.post('p'), n.pre('t')) == (set(['t']), set(['p']))
+        True
         >>> n.remove_input('p', 't')
-        >>> n.post('p'), n.pre('t')
-        (set([]), set([]))
-        >>> n.remove_input('p', 't')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: not connected to 'p'
+        >>> (n.post('p'), n.pre('t')) == (set([]), set([]))
+        True
+        >>> try : n.remove_input('p', 't')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        not connected to 'p'
 
         @param place: the name of the place to disconnect
         @type place: C{str}
@@ -3582,11 +3571,11 @@ class PetriNet (object) :
         try :
             p = self._place[place]
         except KeyError :
-            raise NodeError, "place '%s' not found" % place
+            raise NodeError("place '%s' not found" % place)
         try :
             t = self._trans[trans]
         except KeyError :
-            raise NodeError, "transition '%s' not found" % trans
+            raise NodeError("transition '%s' not found" % trans)
         t.remove_input(p)
         l = p.post[trans]
         del p.post[trans]
@@ -3602,17 +3591,16 @@ class PetriNet (object) :
         >>> n.add_place(Place('p'))
         >>> n.add_transition(Transition('t'))
         >>> n.add_output('p', 't', Value(42))
-        >>> n.post('t'), n.pre('p')
-        (set(['p']), set(['t']))
+        >>> (n.post('t'), n.pre('p')) == (set(['p']), set(['t']))
+        True
         >>> n.place('p').tokens == MultiSet([])
         True
         >>> n.transition('t').fire(Substitution())
         >>> n.place('p').tokens == MultiSet([42])
         True
-        >>> n.add_output('p', 't', Value(42))
-        Traceback (most recent call last):
-          ...
-        ConstraintError: already connected to 'p'
+        >>> try : n.add_output('p', 't', Value(42))
+        ... except ConstraintError : print(sys.exc_info()[1])
+        already connected to 'p'
 
         @param place: the name of the place to connect
         @type place: C{str}
@@ -3624,11 +3612,11 @@ class PetriNet (object) :
         try :
             p = self._place[place]
         except KeyError :
-            raise NodeError, "place '%s' not found" % place
+            raise NodeError("place '%s' not found" % place)
         try :
             t = self._trans[trans]
         except KeyError :
-            raise NodeError, "transition '%s' not found" % trans
+            raise NodeError("transition '%s' not found" % trans)
         t.add_output(p, label)
         p.pre[trans] = label
         t.post[place] = label
@@ -3641,15 +3629,14 @@ class PetriNet (object) :
         >>> n.add_place(Place('p'))
         >>> n.add_transition(Transition('t'))
         >>> n.add_output('p', 't', Value(42))
-        >>> n.post('t'), n.pre('p')
-        (set(['p']), set(['t']))
+        >>> (n.post('t'), n.pre('p')) == (set(['p']), set(['t']))
+        True
         >>> n.remove_output('p', 't')
-        >>> n.post('t'), n.pre('p')
-        (set([]), set([]))
-        >>> n.remove_output('p', 't')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: not connected to 'p'
+        >>> (n.post('t'), n.pre('p')) == (set([]), set([]))
+        True
+        >>> try : n.remove_output('p', 't')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        not connected to 'p'
 
         @param place: the name of the place to disconnect
         @type place: C{str}
@@ -3659,11 +3646,11 @@ class PetriNet (object) :
         try :
             p = self._place[place]
         except KeyError :
-            raise NodeError, "place '%s' not found" % place
+            raise NodeError("place '%s' not found" % place)
         try :
             t = self._trans[trans]
         except KeyError :
-            raise NodeError, "transition '%s' not found" % trans
+            raise NodeError("transition '%s' not found" % trans)
         t.remove_output(p)
         l = p.pre[trans]
         del p.pre[trans]
@@ -3682,10 +3669,10 @@ class PetriNet (object) :
         >>> n.add_transition(Transition('t2'))
         >>> n.add_output('p1', 't1', Value(1))
         >>> n.add_output('p2', 't2', Value(2))
-        >>> n.pre('p1')
-        set(['t1'])
-        >>> n.pre(['p1', 'p2'])
-        set(['t2', 't1'])
+        >>> n.pre('p1') == set(['t1'])
+        True
+        >>> n.pre(['p1', 'p2']) == set(['t2', 't1'])
+        True
 
         @param nodes: a single node name or a list of node names
         @type nodes: C{str} or a C{list} of C{str}
@@ -3697,7 +3684,7 @@ class PetriNet (object) :
             try :
                 result.update(self._node[node].pre.keys())
             except KeyError :
-                raise NodeError, "node '%s' not found" % node
+                raise NodeError("node '%s' not found" % node)
         return result
     def post (self, nodes) :
         """Return the set of nodes names succeeding C{nodes}.
@@ -3711,10 +3698,10 @@ class PetriNet (object) :
         >>> n.add_transition(Transition('t2'))
         >>> n.add_output('p1', 't1', Value(1))
         >>> n.add_output('p2', 't2', Value(2))
-        >>> n.post('t1')
-        set(['p1'])
-        >>> n.post(['t1', 't2'])
-        set(['p2', 'p1'])
+        >>> n.post('t1') == set(['p1'])
+        True
+        >>> n.post(['t1', 't2']) == set(['p2', 'p1'])
+        True
 
         @param nodes: a single node name or a list of node names
         @type nodes: C{str} or a C{list} of C{str}
@@ -3726,7 +3713,7 @@ class PetriNet (object) :
             try :
                 result.update(self._node[node].post.keys())
             except KeyError :
-                raise NodeError, "node '%s' not found" % node
+                raise NodeError("node '%s' not found" % node)
         return result
     def get_marking (self) :
         """Return the current marking of the net, omitting empty
@@ -3769,10 +3756,9 @@ class PetriNet (object) :
         >>> n._set_marking(Marking(p=MultiSet([0])))
         >>> n.get_marking()
         Marking({})
-        >>> n._set_marking(Marking(p2=MultiSet([1]), p3=MultiSet([3.14])))
-        Traceback (most recent call last):
-          ...
-        ValueError: forbidden token '3.14'
+        >>> try : n._set_marking(Marking(p2=MultiSet([1]), p3=MultiSet([3.14])))
+        ... except ValueError : print(sys.exc_info()[1])
+        forbidden token '3.14'
         >>> n.get_marking() # inconsistent
         Marking({'p2': MultiSet([1])})
 
@@ -3806,10 +3792,9 @@ class PetriNet (object) :
         >>> n.set_marking(Marking(p=MultiSet([0])))
         >>> n.get_marking()
         Marking({})
-        >>> n.set_marking(Marking(p2=MultiSet([1]), p0=MultiSet([3.14])))
-        Traceback (most recent call last):
-          ...
-        ValueError: forbidden token '3.14'
+        >>> try : n.set_marking(Marking(p2=MultiSet([1]), p0=MultiSet([3.14])))
+        ... except ValueError : print(sys.exc_info()[1])
+        forbidden token '3.14'
         >>> n.get_marking() # unchanged
         Marking({})
 
@@ -3861,10 +3846,9 @@ class PetriNet (object) :
         >>> n.add_place(Place('p2', range(3)))
         >>> n.get_marking() == Marking({'p2': MultiSet([0, 1, 2])})
         True
-        >>> n.remove_marking(Marking(p1=MultiSet(range(2)), p2=MultiSet([1])))
-        Traceback (most recent call last):
-          ...
-        ValueError: not enough occurrences
+        >>> try : n.remove_marking(Marking(p1=MultiSet(range(2)), p2=MultiSet([1])))
+        ... except ValueError : print(sys.exc_info()[1])
+        not enough occurrences
         >>> n.get_marking() == Marking({'p2': MultiSet([0, 1, 2])})
         True
         >>> n.remove_marking(Marking(p2=MultiSet([1])))
@@ -3891,21 +3875,19 @@ class PetriNet (object) :
         >>> n.add_output('p', 't', Value(0))
         >>> list(sorted(n.node(), key=str))
         [Place('p', MultiSet([]), tAll), Transition('t', Expression('True'))]
-        >>> n.post('t')
-        set(['p'])
+        >>> n.post('t') == set(['p'])
+        True
         >>> n.rename_node('p', 'new_p')
         >>> list(sorted(n.node(), key=str))
         [Place('new_p', MultiSet([]), tAll), Transition('t', Expression('True'))]
-        >>> n.post('t')
-        set(['new_p'])
-        >>> n.rename_node('new_p', 't')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: node 't' exists
-        >>> n.rename_node('old_t', 'new_t')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: node 'old_t' not found
+        >>> n.post('t') == set(['new_p'])
+        True
+        >>> try : n.rename_node('new_p', 't')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        node 't' exists
+        >>> try : n.rename_node('old_t', 'new_t')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        node 'old_t' not found
 
         @param old: the current name of the node
         @type old: C{str}
@@ -3913,9 +3895,9 @@ class PetriNet (object) :
         @type new: C{str}
         """
         if new in self._node :
-            raise ConstraintError, "node '%s' exists" % new
+            raise ConstraintError("node '%s' exists" % new)
         elif old not in self._node :
-            raise ConstraintError, "node '%s' not found" % old
+            raise ConstraintError("node '%s' not found" % old)
         node = self._node[old]
         del self._node[old]
         self._node[new] = node
@@ -4008,10 +3990,11 @@ class PetriNet (object) :
         >>> n.add_output('p2', 't2', Value(2.0))
         >>> n.add_output('p2', 't1', Value(2.0))
         >>> n.merge_places('p', ['p1', 'p2'])
-        >>> n.pre('p'), n.post('t1')
-        (set(['t2', 't1']), set(['p2', 'p', 'p1']))
-        >>> n.node('p').pre
-        {'t2': Value(2.0), 't1': MultiArc((Value(1), Value(2.0)))}
+        >>> (n.pre('p'), n.post('t1')) == (set(['t2', 't1']), set(['p2', 'p', 'p1']))
+        True
+        >>> list(sorted(n.node('p').pre.items()))
+        [('t1', MultiArc((Value(1), Value(2.0)))),
+         ('t2', Value(2.0))]
         >>> n.node('p').tokens == MultiSet([1, 2.0])
         True
         >>> n.node('p').checker()
@@ -4170,10 +4153,9 @@ class StateGraph (object) :
         >>> n.add_input('p', 't', Variable('x'))
         >>> n.add_output('p', 't', Expression('x+1'))
         >>> g = StateGraph(n)
-        >>> g.goto(2)
-        Traceback (most recent call last):
-          ...
-        ValueError: unknown state
+        >>> try : g.goto(2)
+        ... except ValueError : print(sys.exc_info()[1])
+        unknown state
         >>> g.build()
         >>> g.goto(2)
         >>> g.net.get_marking()
@@ -4189,7 +4171,7 @@ class StateGraph (object) :
                 self._current = state
                 self.net.set_marking(self._marking[state])
         else :
-            raise ValueError, "unknown state"
+            raise ValueError("unknown state")
     def current (self) :
         """Return the number of the current state.
 
@@ -4209,9 +4191,9 @@ class StateGraph (object) :
             if len(self._todo) > 0 :
                 return self._todo[0]
             elif len(self._done) > 0 :
-                return iter(self._done).next()
+                return next(iter(self._done))
             else :
-                raise ConstraintError, "all states removed"
+                raise ConstraintError("all states removed")
         else :
             return self._current
     def __getitem__ (self, state) :
@@ -4348,7 +4330,7 @@ class StateGraph (object) :
         >>> len(g)
         1
         >>> for state in g :
-        ...     print len(g), 'states known'
+        ...     print('%s states known' % len(g))
         2 states known
         3 states known
         4 states known
@@ -4377,7 +4359,7 @@ class StateGraph (object) :
         >>> n.add_output('p', 't', Expression('x+1'))
         >>> g = StateGraph(n)
         >>> for state in g :
-        ...     print 'state', state, 'is', repr(g.net.get_marking())
+        ...     print('state %s is %r' % (state, g.net.get_marking()))
         state 0 is Marking({'p': MultiSet([0])})
         state 1 is Marking({'p': MultiSet([1])})
         state 2 is Marking({'p': MultiSet([2])})
@@ -4392,7 +4374,7 @@ class StateGraph (object) :
         >>> n.add_output('p', 't', Expression('(x+1) % 5'))
         >>> g = StateGraph(n)
         >>> for state in g :
-        ...     print 'state', state, 'is', repr(g.net.get_marking())
+        ...     print('state %s is %r' % (state, g.net.get_marking()))
         state 0 is Marking({'p': MultiSet([0])})
         state 1 is Marking({'p': MultiSet([1])})
         state 2 is Marking({'p': MultiSet([2])})
@@ -4445,7 +4427,7 @@ class StateGraph (object) :
         >>> n.add_output('p', 't', Expression('x+1'))
         >>> g = StateGraph(n)
         >>> for state in g :
-        ...     print state, g.completed()
+        ...     print('%s %s' % (state, g.completed()))
         0 False
         1 False
         2 False
@@ -4469,7 +4451,7 @@ class StateGraph (object) :
         >>> n.add_output('p', 't', Expression('x+1'))
         >>> g = StateGraph(n)
         >>> for state in g :
-        ...     print state, g.todo()
+        ...     print('%s %s' % (state, g.todo()))
         0 1
         1 1
         2 1

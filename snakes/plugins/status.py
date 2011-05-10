@@ -16,8 +16,9 @@ Place('p1', MultiSet([]), tAll, status=Status('entry'))
 
 import operator, weakref
 import snakes.plugins
-from snakes.plugins import new_instance
 from snakes import ConstraintError
+from snakes.plugins import new_instance
+from snakes.compat import *
 from snakes.data import iterate
 from snakes.pnml import Tree
 
@@ -149,7 +150,7 @@ class Status (object) :
         if self == other :
             return self.copy()
         else :
-            raise ConstraintError, "incompatible status"
+            raise ConstraintError("incompatible status")
     def name (self) :
         return self._name
     def value (self) :
@@ -256,10 +257,9 @@ class Safebuffer (Buffer) :
         >>> n.place('v')
         Place('v', MultiSet([1]), tAll, status=Safebuffer('safebuffer','var'))
         >>> n.add_place(Place('p8', [3], status=var))
-        >>> n.status.merge(var, 'vv')
-        Traceback (most recent call last):
-          ...
-        ConstraintError: incompatible markings
+        >>> try : n.status.merge(var, 'vv')
+        ... except ConstraintError : print(sys.exc_info()[1])
+        incompatible markings
 
         @param net: the Petri net where places should be merged
         @type net: C{PetriNet}
@@ -274,7 +274,7 @@ class Safebuffer (Buffer) :
         marking = net.place(nodes[0]).tokens
         for node in nodes[1:] :
             if net.place(node).tokens != marking :
-                raise ConstraintError, "incompatible markings"
+                raise ConstraintError("incompatible markings")
         if name is None :
             name = "(%s)" % "+".join(sorted(nodes))
         net.merge_places(name, nodes, status=self)

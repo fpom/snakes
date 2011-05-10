@@ -17895,4 +17895,4 @@ if __name__ == '__main__' :
     # just for test purpose
     import sys, pprint
     st = parser.parseStream(sys.stdin)
-    print(parser.pprint(st))
+    print((parser.pprint(st)))

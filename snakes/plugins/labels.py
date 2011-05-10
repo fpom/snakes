@@ -53,7 +53,7 @@ def extend (module) :
             """
             t = module.Transition.__pnmldump__(self)
             if hasattr(self, "_labels") :
-                for key, val in self._labels.iteritems() :
+                for key, val in self._labels.items() :
                     t.add_child(Tree("label", None,
                                      Tree.from_obj(val),
                                      name=key))
@@ -126,7 +126,7 @@ def extend (module) :
             """
             t = module.Place.__pnmldump__(self)
             if hasattr(self, "_labels") :
-                for key, val in self._labels.iteritems() :
+                for key, val in self._labels.items() :
                     t.add_child(Tree("label", None,
                                      Tree.from_obj(val),
                                      name=key))
@@ -195,7 +195,7 @@ def extend (module) :
             """
             t = module.PetriNet.__pnmldump__(self)
             if hasattr(self, "_labels") :
-                for key, val in self._labels.iteritems() :
+                for key, val in self._labels.items() :
                     t.add_child(Tree("label", None,
                                      Tree.from_obj(val),
                                      name=key))

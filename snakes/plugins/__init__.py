@@ -47,12 +47,12 @@ def update (module, objects) :
             try :
                 n, o = obj
             except :
-                raise ValueError, "expected (name, object) and got '%s'" % repr(obj)
+                raise ValueError("expected (name, object) and got '%r'" % obj)
             setattr(module, n, o)
         elif inspect.isclass(obj) or inspect.isfunction(obj) :
             setattr(module, obj.__name__, obj)
         else :
-            raise ValueError, "cannot plug '%s'" % repr(obj)
+            raise ValueError("cannot plug '%r'" % obj)
 
 def build (name, module, *objects) :
     """Builds an extended module.
@@ -151,7 +151,7 @@ def plugin (base, depends=[], conflicts=[]) :
                     loaded.update(module.__plugins__)
             conf = set(conflicts) & loaded
             if len(conf) > 0 :
-                raise ValueError, "plugin conflict (%s)" % ", ".join(conf)
+                raise ValueError("plugin conflict (%s)" % ", ".join(conf))
             objects = fun(module)
             if type(objects) is not tuple :
                 objects = (objects,)

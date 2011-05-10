@@ -72,7 +72,7 @@ class Cluster (object) :
                 result.add_child(child.to_obj())
         return result
     def __str__ (self) :
-        return "cluster_%s" % id(self)
+        return "cluster_%s" % str(id(self)).replace("-", "m")
     def __repr__ (self) :
         """
         >>> Cluster(['a', 'b'],
@@ -219,18 +219,18 @@ class Cluster (object) :
         self._children.append(cluster)
     def nodes (self, all=False) :
         """
-        >>> Cluster(['a', 'b'],
+        >>> list(sorted(Cluster(['a', 'b'],
         ...         [Cluster(['1', '2'],
         ...                  [Cluster(['A'])]),
         ...          Cluster(['3', '4', '5'],
-        ...                  [Cluster(['C', 'D'])])]).nodes()
-        set(['...', '...'])
-        >>> Cluster(['a', 'b'],
+        ...                  [Cluster(['C', 'D'])])]).nodes()))
+        ['a', 'b']
+        >>> list(sorted(Cluster(['a', 'b'],
         ...         [Cluster(['1', '2'],
         ...                  [Cluster(['A'])]),
         ...          Cluster(['3', '4', '5'],
-        ...                  [Cluster(['C', 'D'])])]).nodes(True)
-        set(['...', '...', '...', '...', '...', '...', '...', '...', '...', '...'])
+        ...                  [Cluster(['C', 'D'])])]).nodes(True)))
+        ['1', '2', '3', '4', '5', 'A', 'C', 'D', 'a', 'b']
         """
         if all :
             result = set()
@@ -280,12 +280,12 @@ class Cluster (object) :
         ...              Cluster(['3', '4', '5'],
         ...                      [Cluster(['C', 'D'])])])
         >>> for cluster in c :
-        ...    print cluster.nodes()
-        set(['...', '...'])
-        set(['...', '...'])
-        set(['A'])
-        set(['...', '...', '...'])
-        set(['...', '...'])
+        ...    print(list(sorted(cluster.nodes())))
+        ['a', 'b']
+        ['1', '2']
+        ['A']
+        ['3', '4', '5']
+        ['C', 'D']
         """
         yield self
         for child in self._children :

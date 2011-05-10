@@ -63,6 +63,7 @@ TypeError: ...
 """
 
 import inspect, sys
+from snakes.compat import *
 from snakes.data import cross
 from snakes.pnml import Tree
 
@@ -72,7 +73,7 @@ def _iterable (obj, *types) :
             iter(t)
         except :
             def __iterable__ () :
-                raise ValueError, "iteration over non-sequence"
+                raise ValueError("iteration over non-sequence")
             obj.__iterable__ = __iterable__
             break
 
@@ -94,7 +95,7 @@ class Type (object) :
 
         @raise NotImplementedError: when called
         """
-        raise NotImplementedError, "abstract class"
+        raise NotImplementedError("abstract class")
     def __eq__ (self, other) :
         return (self.__class__ == other.__class__
                 and self.__dict__ == other.__dict__)
@@ -605,13 +606,13 @@ class TypeCheck (Type) :
         ...         yield -i
         ...         i += 2
         >>> i = iter(TypeCheck(odd, odd_iter))
-        >>> i.next(), i.next(), i.next()
+        >>> next(i), next(i), next(i)
         (1, -1, 3)
         """
         try :
             return iter(self._iterate())
         except TypeError :
-            raise ValueError, "type not iterable"
+            raise ValueError("type not iterable")
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1130,10 +1131,6 @@ class Range (Type) :
     True
     >>> 4 in Range(1, 2**128, 2)
     False
-    >>> 4 in range(1, 2**128, 2) # Python's builtin
-    Traceback (most recent call last):
-    ...
-    OverflowError: ...
     """
     def __init__ (self, first, last, step=1) :
         """The values are those that the builtin C{range(first, last, step)}
@@ -1254,8 +1251,6 @@ class Greater (Type) :
     True
     >>> 3 in Greater(3)
     False
-    >>> 4 in Greater(None) # Python yields C{True} on: C{4 > None}
-    True
     """
     def __init__ (self, min) :
         """Initialises the type
