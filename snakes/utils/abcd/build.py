@@ -130,7 +130,8 @@ class Builder (object) :
                         "%r declared as %s but used as buffer"
                         % (name, decl.kind))
         elif decl.capacity is not None :
-            self._raise(NotImplementedError, "capacities not (yet) supported")
+            pass
+            #self._raise(NotImplementedError, "capacities not (yet) supported")
         return decl
     def get_net (self, name) :
         if name not in self :
@@ -183,8 +184,13 @@ class Builder (object) :
             for place in net.status(status) :
                 place = net.place(place)
                 place.reset(decl.marking)
+                if decl.capacity is None :
+                    cap = None
+                else :
+                    cap = [c.n if c else None for c in decl.capacity]
+                    # TODO: accept more than integers as capacities
                 place.label(path=self.path,
-                            capacity=decl.capacity)
+                            capacity=cap)
                 # TODO: check capacity
             net.hide(status)
         if self.up is None :
