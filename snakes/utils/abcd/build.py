@@ -183,7 +183,9 @@ class Builder (object) :
             for place in net.status(status) :
                 place = net.place(place)
                 place.reset(decl.marking)
-                place.label(path=self.path)
+                place.label(path=self.path,
+                            capacity=decl.capacity)
+                # TODO: check capacity
             net.hide(status)
         if self.up is None :
             # set entry marking

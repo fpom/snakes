@@ -17,7 +17,7 @@ abcd_typedef: 'typedef' NAME ':' abcd_type
 abcd_net: 'net' NAME parameters ':' abcd_suite
 abcd_task: 'task' NAME typelist '-' '>' typelist ':' abcd_suite
 abcd_suite: abcd_expr | NEWLINE INDENT abcd_spec DEDENT
-abcd_buffer: 'buffer' NAME ':' abcd_type ['[' subscript ']'] '=' testlist
+abcd_buffer: [ decorators ] 'buffer' NAME ['[' test ']'] ':' abcd_type '=' testlist
 
 abcd_namelist: NAME (',' NAME)*
 typelist: '(' [abcd_type (',' abcd_type)*] ')'

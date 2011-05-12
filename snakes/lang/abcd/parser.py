@@ -268,7 +268,7 @@ class Translator (PyTranslator) :
         <<< [egg+(x), spam-(y), ham?(z), foo<<(bar)]
         "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='x', ctx=Load())), SimpleAccess(buffer='spam', arc=Consume(), tokens=Name(id='y', ctx=Load())), SimpleAccess(buffer='ham', arc=Test(), tokens=Name(id='z', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='bar', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
         <<< [foo<<(spam(egg) for egg in ham)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Fill(), tokens=GeneratorExp(elt=Call(func=Name(id='spam', ctx=Load()), args=[Name(id='egg', ctx=Load())], keywords=[], starargs=None, kwargs=None), generators=[comprehension(target=Name(id='egg', ctx=Store()), iter=Name(id='ham', ctx=Load()), ifs=[])]))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Fill(), tokens=ListComp(elt=Call(func=Name(id='spam', ctx=Load()), args=[Name(id='egg', ctx=Load())], keywords=[], starargs=None, kwargs=None), generators=[comprehension(target=Name(id='egg', ctx=Store()), iter=Name(id='ham', ctx=Load()), ifs=[])]))], guard=Name(id='True', ctx=Load())))"
         <<< [bar-(l), foo<<(l)]
         "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='bar', arc=Consume(), tokens=Name(id='l', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='l', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
         <<< [bar-(l), foo<<(l,)]
@@ -433,7 +433,7 @@ class Translator (PyTranslator) :
         else :
             return self.do(st[2])
     def do_abcd_buffer (self, st, ctx=ast.Load) :
-        """abcd_buffer: 'buffer' NAME ':' abcd_type ['[' subscript ']'] '=' testlist
+        """[ decorators ] 'buffer' NAME ['[' test ']'] ':' abcd_type '=' testlist
         -> ast.AbcdBuffer
 
         <<< buffer foo : int = ()
@@ -445,28 +445,58 @@ class Translator (PyTranslator) :
         <<< buffer foo : int|bool = ()
         ... [True]
         "AbcdSpec(context=[AbcdBuffer(name='foo', type=UnionType(types=[NamedType(name='int'), NamedType(name='bool')]), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
-        <<< buffer foo : int[1] = ()
+        <<< @capacity(max=5)
+        ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=Index(value=Num(n=1)), content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
-        <<< buffer foo : int[1:] = ()
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[None, Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        <<< @capacity(min=2)
+        ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=Slice(lower=Num(n=1), upper=None, step=None), content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
-        <<< buffer foo : int[1:2:3] = ()
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), None], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        <<< @capacity(min=2, max=5)
+        ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=Slice(lower=Num(n=1), upper=Num(n=2), step=Num(n=3)), content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
         """
-        if len(st) == 6 :
+        if len(st) == 6 : # no decorator, no array
             return ast.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
                                   name=st[1].text,
                                   type=self.do(st[3]),
                                   capacity=None,
                                   content=self.do(st[-1]))
-        else :
+        elif len(st) == 7 : # decorator, no array
+            deco = self.do_buffer_decorators(st[0])
             return ast.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
-                                  name=st[1].text,
-                                  type=self.do(st[3]),
-                                  capacity=self.do(st[5]),
+                                  name=st[2].text,
+                                  type=self.do(st[4]),
+                                  capacity=deco["capacity"],
                                   content=self.do(st[-1]))
+        else :
+            raise ParseError(st.text,
+                             reason="arrays not (yet) supported")
+    def do_buffer_decorators (self, st) :
+        deco = {}
+        for child in st :
+            tree = self.do(child)
+            if tree.__class__.__name__ == "Call" and tree.func.id == "capacity" :
+                if tree.args or tree.starargs or tree.kwargs :
+                    raise ParseError(child, reason="invalid parameters")
+                min, max = None, None
+                for kw in tree.keywords :
+                    if kw.arg == "min" :
+                        min = kw.value
+                    elif kw.arg == "max" :
+                        max = kw.value
+                    else :
+                        raise ParseError(child,
+                                         reason="invalid parameter %r" % kw.arg)
+                if min or max :
+                    deco["capacity"] = [min, max]
+                else :
+                    deco["capacity"] = None
+                continue
+            raise ParseError(child, reason="invalid buffer decorator")
+        return deco
     def do_abcd_typedef (self, st, ctx=ast.Load) :
         """abcd_typedef: 'typedef' NAME ':' abcd_type
         -> ast.AbcdTypedef
