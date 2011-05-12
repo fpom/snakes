@@ -23,6 +23,7 @@ class ParseTree (list) :
         self.scol = st[0][1].scol
         self.ecol = st[0][1].ecol
         self.text = st[0][1]
+        self.filename = self.text.filename
         list.__init__(self, (self.__class__(child) for child in st[1]))
     def __repr__ (self) :
         return repr(self.text)
