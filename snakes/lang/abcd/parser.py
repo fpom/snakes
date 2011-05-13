@@ -36,7 +36,8 @@ class ParseTree (PyParseTree) :
 class Translator (PyTranslator) :
     ParseTree = ParseTree
     parser = parser
-    def do_file_input (self, st, ctx=ast.Load) :
+    ST = ast
+    def do_file_input (self, st, ctx) :
         """file_input: abcd_main ENDMARKER
         -> ast.AbcdSpec
 
@@ -45,7 +46,7 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))))"
         """
         return self.do(st[0])
-    def do_abcd_main (self, st, ctx=ast.Load) :
+    def do_abcd_main (self, st, ctx) :
         """abcd_main: (NEWLINE | abcd_global)* abcd_expr
         -> ast.AbcdSpec
 
@@ -53,11 +54,11 @@ class Translator (PyTranslator) :
         ... [egg+(spam) if spam == ham] ; [spam-(FOO, BAR)]
         "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))))"
         """
-        return ast.AbcdSpec(lineno=st.srow, col_offset=st.scol,
-                            context=[self.do(child) for child in st[:-1]
-                                     if child.kind != self.NEWLINE],
-                            body=self.do(st[-1]))
-    def do_abcd_global (self, st, ctx=ast.Load) :
+        return self.ST.AbcdSpec(lineno=st.srow, col_offset=st.scol,
+                                context=[self.do(child) for child in st[:-1]
+                                         if child.kind != self.NEWLINE],
+                                body=self.do(st[-1]))
+    def do_abcd_global (self, st, ctx) :
         """abcd_global: (import_stmt | abcd_symbol | abcd_typedef
                | abcd_const | abcd_decl)
         -> ast.AST
@@ -72,7 +73,7 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[Import(names=[alias(name='module', asname=None)]), ImportFrom(module='module', names=[alias(name='content', asname=None)], level=0), AbcdSymbol(symbols=['EGG', 'SPAM', 'HAM']), AbcdTypedef(name='t', type=EnumType(items=[Name(id='EGG', ctx=Load()), Name(id='SPAM', ctx=Load()), Name(id='HAM', ctx=Load())])), AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))), AbcdBuffer(name='bar', type=NamedType(name='t'), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
         """
         return self.do(st[0])
-    def do_abcd_spec (self, st, ctx=ast.Load) :
+    def do_abcd_spec (self, st, ctx) :
         """abcd_spec: (NEWLINE | abcd_decl)* abcd_expr
         -> ast.AbcdSpec
 
@@ -83,10 +84,10 @@ class Translator (PyTranslator) :
         ... Foo()
         "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False)))], body=AbcdAction(accesses=[], guard=True)))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None))"
         """
-        tree = self.do_abcd_main(st)
+        tree = self.do_abcd_main(st, ctx)
         tree.st = st
         return tree
-    def do_abcd_decl (self, st, ctx=ast.Load) :
+    def do_abcd_decl (self, st, ctx) :
         """abcd_decl: abcd_net | abcd_task | abcd_buffer
         -> ast.AST
 
@@ -97,10 +98,10 @@ class Translator (PyTranslator) :
         ... Foo()
         "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False)))], body=AbcdAction(accesses=[], guard=True)))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None))"
         """
-        tree = self.do_abcd_global(st)
+        tree = self.do_abcd_global(st, ctx)
         tree.st = st
         return tree
-    def do_abcd_const (self, st, ctx=ast.Load) :
+    def do_abcd_const (self, st, ctx) :
         """abcd_const: 'const' NAME '=' testlist
         -> ast.AbcdConst
 
@@ -111,9 +112,9 @@ class Translator (PyTranslator) :
         ... [True]
         "AbcdSpec(context=[AbcdConst(name='FOO', value=Tuple(elts=[Num(n=1), Num(n=2), Num(n=3)], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
         """
-        return ast.AbcdConst(lineno=st.srow, col_offset=st.scol,
-                             name=st[1].text, value=self.do(st[3], ctx))
-    def do_abcd_symbol (self, st, ctx=ast.Load) :
+        return self.ST.AbcdConst(lineno=st.srow, col_offset=st.scol,
+                                 name=st[1].text, value=self.do(st[3], ctx))
+    def do_abcd_symbol (self, st, ctx) :
         """abcd_symbol: 'symbol' abcd_namelist
         -> ast.AbcdSymbol
 
@@ -124,9 +125,9 @@ class Translator (PyTranslator) :
         ... [True]
         "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdAction(accesses=[], guard=True))"
         """
-        return ast.AbcdSymbol(lineno=st.srow, col_offset=st.scol,
-                              symbols=self.do(st[1]))
-    def do_abcd_namelist (self, st, ctx=ast.Load) :
+        return self.ST.AbcdSymbol(lineno=st.srow, col_offset=st.scol,
+                                  symbols=self.do(st[1]))
+    def do_abcd_namelist (self, st, ctx) :
         """abcd_namelist: NAME (',' NAME)*
         -> str+
 
@@ -143,11 +144,11 @@ class Translator (PyTranslator) :
         while len(nodes) > 1 :
             left = nodes.pop(0)
             right = nodes.pop(0)
-            nodes.insert(0, ast.AbcdFlowOp(lineno=left.lineno,
-                                           col_offset=left.col_offset,
-                                           left=left, op=op(), right=right))
+            nodes.insert(0, self.ST.AbcdFlowOp(lineno=left.lineno,
+                                               col_offset=left.col_offset,
+                                               left=left, op=op(), right=right))
         return nodes[0]
-    def do_abcd_expr (self, st, ctx=ast.Load) :
+    def do_abcd_expr (self, st, ctx) :
         """abcd_expr: abcd_choice_expr ('|' abcd_choice_expr)*
         -> ast.process
 
@@ -159,8 +160,8 @@ class Translator (PyTranslator) :
         'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Parallel(), right=AbcdAction(accesses=[], guard=False)), op=Parallel(), right=AbcdAction(accesses=[], guard=True)))'
 
         """
-        return self._do_flowop(st, ast.Parallel)
-    def do_abcd_choice_expr (self, st, ctx=ast.Load) :
+        return self._do_flowop(st, self.ST.Parallel)
+    def do_abcd_choice_expr (self, st, ctx) :
         """abcd_choice_expr: abcd_iter_expr ('+' abcd_iter_expr)*
         -> ast.process
 
@@ -171,8 +172,8 @@ class Translator (PyTranslator) :
         <<< [True] + [False] + [True]
         'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)), op=Choice(), right=AbcdAction(accesses=[], guard=True)))'
         """
-        return self._do_flowop(st, ast.Choice)
-    def do_abcd_iter_expr (self, st, ctx=ast.Load) :
+        return self._do_flowop(st, self.ST.Choice)
+    def do_abcd_iter_expr (self, st, ctx) :
         """abcd_iter_expr: abcd_seq_expr ('*' abcd_seq_expr)*
         -> ast.process
 
@@ -183,8 +184,8 @@ class Translator (PyTranslator) :
         <<< [True] * [False] * [True]
         'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Loop(), right=AbcdAction(accesses=[], guard=False)), op=Loop(), right=AbcdAction(accesses=[], guard=True)))'
         """
-        return self._do_flowop(st, ast.Loop)
-    def do_abcd_seq_expr (self, st, ctx=ast.Load) :
+        return self._do_flowop(st, self.ST.Loop)
+    def do_abcd_seq_expr (self, st, ctx) :
         """abcd_seq_expr: abcd_base_expr (';' abcd_base_expr)*
         -> ast.process
 
@@ -195,8 +196,8 @@ class Translator (PyTranslator) :
         <<< [True] ; [False] ; [True]
         'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Sequence(), right=AbcdAction(accesses=[], guard=False)), op=Sequence(), right=AbcdAction(accesses=[], guard=True)))'
         """
-        return self._do_flowop(st, ast.Sequence)
-    def do_abcd_base_expr (self, st, ctx=ast.Load) :
+        return self._do_flowop(st, self.ST.Sequence)
+    def do_abcd_base_expr (self, st, ctx) :
         """abcd_base_expr: (abcd_action | '(' abcd_expr ')') (NEWLINE)*
         -> ast.process
 
@@ -209,7 +210,7 @@ class Translator (PyTranslator) :
             return self.do(st[1])
         else :
             return self.do(st[0])
-    def do_abcd_action (self, st, ctx=ast.Load) :
+    def do_abcd_action (self, st, ctx) :
         """abcd_action: ('[' 'True' ']' | '[' 'False' ']' |
                          '[' abcd_access_list ['if' test] ']' |
                          abcd_instance)
@@ -225,23 +226,23 @@ class Translator (PyTranslator) :
         if len(st) == 1 :
             return self.do(st[0])
         elif st[1].text == "True" :
-            return ast.AbcdAction(lineno=st.srow, col_offset=st.scol,
-                                  accesses=[], guard=True)
+            return self.ST.AbcdAction(lineno=st.srow, col_offset=st.scol,
+                                      accesses=[], guard=True)
         elif st[1].text == "False" :
-            return ast.AbcdAction(lineno=st.srow, col_offset=st.scol,
-                                  accesses=[], guard=False)
+            return self.ST.AbcdAction(lineno=st.srow, col_offset=st.scol,
+                                      accesses=[], guard=False)
         elif len(st) == 3 :
-            return ast.AbcdAction(lineno=st.srow, col_offset=st.scol,
-                                  accesses=self.do(st[1]),
-                                  guard=ast.Name(lineno=st[-1].srow,
-                                                 col_offset=st[-1].scol,
-                                                 id="True",
-                                                 ctx=ast.Load()))
+            return self.ST.AbcdAction(lineno=st.srow, col_offset=st.scol,
+                                      accesses=self.do(st[1]),
+                                      guard=self.ST.Name(lineno=st[-1].srow,
+                                                         col_offset=st[-1].scol,
+                                                         id="True",
+                                                         ctx=self.ST.Load()))
         else :
-            return ast.AbcdAction(lineno=st.srow, col_offset=st.scol,
-                                  accesses=self.do(st[1]),
-                                  guard=self.do(st[3]))
-    def do_abcd_access_list (self, st, ctx=ast.Load) :
+            return self.ST.AbcdAction(lineno=st.srow, col_offset=st.scol,
+                                      accesses=self.do(st[1]),
+                                      guard=self.do(st[3]))
+    def do_abcd_access_list (self, st, ctx) :
         """abcd_access_list: abcd_access (',' abcd_access)*
         -> ast.access+
 
@@ -255,7 +256,7 @@ class Translator (PyTranslator) :
             "-" : ast.Consume,
             "?" : ast.Test,
             "<<" : ast.Fill}
-    def do_abcd_access (self, st, ctx=ast.Load) :
+    def do_abcd_access (self, st, ctx) :
         """abcd_access: (NAME '+' '(' testlist ')' |
               NAME '?' '(' testlist ')' |
               NAME '-' '(' testlist ')' |
@@ -287,41 +288,41 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[], body=AbcdAction(accesses=[Resume(net='foo', pid=Name(id='pid', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
         """
         if st[1].text in ("+", "?", "-") :
-            return ast.SimpleAccess(lineno=st.srow, col_offset=st.scol,
-                                    buffer=st[0].text,
-                                    arc=self._arc[st[1].text](),
-                                    tokens=self.do(st[3]))
+            return self.ST.SimpleAccess(lineno=st.srow, col_offset=st.scol,
+                                        buffer=st[0].text,
+                                        arc=self._arc[st[1].text](),
+                                        tokens=self.do(st[3]))
         elif st[1].text == "<<" :
             loop, elts, atom = self.do(st[3], ctx)
             if atom is not None :
                 args = atom
             elif loop is None :
-                args = ast.Tuple(lineno=st.srow, col_offset=st.scol,
-                                 elts=elts, ctx=ctx())
+                args = self.ST.Tuple(lineno=st.srow, col_offset=st.scol,
+                                     elts=elts, ctx=ctx())
             else :
-                args = ast.ListComp(lineno=st.srow, col_offset=st.scol,
-                                    elt=loop, generators=elts)
-            return ast.SimpleAccess(lineno=st.srow, col_offset=st.scol,
-                                    buffer=st[0].text,
-                                    arc=self._arc[st[1].text](),
-                                    tokens=args)
+                args = self.ST.ListComp(lineno=st.srow, col_offset=st.scol,
+                                        elt=loop, generators=elts)
+            return self.ST.SimpleAccess(lineno=st.srow, col_offset=st.scol,
+                                        buffer=st[0].text,
+                                        arc=self._arc[st[1].text](),
+                                        tokens=args)
         elif st[1].text == ">>" :
-            return ast.FlushAccess(lineno=st.srow, col_offset=st.scol,
-                                   buffer=st[0].text,
-                                   target=st[3].text)
+            return self.ST.FlushAccess(lineno=st.srow, col_offset=st.scol,
+                                       buffer=st[0].text,
+                                       target=st[3].text)
         elif st[1].text == "<>" :
-            return ast.SwapAccess(lineno=st.srow, col_offset=st.scol,
-                                  buffer=st[0].text,
-                                  target=self.do(st[3]),
-                                  tokens=self.do(st[5]))
+            return self.ST.SwapAccess(lineno=st.srow, col_offset=st.scol,
+                                      buffer=st[0].text,
+                                      target=self.do(st[3]),
+                                      tokens=self.do(st[5]))
         elif st[2].text in ("suspend", "resume") : # st[1].text == "."
             if len(st) > 6 :
                 raise ParseError(st.text, reason="too many arguments for %s"
                                  % st[2].text)
             if st[2].text == "suspend" :
-                tree = ast.Suspend
+                tree = self.ST.Suspend
             else :
-                tree = ast.Resume
+                tree = self.ST.Resume
             return tree(lineno=st.srow, col_offset=st.scol,
                         net=st[0].text,
                         pid=self.do(st[4]))
@@ -331,9 +332,9 @@ class Translator (PyTranslator) :
             else :
                 args = []
             if st[2].text == "spawn" :
-                tree = ast.Spawn
+                tree = self.ST.Spawn
             else :
-                tree = ast.Wait
+                tree = self.ST.Wait
             return tree(lineno=st.srow, col_offset=st.scol,
                         net=st[0].text,
                         pid=self.do(st[4]),
@@ -342,7 +343,7 @@ class Translator (PyTranslator) :
             raise ParseError(st[2].text, reason=("expected 'spawn', 'wait', "
                              "'suspend' or 'resume', but found '%s'")
                              % st[2].text)
-    def do_abcd_instance (self, st, ctx=ast.Load) :
+    def do_abcd_instance (self, st, ctx) :
         """abcd_instance: [NAME ':' ':'] NAME '(' [arglist] ')'
         -> ast.AbcdInstance
 
@@ -371,11 +372,11 @@ class Translator (PyTranslator) :
         else :
             net = st[0].text
             asname = None
-        return ast.AbcdInstance(lineno=st.srow, col_offset=st.scol,
-                                net=net, asname=asname, args=args,
-                                keywords=keywords, starargs=starargs,
-                                kwargs=kwargs)
-    def do_abcd_net (self, st, ctx=ast.Load) :
+        return self.ST.AbcdInstance(lineno=st.srow, col_offset=st.scol,
+                                    net=net, asname=asname, args=args,
+                                    keywords=keywords, starargs=starargs,
+                                    kwargs=kwargs)
+    def do_abcd_net (self, st, ctx) :
         """abcd_net: 'net' NAME parameters ':' abcd_suite
         -> ast.AbcdNet
 
@@ -387,11 +388,11 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)))], body=AbcdAction(accesses=[], guard=False))"
         """
         params = self.do(st[2])
-        return ast.AbcdNet(lineno=st.srow, col_offset=st.scol,
-                           name=st[1].text,
-                           args=params,
-                           body=self.do(st[4]))
-    def do_abcd_task (self, st, ctx=ast.Load) :
+        return self.ST.AbcdNet(lineno=st.srow, col_offset=st.scol,
+                               name=st[1].text,
+                               args=params,
+                               body=self.do(st[4]))
+    def do_abcd_task (self, st, ctx) :
         """abcd_task: 'task' NAME typelist '-' '>' typelist ':' abcd_suite
         -> ast.AbcdTask
 
@@ -399,12 +400,12 @@ class Translator (PyTranslator) :
         ... [False]
         "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)), input=[NamedType(name='int')], output=[])], body=AbcdAction(accesses=[], guard=False))"
         """
-        return ast.AbcdTask(lineno=st.srow, col_offset=st.scol,
-                            name=st[1].text,
-                            body=self.do(st[-1]),
-                            input=self.do(st[2]),
-                            output=self.do(st[5]))
-    def do_typelist (self, st, ctx=ast.Load) :
+        return self.ST.AbcdTask(lineno=st.srow, col_offset=st.scol,
+                                name=st[1].text,
+                                body=self.do(st[-1]),
+                                input=self.do(st[2]),
+                                output=self.do(st[5]))
+    def do_typelist (self, st, ctx) :
         """typelist: '(' [abcd_type (',' abcd_type)*] ')'
         -> ast.abcdtype*
 
@@ -413,7 +414,7 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)), input=[], output=[NamedType(name='int'), NamedType(name='int'), UnionType(types=[NamedType(name='int'), NamedType(name='bool')])])], body=AbcdAction(accesses=[], guard=False))"
         """
         return [self.do(child) for child in st[1:-1:2]]
-    def do_abcd_suite (self, st, ctx=ast.Load) :
+    def do_abcd_suite (self, st, ctx) :
         """abcd_suite: abcd_expr | NEWLINE INDENT abcd_spec DEDENT
         -> ast.AbcdSpec
 
@@ -427,12 +428,12 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False))))], body=AbcdAction(accesses=[], guard=False))"
         """
         if len(st) == 1 :
-            return ast.AbcdSpec(lineno=st.srow, col_offset=st.scol,
-                                context=[],
-                                body=self.do(st[0]))
+            return self.ST.AbcdSpec(lineno=st.srow, col_offset=st.scol,
+                                    context=[],
+                                    body=self.do(st[0]))
         else :
             return self.do(st[2])
-    def do_abcd_buffer (self, st, ctx=ast.Load) :
+    def do_abcd_buffer (self, st, ctx) :
         """[ decorators ] 'buffer' NAME ['[' test ']'] ':' abcd_type '=' testlist
         -> ast.AbcdBuffer
 
@@ -459,26 +460,26 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
         """
         if len(st) == 6 : # no decorator, no array
-            return ast.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
-                                  name=st[1].text,
-                                  type=self.do(st[3]),
-                                  capacity=None,
-                                  content=self.do(st[-1]))
+            return self.ST.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
+                                      name=st[1].text,
+                                      type=self.do(st[3]),
+                                      capacity=None,
+                                      content=self.do(st[-1]))
         elif len(st) == 7 : # decorator, no array
-            deco = self.do_buffer_decorators(st[0])
-            return ast.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
-                                  name=st[2].text,
-                                  type=self.do(st[4]),
-                                  capacity=deco["capacity"],
-                                  content=self.do(st[-1]))
+            deco = self.do_buffer_decorators(st[0], ctx)
+            return self.ST.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
+                                      name=st[2].text,
+                                      type=self.do(st[4]),
+                                      capacity=deco["capacity"],
+                                      content=self.do(st[-1]))
         else :
             raise ParseError(st.text,
                              reason="arrays not (yet) supported")
-    def do_buffer_decorators (self, st) :
+    def do_buffer_decorators (self, st, ctx) :
         deco = {}
         for child in st :
             tree = self.do(child)
-            if tree.__class__.__name__ == "Call" and tree.func.id == "capacity" :
+            if isinstance(tree, self.ST.Call) and tree.func.id == "capacity" :
                 if tree.args or tree.starargs or tree.kwargs :
                     raise ParseError(child, reason="invalid parameters")
                 min, max = None, None
@@ -497,7 +498,7 @@ class Translator (PyTranslator) :
                 continue
             raise ParseError(child, reason="invalid buffer decorator")
         return deco
-    def do_abcd_typedef (self, st, ctx=ast.Load) :
+    def do_abcd_typedef (self, st, ctx) :
         """abcd_typedef: 'typedef' NAME ':' abcd_type
         -> ast.AbcdTypedef
 
@@ -505,10 +506,10 @@ class Translator (PyTranslator) :
         ... [True]
         "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
         """
-        return ast.AbcdTypedef(lineno=st.srow, col_offset=st.scol,
-                               name=st[1].text,
-                               type=self.do(st[3]))
-    def do_abcd_type (self, st, ctx=ast.Load) :
+        return self.ST.AbcdTypedef(lineno=st.srow, col_offset=st.scol,
+                                   name=st[1].text,
+                                   type=self.do(st[3]))
+    def do_abcd_type (self, st, ctx) :
         """abcd_type: abcd_and_type ('|' abcd_and_type)*
         -> snakes.typing.Type
 
@@ -522,9 +523,9 @@ class Translator (PyTranslator) :
         if len(st) == 1 :
             return self.do(st[0])
         else :
-            return ast.UnionType(lineno=st.srow, col_offset=st.scol,
-                                 types=[self.do(child) for child in st[::2]])
-    def do_abcd_and_type (self, st, ctx=ast.Load) :
+            return self.ST.UnionType(lineno=st.srow, col_offset=st.scol,
+                                     types=[self.do(child) for child in st[::2]])
+    def do_abcd_and_type (self, st, ctx) :
         """abcd_and_type: abcd_cross_type ('&' abcd_cross_type)*
         -> snakes.typing.Type
 
@@ -538,9 +539,9 @@ class Translator (PyTranslator) :
         if len(st) == 1 :
             return self.do(st[0])
         else :
-            return ast.IntersectionType(lineno=st.srow, col_offset=st.scol,
-                                        types=[self.do(child) for child in st[::2]])
-    def do_abcd_cross_type (self, st, ctx=ast.Load) :
+            return self.ST.IntersectionType(lineno=st.srow, col_offset=st.scol,
+                                            types=[self.do(child) for child in st[::2]])
+    def do_abcd_cross_type (self, st, ctx) :
         """abcd_cross_type: abcd_base_type ('*' abcd_base_type)*
         -> snakes.typing.Type
 
@@ -554,9 +555,9 @@ class Translator (PyTranslator) :
         if len(st) == 1 :
             return self.do(st[0])
         else :
-            return ast.CrossType(lineno=st.srow, col_offset=st.scol,
-                                 types=[self.do(child) for child in st[::2]])
-    def do_abcd_base_type (self, st, ctx=ast.Load) :
+            return self.ST.CrossType(lineno=st.srow, col_offset=st.scol,
+                                     types=[self.do(child) for child in st[::2]])
+    def do_abcd_base_type (self, st, ctx) :
         """abcd_base_type: (NAME ['(' abcd_type (',' abcd_type)* ')']
                  | 'enum' '(' test (',' test)* ')' | '(' abcd_type ')')
         -> snakes.typing.Type
@@ -578,8 +579,8 @@ class Translator (PyTranslator) :
         "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
         """
         if len(st) == 1 :
-            return ast.NamedType(lineno=st.srow, col_offset=st.scol,
-                                 name=st[0].text)
+            return self.ST.NamedType(lineno=st.srow, col_offset=st.scol,
+                                     name=st[0].text)
         elif len(st) == 3 :
             return self.do(st[1])
         elif st[0].text in ("list", "set") :
@@ -588,26 +589,26 @@ class Translator (PyTranslator) :
                                  reason="too many arguments for %s type"
                                  % st[0].text)
             if st[0].text == "list" :
-                tree = ast.ListType
+                tree = self.ST.ListType
             else :
-                tree = ast.SetType
+                tree = self.ST.SetType
             return tree(lineno=st.srow, col_offset=st.scol,
                         items=self.do(st[2]))
         elif st[0].text == "dict" :
             if len(st) > 6 :
                 raise ParseError(st.text,
                                  reason="too many arguments for dict type")
-            return ast.DictType(lineno=st.srow, col_offset=st.scol,
-                                keys=self.do(st[2]),
-                                values=self.do(st[4]))
+            return self.ST.DictType(lineno=st.srow, col_offset=st.scol,
+                                    keys=self.do(st[2]),
+                                    values=self.do(st[4]))
         elif st[0].text == "enum" :
-            return ast.EnumType(lineno=st.srow, col_offset=st.scol,
-                                items=[self.do(child) for child in st[2:-1:2]])
+            return self.ST.EnumType(lineno=st.srow, col_offset=st.scol,
+                                    items=[self.do(child) for child in st[2:-1:2]])
         else :
             raise ParseError(st[0].text,
                              reason=("expected 'enum', 'list', 'set' or"
                                      " 'dict' but found '%s'") % st[0].text)
-    def do_tfpdef (self, st, ctx=ast.Load) :
+    def do_tfpdef (self, st, ctx) :
         """tfpdef: NAME [':' ('net' | 'buffer' | 'task')]
         -> str, ast.AST?
 
@@ -618,10 +619,10 @@ class Translator (PyTranslator) :
         if len(st) == 1 :
             return st[0].text, None
         else :
-            return st[0].text, ast.Name(lineno=st[2].srow,
-                                        col_offset=st[2].scol,
-                                        id=st[2].text,
-                                        ctx=ctx())
+            return st[0].text, self.ST.Name(lineno=st[2].srow,
+                                            col_offset=st[2].scol,
+                                            id=st[2].text,
+                                            ctx=ctx())
 
 parse = Translator.parse
 

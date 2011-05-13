@@ -189,8 +189,20 @@ class Builder (object) :
                 if decl.capacity is None :
                     cap = None
                 else :
-                    cap = [c.n if c else None for c in decl.capacity]
+                    #cap = [c.n if c else None for c in decl.capacity]
                     # TODO: accept more than integers as capacities
+                    cap = []
+                    for c in decl.capacity :
+                        if c is None :
+                            cap.append(None)
+                        else :
+                            try :
+                                cap.append(self._eval(c))
+                            except :
+                                err = sys.exc_info()[1]
+                                self._raise(CompilationError,
+                                            "could not evaluate %r, %s"
+                                            % (unparse(c), err))
                 place.label(path=self.path,
                             capacity=cap)
                 # TODO: check capacity
@@ -240,7 +252,8 @@ class Builder (object) :
         while todo :
             node = todo.pop(-1)
             new = ren(node)
-            net.rename_node(node.name, new)
+            if new != node.name :
+                net.rename_node(node.name, new)
             done.add(new)
             for n in net.post(new) - done :
                 todo.append(net.node(n))

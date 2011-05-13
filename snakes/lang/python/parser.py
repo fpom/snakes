@@ -46,11 +46,23 @@ class ParseTree (list) :
 class Translator (object) :
     ParseTree = ParseTree
     parser = parser
+    ST = ast
     def __init__ (self, st) :
         for value, name in self.parser.tokenizer.tok_name.items() :
             setattr(self, name, value)
+        def isdict (obj) : return isinstance(obj, dict)
+        for name, d in inspect.getmembers(self.__class__, isdict) :
+            d = d.copy()
+            for key, val in d.items() :
+                try :
+                    d[key] = getattr(self.ST, val.__name__)
+                except AttributeError :
+                    pass
+            setattr(self, name, d)
         self.ast = self.do(self.ParseTree(st))
-    def do (self, st, ctx=ast.Load) :
+    def do (self, st, ctx=None) :
+        if ctx is None :
+            ctx = self.ST.Load
         name = st.symbol
         meth = getattr(self, "do_" + name)
         tree = meth(st, ctx)
@@ -64,15 +76,15 @@ class Translator (object) :
               "+" : ast.UAdd,
               "-" : ast.USub,
               "~" : ast.Invert}
-    def _do_unary (self, st, ctx=ast.Load) :
+    def _do_unary (self, st, ctx) :
         """unary: not_test | factor
         """
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            return ast.UnaryOp(lineno=st.srow, col_offset=st.scol,
-                               op=self._unary[st[0].text](),
-                               operand=self.do(st[1], ctx))
+            return self.ST.UnaryOp(lineno=st.srow, col_offset=st.scol,
+                                   op=self._unary[st[0].text](),
+                                   operand=self.do(st[1], ctx))
     # binary operations
     _binary = {"+" : ast.Add,
                "-" : ast.Sub,
@@ -86,7 +98,7 @@ class Translator (object) :
                ">>" : ast.RShift,
                "**" : ast.Pow,
                "//" : ast.FloorDiv}
-    def _do_binary (self, st, ctx=ast.Load) :
+    def _do_binary (self, st, ctx) :
         """binary: expr | xor_expr | and_expr | shift_expr | arith_expr | term
         """
         if len(st) == 1 :
@@ -98,23 +110,25 @@ class Translator (object) :
                 left = values.pop(0)
                 right = values.pop(0)
                 operator = ops.pop(0)
-                values.insert(0, ast.BinOp(lineno=st.srow, col_offset=st.scol,
-                                           left=left,
-                                           op=operator(),
-                                           right=right))
+                values.insert(0, self.ST.BinOp(lineno=st.srow,
+                                               col_offset=st.scol,
+                                               left=left,
+                                               op=operator(),
+                                               right=right))
             return values[0]
     # boolean operation
     _boolean = {"and" : ast.And,
                 "or" : ast.Or}
-    def _do_boolean (self, st, ctx=ast.Load) :
+    def _do_boolean (self, st, ctx) :
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            return ast.BoolOp(lineno=st.srow, col_offset=st.scol,
-                              op=self._boolean[st[1].text](),
-                              values=[self.do(child, ctx) for child in st[::2]])
+            return self.ST.BoolOp(lineno=st.srow, col_offset=st.scol,
+                                  op=self._boolean[st[1].text](),
+                                  values=[self.do(child, ctx)
+                                          for child in st[::2]])
     # start of rule handlers
-    def do_file_input (self, st, ctx=ast.Load) :
+    def do_file_input (self, st, ctx) :
         """file_input: (NEWLINE | stmt)* ENDMARKER
         -> ast.Module
 
@@ -125,9 +139,10 @@ class Translator (object) :
                       (self.do(child, ctx)  for child in st
                        if child.kind not in (self.NEWLINE, self.ENDMARKER)),
                       [])
-        return ast.Module(lineno=st.srow, col_offset=st.scol,
-                          body=body)
-    def do_decorator (self, st, ctx=ast.Load) :
+        return self.ST.Module(lineno=st.srow,
+                              col_offset=st.scol,
+                              body=body)
+    def do_decorator (self, st, ctx) :
         """decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
         -> ast.AST
 
@@ -148,23 +163,24 @@ class Translator (object) :
         "Module(body=[FunctionDef(name='f', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=[Pass()], decorator_list=[Call(func=Attribute(value=Name(id='foo', ctx=Load()), attr='bar', ctx=Load()), args=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], keywords=[], starargs=None, kwargs=None)], returns=None)])"
         """
         names = self.do(st[1], ctx).split(".")
-        obj = ast.Name(lineno=st[1].srow, col_offset=st[1].scol,
-                       id=names.pop(0), ctx=ctx())
+        obj = self.ST.Name(lineno=st[1].srow, col_offset=st[1].scol,
+                           id=names.pop(0), ctx=ctx())
         while names :
-            obj = ast.Attribute(lineno=st[1].srow, col_offset=st[1].scol,
-                                value=obj, attr=names.pop(0), ctx=ctx())
+            obj = self.ST.Attribute(lineno=st[1].srow,
+                                    col_offset=st[1].scol,
+                                    value=obj, attr=names.pop(0), ctx=ctx())
         if len(st) == 3 :
             return obj
         elif len(st) == 5 :
-            return ast.Call(lineno=st[1].srow, col_offset=st[1].scol,
-                            func=obj, args=[], keywords=[],
-                            starargs=None, kwargs=None)
+            return self.ST.Call(lineno=st[1].srow, col_offset=st[1].scol,
+                                func=obj, args=[], keywords=[],
+                                starargs=None, kwargs=None)
         else :
             args, keywords, starargs, kwargs = self.do(st[3], ctx)
-            return ast.Call(lineno=st[1].srow, col_offset=st[1].scol,
-                            func=obj, args=args, keywords=keywords,
-                            starargs=starargs, kwargs=kwargs)
-    def do_decorators (self, st, ctx=ast.Load) :
+            return self.ST.Call(lineno=st[1].srow, col_offset=st[1].scol,
+                                func=obj, args=args, keywords=keywords,
+                                starargs=starargs, kwargs=kwargs)
+    def do_decorators (self, st, ctx) :
         """decorators: decorator+
         -> ast.AST+
 
@@ -176,7 +192,7 @@ class Translator (object) :
         "Module(body=[FunctionDef(name='f', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=[Pass()], decorator_list=[Name(id='foo', ctx=Load()), Name(id='bar', ctx=Load()), Call(func=Attribute(value=Name(id='spam', ctx=Load()), attr='egg', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)], returns=None)])"
         """
         return [self.do(child, ctx) for child in st]
-    def do_decorated (self, st, ctx=ast.Load) :
+    def do_decorated (self, st, ctx) :
         """decorated: decorators (classdef | funcdef)
         -> ast.AST
 
@@ -192,7 +208,7 @@ class Translator (object) :
         child = self.do(st[1], ctx)
         child.decorator_list.extend(self.do(st[0], ctx))
         return child
-    def do_funcdef (self, st, ctx=ast.Load) :
+    def do_funcdef (self, st, ctx) :
         """funcdef: 'def' NAME parameters ['->' test] ':' suite
         -> ast.FunctionDef
 
@@ -202,20 +218,20 @@ class Translator (object) :
         "Module(body=[FunctionDef(name='f', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=[Expr(value=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())))], decorator_list=[], returns=Name(id='int', ctx=Load()))])"
         """
         if len(st) == 5 :
-            return ast.FunctionDef(lineno=st.srow, col_offset=st.scol,
-                                   name=st[1].text,
-                                   args=self.do(st[2], ctx),
-                                   returns=None,
-                                   body=self.do(st[-1], ctx),
-                                   decorator_list=[])
+            return self.ST.FunctionDef(lineno=st.srow, col_offset=st.scol,
+                                       name=st[1].text,
+                                       args=self.do(st[2], ctx),
+                                       returns=None,
+                                       body=self.do(st[-1], ctx),
+                                       decorator_list=[])
         else :
-            return ast.FunctionDef(lineno=st.srow, col_offset=st.scol,
-                                   name=st[1].text,
-                                   args=self.do(st[2], ctx),
-                                   returns=self.do(st[5], ctx),
-                                   body=self.do(st[-1], ctx),
-                                   decorator_list=[])
-    def do_parameters (self, st, ctx=ast.Load) :
+            return self.ST.FunctionDef(lineno=st.srow, col_offset=st.scol,
+                                       name=st[1].text,
+                                       args=self.do(st[2], ctx),
+                                       returns=self.do(st[5], ctx),
+                                       body=self.do(st[-1], ctx),
+                                       decorator_list=[])
+    def do_parameters (self, st, ctx) :
         """parameters: '(' [typedargslist] ')'
         -> ast.arguments
 
@@ -225,15 +241,15 @@ class Translator (object) :
         "Module(body=[FunctionDef(name='f', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=[Pass()], decorator_list=[], returns=None)])"
         """
         if len(st) == 2 :
-            return ast.arguments(lineno=st.srow, col_offset=st.scol,
-                                 args=[], vararg=None,
-                                 varargannotation=None,
-                                 kwonlyargs=[], kwarg=None,
-                                 kwargannotation=None,
-                                 defaults=[], kw_defaults=[])
+            return self.ST.arguments(lineno=st.srow, col_offset=st.scol,
+                                     args=[], vararg=None,
+                                     varargannotation=None,
+                                     kwonlyargs=[], kwarg=None,
+                                     kwargannotation=None,
+                                     defaults=[], kw_defaults=[])
         else :
             return self.do(st[1], ctx)
-    def do_typedargslist (self, st, ctx=ast.Load) :
+    def do_typedargslist (self, st, ctx) :
         """typedargslist: ((tfpdef ['=' test] ',')*
                 ('*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef]
                  | '**' tfpdef)
@@ -279,8 +295,8 @@ class Translator (object) :
                 kwarg, kwargannotation = self.do(nodes.pop(0), ctx)
             else :
                 n, a = self.do(first, ctx)
-                arg = ast.arg(lineno=first.srow, col_offset=first.scol,
-                              arg=n, annotation=a)
+                arg = self.ST.arg(lineno=first.srow, col_offset=first.scol,
+                                  arg=n, annotation=a)
                 if nodes and nodes[0].text == "=" :
                     del nodes[0]
                     d = self.do(nodes.pop(0), ctx)
@@ -293,16 +309,16 @@ class Translator (object) :
                     args.append(arg)
                     if d is not None :
                         defaults.append(d)
-        return ast.arguments(lineno=st.srow, col_offset=st.scol,
-                             args=args,
-                             vararg=vararg,
-                             varargannotation=varargannotation,
-                             kwonlyargs=kwonlyargs,
-                             kwarg=kwarg,
-                             kwargannotation=kwargannotation,
-                             defaults=defaults,
-                             kw_defaults=kw_defaults)
-    def do_tfpdef (self, st, ctx=ast.Load) :
+        return self.ST.arguments(lineno=st.srow, col_offset=st.scol,
+                                 args=args,
+                                 vararg=vararg,
+                                 varargannotation=varargannotation,
+                                 kwonlyargs=kwonlyargs,
+                                 kwarg=kwarg,
+                                 kwargannotation=kwargannotation,
+                                 defaults=defaults,
+                                 kw_defaults=kw_defaults)
+    def do_tfpdef (self, st, ctx) :
         """tfpdef: NAME [':' test]
         -> str, ast.AST?
 
@@ -317,7 +333,7 @@ class Translator (object) :
             return st[0].text, None
         else :
             return st[0].text, self.do(st[2], ctx)
-    def do_varargslist (self, st, ctx=ast.Load) :
+    def do_varargslist (self, st, ctx) :
         """varargslist: ((vfpdef ['=' test] ',')*
               ('*' [vfpdef] (',' vfpdef ['=' test])*  [',' '**' vfpdef]
                | '**' vfpdef)
@@ -332,7 +348,7 @@ class Translator (object) :
         tree = self.do_typedargslist(st, ctx)
         tree.st = st
         return tree
-    def do_vfpdef (self, st, ctx=ast.Load) :
+    def do_vfpdef (self, st, ctx) :
         """vfpdef: NAME
         -> str, None
 
@@ -344,7 +360,7 @@ class Translator (object) :
         "Module(body=[Expr(value=Lambda(args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load()))))])"
         """
         return st[0].text, None
-    def do_stmt (self, st, ctx=ast.Load) :
+    def do_stmt (self, st, ctx) :
         """stmt: simple_stmt | compound_stmt
         -> ast.AST+
 
@@ -356,11 +372,11 @@ class Translator (object) :
         "Module(body=[With(context_expr=Name(id='x', ctx=Load()), optional_vars=None, body=[Expr(value=Name(id='y', ctx=Load()))])])"
         """
         child = self.do(st[0], ctx)
-        if isinstance(child, ast.AST) :
+        if isinstance(child, self.ST.AST) :
             return [child]
         else :
             return child
-    def do_simple_stmt (self, st, ctx=ast.Load) :
+    def do_simple_stmt (self, st, ctx) :
         """simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
         -> ast.AST+
 
@@ -369,7 +385,7 @@ class Translator (object) :
         """
         return [self.do(child, ctx) for child in st[::2]
                 if child != self.NEWLINE]
-    def do_small_stmt (self, st, ctx=ast.Load) :
+    def do_small_stmt (self, st, ctx) :
         """small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
                      import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
         -> ast.AST
@@ -390,7 +406,7 @@ class Translator (object) :
         "Module(body=[Assert(test=Name(id='x', ctx=Load()), msg=None)])"
         """
         return self.do(st[0], ctx)
-    def do_expr_stmt (self, st, ctx=ast.Load) :
+    def do_expr_stmt (self, st, ctx) :
         """expr_stmt: testlist (augassign (yield_expr|testlist) |
                                 ('=' (yield_expr|testlist))*)
         -> ast.Expr
@@ -407,23 +423,23 @@ class Translator (object) :
         "Module(body=[Assign(targets=[Name(id='x', ctx=Store()), Name(id='y', ctx=Store())], value=Yield(value=Tuple(elts=[Num(n=1), Num(n=2)], ctx=Load())))])"
         """
         if len(st) == 1 :
-            return ast.Expr(lineno=st.srow, col_offset=st.scol,
-                            value=self.do(st[0], ctx))
+            return self.ST.Expr(lineno=st.srow, col_offset=st.scol,
+                                value=self.do(st[0], ctx))
         elif st[1].symbol == "augassign" :
-            target = self.do(st[0], ast.Store)
-            if isinstance(target, ast.Tuple) :
+            target = self.do(st[0], self.ST.Store)
+            if isinstance(target, self.ST.Tuple) :
                 raise ParseError(st[0].text, reason="illegal expression for"
                                  " augmented assignment")
-            return ast.AugAssign(lineno=st.srow, col_offset=st.scol,
-                                 target=target,
-                                 op=self.do(st[1], ctx),
-                                 value=self.do(st[2], ctx))
+            return self.ST.AugAssign(lineno=st.srow, col_offset=st.scol,
+                                     target=target,
+                                     op=self.do(st[1], ctx),
+                                     value=self.do(st[2], ctx))
         else :
-            return ast.Assign(lineno=st.srow, col_offset=st.scol,
-                              targets=[self.do(child, ast.Store)
-                                       for child in st[:-1:2]],
-                              value=self.do(st[-1], ctx))
-    def do_augassign (self, st, ctx=ast.Load) :
+            return self.ST.Assign(lineno=st.srow, col_offset=st.scol,
+                                  targets=[self.do(child, ast.Store)
+                                           for child in st[:-1:2]],
+                                  value=self.do(st[-1], ctx))
+    def do_augassign (self, st, ctx) :
         """augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
             '<<=' | '>>=' | '**=' | '//=')
         -> ast.AST
@@ -454,7 +470,7 @@ class Translator (object) :
         "Module(body=[AugAssign(target=Name(id='x', ctx=Store()), op=FloorDiv(), value=Num(n=1))])"
         """
         return self._binary[st[0].text[:-1]](lineno=st.srow, col_offset=st.scol)
-    def do_del_stmt (self, st, ctx=ast.Load) :
+    def do_del_stmt (self, st, ctx) :
         """del_stmt: 'del' exprlist
         -> ast.Delete
 
@@ -463,22 +479,22 @@ class Translator (object) :
         <<< del x, y
         "Module(body=[Delete(targets=[Name(id='x', ctx=Del()), Name(id='y', ctx=Del())])])"
         """
-        targets = self.do(st[1], ctx=ast.Del)
-        if isinstance(targets, ast.Tuple) :
+        targets = self.do(st[1], ctx=self.ST.Del)
+        if isinstance(targets, self.ST.Tuple) :
             targets = targets.elts
         else :
             targets = [targets]
-        return ast.Delete(lineno=st.srow, col_offset=st.scol,
-                          targets=targets)
-    def do_pass_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Delete(lineno=st.srow, col_offset=st.scol,
+                              targets=targets)
+    def do_pass_stmt (self, st, ctx) :
         """pass_stmt: 'pass'
         -> ast.Pass
 
         <<< pass
         'Module(body=[Pass()])'
         """
-        return ast.Pass(lineno=st.srow, col_offset=st.scol)
-    def do_flow_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Pass(lineno=st.srow, col_offset=st.scol)
+    def do_flow_stmt (self, st, ctx) :
         """flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt
                  | yield_stmt
         -> ast.AST
@@ -495,23 +511,23 @@ class Translator (object) :
         'Module(body=[Expr(value=Yield(value=None))])'
         """
         return self.do(st[0], ctx)
-    def do_break_stmt (self, st, ctx=ast.Load) :
+    def do_break_stmt (self, st, ctx) :
         """break_stmt: 'break'
         -> ast.Break()
 
         <<< break
         'Module(body=[Break()])'
         """
-        return ast.Break(lineno=st.srow, col_offset=st.scol)
-    def do_continue_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Break(lineno=st.srow, col_offset=st.scol)
+    def do_continue_stmt (self, st, ctx) :
         """continue_stmt: 'continue'
         -> ast.Continue
 
         <<< continue
         'Module(body=[Continue()])'
         """
-        return ast.Continue(lineno=st.srow, col_offset=st.scol)
-    def do_return_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Continue(lineno=st.srow, col_offset=st.scol)
+    def do_return_stmt (self, st, ctx) :
         """return_stmt: 'return' [testlist]
         -> ast.Return
 
@@ -523,13 +539,13 @@ class Translator (object) :
         'Module(body=[Return(value=Tuple(elts=[Num(n=1), Num(n=2)], ctx=Load()))])'
         """
         if len(st) == 1 :
-            return ast.Return(lineno=st.srow, col_offset=st.scol,
-                              value=None)
+            return self.ST.Return(lineno=st.srow, col_offset=st.scol,
+                                  value=None)
 
         else :
-            return ast.Return(lineno=st.srow, col_offset=st.scol,
-                              value=self.do(st[1], ctx))
-    def do_yield_stmt (self, st, ctx=ast.Load) :
+            return self.ST.Return(lineno=st.srow, col_offset=st.scol,
+                                  value=self.do(st[1], ctx))
+    def do_yield_stmt (self, st, ctx) :
         """yield_stmt: yield_expr
         -> ast.Expr
 
@@ -538,9 +554,9 @@ class Translator (object) :
         <<< yield 42
         'Module(body=[Expr(value=Yield(value=Num(n=42)))])'
         """
-        return ast.Expr(lineno=st.srow, col_offset=st.scol,
-                        value=self.do(st[0], ctx))
-    def do_raise_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Expr(lineno=st.srow, col_offset=st.scol,
+                            value=self.do(st[0], ctx))
+    def do_raise_stmt (self, st, ctx) :
         """raise_stmt: 'raise' [test ['from' test]]
         -> ast.Raise
 
@@ -553,17 +569,17 @@ class Translator (object) :
         """
         count = len(st)
         if count == 1 :
-            return ast.Raise(lineno=st.srow, col_offset=st.scol,
-                             exc=None, cause=None)
+            return self.ST.Raise(lineno=st.srow, col_offset=st.scol,
+                                 exc=None, cause=None)
         elif count == 2 :
-            return ast.Raise(lineno=st.srow, col_offset=st.scol,
-                             exc=self.do(st[1], ctx),
-                             cause=None)
+            return self.ST.Raise(lineno=st.srow, col_offset=st.scol,
+                                 exc=self.do(st[1], ctx),
+                                 cause=None)
         else :
-            return ast.Raise(lineno=st.srow, col_offset=st.scol,
-                             exc=self.do(st[1], ctx),
-                             cause=self.do(st[3], ctx))
-    def do_import_stmt (self, st, ctx=ast.Load) :
+            return self.ST.Raise(lineno=st.srow, col_offset=st.scol,
+                                 exc=self.do(st[1], ctx),
+                                 cause=self.do(st[3], ctx))
+    def do_import_stmt (self, st, ctx) :
         """import_stmt: import_name | import_from
         -> ast.AST
 
@@ -581,7 +597,7 @@ class Translator (object) :
         "Module(body=[Import(names=[alias(name='foo', asname=None), alias(name='bar', asname=None), alias(name='egg', asname='spam')])])"
         """
         return self.do(st[0], ctx)
-    def do_import_name (self, st, ctx=ast.Load) :
+    def do_import_name (self, st, ctx) :
         """import_name: 'import' dotted_as_names
         -> ast.Import
 
@@ -598,9 +614,9 @@ class Translator (object) :
         <<< import foo, bar, egg as spam
         "Module(body=[Import(names=[alias(name='foo', asname=None), alias(name='bar', asname=None), alias(name='egg', asname='spam')])])"
         """
-        return ast.Import(lineno=st.srow, col_offset=st.scol,
-                          names=self.do(st[1], ctx))
-    def do_import_from (self, st, ctx=ast.Load) :
+        return self.ST.Import(lineno=st.srow, col_offset=st.scol,
+                              names=self.do(st[1], ctx))
+    def do_import_from (self, st, ctx) :
         """import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
               'import' ('*' | '(' import_as_names ')' | import_as_names))
         -> ast.ImportFrom
@@ -646,15 +662,16 @@ class Translator (object) :
             next += 2
         text = st[next].text
         if text == "*" :
-            names = [ast.alias(lineno=st[next].srow, col_offset=st[next].scol,
-                               name="*", asname=None)]
+            names = [self.ST.alias(lineno=st[next].srow,
+                                   col_offset=st[next].scol,
+                                   name="*", asname=None)]
         elif text == "(" :
             names = self.do(st[next+1], ctx)
         else :
             names = self.do(st[next], ctx)
-        return ast.ImportFrom(lineno=st.srow, col_offset=st.scol,
-                              module=module, names=names, level=level)
-    def do_import_as_name (self, st, ctx=ast.Load) :
+        return self.ST.ImportFrom(lineno=st.srow, col_offset=st.scol,
+                                  module=module, names=names, level=level)
+    def do_import_as_name (self, st, ctx) :
         """import_as_name: NAME ['as' NAME]
         -> ast.alias
 
@@ -662,14 +679,14 @@ class Translator (object) :
         "Module(body=[ImportFrom(module='foo', names=[alias(name='egg', asname='spam')], level=0)])"
         """
         if len(st) == 1 :
-            return ast.alias(lineno=st.srow, col_offset=st.scol,
-                             name=st[0].text,
-                             asname=None)
+            return self.ST.alias(lineno=st.srow, col_offset=st.scol,
+                                 name=st[0].text,
+                                 asname=None)
         else :
-            return ast.alias(lineno=st.srow, col_offset=st.scol,
-                             name=st[0].text,
-                             asname=st[2].text)
-    def do_dotted_as_name (self, st, ctx=ast.Load) :
+            return self.ST.alias(lineno=st.srow, col_offset=st.scol,
+                                 name=st[0].text,
+                                 asname=st[2].text)
+    def do_dotted_as_name (self, st, ctx) :
         """dotted_as_name: dotted_name ['as' NAME]
         -> ast.alias
 
@@ -677,14 +694,14 @@ class Translator (object) :
         "Module(body=[Import(names=[alias(name='foo.bar', asname='egg')])])"
         """
         if len(st) == 1 :
-            return ast.alias(lineno=st.srow, col_offset=st.scol,
-                             name=self.do(st[0], ctx),
-                             asname=None)
+            return self.ST.alias(lineno=st.srow, col_offset=st.scol,
+                                 name=self.do(st[0], ctx),
+                                 asname=None)
         else :
-            return ast.alias(lineno=st.srow, col_offset=st.scol,
-                             name=self.do(st[0], ctx),
-                             asname=st[2].text)
-    def do_import_as_names (self, st, ctx=ast.Load) :
+            return self.ST.alias(lineno=st.srow, col_offset=st.scol,
+                                 name=self.do(st[0], ctx),
+                                 asname=st[2].text)
+    def do_import_as_names (self, st, ctx) :
         """import_as_names: import_as_name (',' import_as_name)* [',']
         -> ast.alias+
 
@@ -694,7 +711,7 @@ class Translator (object) :
         "Module(body=[ImportFrom(module='foo', names=[alias(name='egg', asname='spam'), alias(name='bar', asname='baz')], level=0)])"
         """
         return [self.do(child, ctx) for child in st[::2]]
-    def do_dotted_as_names (self, st, ctx=ast.Load) :
+    def do_dotted_as_names (self, st, ctx) :
         """dotted_as_names: dotted_as_name (',' dotted_as_name)*
         -> ast.alias+
 
@@ -702,7 +719,7 @@ class Translator (object) :
         "Module(body=[Import(names=[alias(name='foo.bar', asname=None), alias(name='egg.spam', asname='baz')])])"
         """
         return [self.do(child, ctx) for child in st[::2]]
-    def do_dotted_name (self, st, ctx=ast.Load) :
+    def do_dotted_name (self, st, ctx) :
         """dotted_name: NAME ('.' NAME)*
         -> str
 
@@ -710,7 +727,7 @@ class Translator (object) :
         "Module(body=[Import(names=[alias(name='foo.bar', asname=None)])])"
         """
         return ".".join(child.text for child in st[::2])
-    def do_global_stmt (self, st, ctx=ast.Load) :
+    def do_global_stmt (self, st, ctx) :
         """global_stmt: 'global' NAME (',' NAME)*
         -> ast.Global
 
@@ -719,9 +736,9 @@ class Translator (object) :
         <<< global x, y
         "Module(body=[Global(names=['x', 'y'])])"
         """
-        return ast.Global(lineno=st.srow, col_offset=st.scol,
-                          names=[child.text for child in st[1::2]])
-    def do_nonlocal_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Global(lineno=st.srow, col_offset=st.scol,
+                              names=[child.text for child in st[1::2]])
+    def do_nonlocal_stmt (self, st, ctx) :
         """nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
         -> ast.Nonlocal
 
@@ -730,9 +747,9 @@ class Translator (object) :
         <<< nonlocal x, y
         "Module(body=[Nonlocal(names=['x', 'y'])])"
         """
-        return ast.Nonlocal(lineno=st.srow, col_offset=st.scol,
-                            names=[child.text for child in st[1::2]])
-    def do_assert_stmt (self, st, ctx=ast.Load) :
+        return self.ST.Nonlocal(lineno=st.srow, col_offset=st.scol,
+                                names=[child.text for child in st[1::2]])
+    def do_assert_stmt (self, st, ctx) :
         """assert_stmt: 'assert' test [',' test]
         -> ast.Assert
 
@@ -742,14 +759,14 @@ class Translator (object) :
         "Module(body=[Assert(test=Name(id='x', ctx=Load()), msg=Name(id='y', ctx=Load()))])"
         """
         if len(st) == 2 :
-            return ast.Assert(lineno=st.srow, col_offset=st.scol,
-                              test=self.do(st[1], ctx),
-                              msg=None)
+            return self.ST.Assert(lineno=st.srow, col_offset=st.scol,
+                                  test=self.do(st[1], ctx),
+                                  msg=None)
         else :
-            return ast.Assert(lineno=st.srow, col_offset=st.scol,
-                              test=self.do(st[1], ctx),
-                              msg=self.do(st[3], ctx))
-    def do_compound_stmt (self, st, ctx=ast.Load) :
+            return self.ST.Assert(lineno=st.srow, col_offset=st.scol,
+                                  test=self.do(st[1], ctx),
+                                  msg=self.do(st[3], ctx))
+    def do_compound_stmt (self, st, ctx) :
         """compound_stmt: (if_stmt | while_stmt | for_stmt | try_stmt
                 | with_stmt | funcdef | classdef | decorated)
         -> ast.AST
@@ -774,7 +791,7 @@ class Translator (object) :
         "Module(body=[FunctionDef(name='f', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=[Pass()], decorator_list=[Name(id='foo', ctx=Load())], returns=None)])"
         """
         return self.do(st[0], ctx)
-    def do_if_stmt (self, st, ctx=ast.Load) :
+    def do_if_stmt (self, st, ctx) :
         """if_stmt: 'if' test ':' suite ('elif' test ':' suite)*
                ['else' ':' suite]
         -> ast.If
@@ -799,10 +816,11 @@ class Translator (object) :
                 last.orelse.extend(self.do(nodes[2], ctx))
                 del nodes[:3]
             else :
-                next = ast.If(lineno=nodes[0].srow, col_offset=nodes[0].scol,
-                              test=self.do(nodes[1], ctx),
-                              body=self.do(nodes[3], ctx),
-                              orelse=[])
+                next = self.ST.If(lineno=nodes[0].srow,
+                                  col_offset=nodes[0].scol,
+                                  test=self.do(nodes[1], ctx),
+                                  body=self.do(nodes[3], ctx),
+                                  orelse=[])
                 if first is None :
                     first = next
                 if last is not None :
@@ -810,7 +828,7 @@ class Translator (object) :
                 last = next
                 del nodes[:4]
         return first
-    def do_while_stmt (self, st, ctx=ast.Load) :
+    def do_while_stmt (self, st, ctx) :
         """while_stmt: 'while' test ':' suite ['else' ':' suite]
         -> ast.While
 
@@ -827,16 +845,16 @@ class Translator (object) :
         "Module(body=[While(test=Name(id='x', ctx=Load()), body=[Pass()], orelse=[Pass()])])"
         """
         if len(st) == 4 :
-            return ast.While(lineno=st.srow, col_offset=st.scol,
-                             test=self.do(st[1], ctx),
-                             body=self.do(st[3], ctx),
-                             orelse=[])
+            return self.ST.While(lineno=st.srow, col_offset=st.scol,
+                                 test=self.do(st[1], ctx),
+                                 body=self.do(st[3], ctx),
+                                 orelse=[])
         else :
-            return ast.While(lineno=st.srow, col_offset=st.scol,
-                             test=self.do(st[1], ctx),
-                             body=self.do(st[3], ctx),
-                             orelse=self.do(st[6], ctx))
-    def do_for_stmt (self, st, ctx=ast.Load) :
+            return self.ST.While(lineno=st.srow, col_offset=st.scol,
+                                 test=self.do(st[1], ctx),
+                                 body=self.do(st[3], ctx),
+                                 orelse=self.do(st[6], ctx))
+    def do_for_stmt (self, st, ctx) :
         """for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
         -> ast.For
 
@@ -857,18 +875,18 @@ class Translator (object) :
         "Module(body=[For(target=Name(id='x', ctx=Store()), iter=Tuple(elts=[Name(id='a', ctx=Load()), Name(id='b', ctx=Load())], ctx=Load()), body=[Pass()], orelse=[])])"
         """
         if len(st) == 6 :
-            return ast.For(lineno=st.srow, col_offset=st.scol,
-                           target=self.do(st[1], ast.Store),
-                           iter=self.do(st[3], ctx),
-                           body=self.do(st[5], ctx),
-                           orelse=[])
+            return self.ST.For(lineno=st.srow, col_offset=st.scol,
+                               target=self.do(st[1], ast.Store),
+                               iter=self.do(st[3], ctx),
+                               body=self.do(st[5], ctx),
+                               orelse=[])
         else :
-            return ast.For(lineno=st.srow, col_offset=st.scol,
-                           target=self.do(st[1], ast.Store),
-                           iter=self.do(st[3], ctx),
-                           body=self.do(st[5], ctx),
-                           orelse=self.do(st[8], ctx))
-    def do_try_stmt (self, st, ctx=ast.Load) :
+            return self.ST.For(lineno=st.srow, col_offset=st.scol,
+                               target=self.do(st[1], ast.Store),
+                               iter=self.do(st[3], ctx),
+                               body=self.do(st[5], ctx),
+                               orelse=self.do(st[8], ctx))
+    def do_try_stmt (self, st, ctx) :
         """try_stmt: ('try' ':' suite
            ((except_clause ':' suite)+
             ['else' ':' suite]
@@ -901,21 +919,21 @@ class Translator (object) :
                 finalbody = self.do(nodes[2], ctx)
             else :
                 t, n = self.do(nodes[0], ctx)
-                handlers.append(ast.ExceptHandler(lineno=nodes[0].srow,
-                                                  col_offset=nodes[0].scol,
-                                                  type=t, name=n,
-                                                  body=self.do(nodes[2], ctx)))
+                handlers.append(self.ST.ExceptHandler(lineno=nodes[0].srow,
+                                                      col_offset=nodes[0].scol,
+                                                      type=t, name=n,
+                                                      body=self.do(nodes[2], ctx)))
             del nodes[:3]
-        stmt = ast.TryExcept(lineno=st.srow, col_offset=st.scol,
-                             body=self.do(st[2], ctx),
-                             handlers=handlers,
-                             orelse=orelse)
+        stmt = self.ST.TryExcept(lineno=st.srow, col_offset=st.scol,
+                                 body=self.do(st[2], ctx),
+                                 handlers=handlers,
+                                 orelse=orelse)
         if finalbody is None :
             return stmt
         else :
-            return ast.TryFinally(lineno=st.srow, col_offset=st.scol,
-                                  body=[stmt], finalbody=finalbody)
-    def do_with_stmt (self, st, ctx=ast.Load) :
+            return self.ST.TryFinally(lineno=st.srow, col_offset=st.scol,
+                                      body=[stmt], finalbody=finalbody)
+    def do_with_stmt (self, st, ctx) :
         """with_stmt: 'with' test [ with_var ] ':' suite
         -> ast.With
 
@@ -931,16 +949,16 @@ class Translator (object) :
         "Module(body=[With(context_expr=Name(id='x', ctx=Load()), optional_vars=Name(id='y', ctx=Store()), body=[Pass()])])"
         """
         if len(st) == 5 :
-            return ast.With(lineno=st.srow, col_offset=st.scol,
-                            context_expr=self.do(st[1], ctx),
-                            optional_vars=self.do(st[2], ast.Store),
-                            body=self.do(st[4], ctx))
+            return self.ST.With(lineno=st.srow, col_offset=st.scol,
+                                context_expr=self.do(st[1], ctx),
+                                optional_vars=self.do(st[2], self.ST.Store),
+                                body=self.do(st[4], ctx))
         else :
-            return ast.With(lineno=st.srow, col_offset=st.scol,
-                            context_expr=self.do(st[1], ctx),
-                            optional_vars=None,
-                            body=self.do(st[3], ctx))
-    def do_with_var (self, st, ctx=ast.Load) :
+            return self.ST.With(lineno=st.srow, col_offset=st.scol,
+                                context_expr=self.do(st[1], ctx),
+                                optional_vars=None,
+                                body=self.do(st[3], ctx))
+    def do_with_var (self, st, ctx) :
         """with_var: 'as' expr
         -> ast.Name
 
@@ -948,7 +966,7 @@ class Translator (object) :
         "Module(body=[With(context_expr=Name(id='x', ctx=Load()), optional_vars=Name(id='y', ctx=Store()), body=[Pass()])])"
         """
         return self.do(st[1], ctx)
-    def do_except_clause (self, st, ctx=ast.Load) :
+    def do_except_clause (self, st, ctx) :
         """except_clause: 'except' [test ['as' NAME]]
         -> ast.AST?, ast.Name?
 
@@ -963,11 +981,11 @@ class Translator (object) :
         elif len(st) == 2 :
             return self.do(st[1], ctx), None
         else :
-            return self.do(st[1], ctx), ast.Name(lineno=st[3].srow,
-                                                 col_offset=st[3].scol,
-                                                 id=st[3].text,
-                                                 ctx=ast.Store())
-    def do_suite (self, st, ctx=ast.Load) :
+            return self.do(st[1], ctx), self.ST.Name(lineno=st[3].srow,
+                                                     col_offset=st[3].scol,
+                                                     id=st[3].text,
+                                                     ctx=self.ST.Store())
+    def do_suite (self, st, ctx) :
         """suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
         -> ast.AST+
 
@@ -987,7 +1005,7 @@ class Translator (object) :
             return reduce(operator.add,
                           (self.do(child, ctx) for child in st[2:-1]),
                           [])
-    def do_test (self, st, ctx=ast.Load) :
+    def do_test (self, st, ctx) :
         """test: or_test ['if' or_test 'else' test] | lambdef
         -> ast.AST
 
@@ -1001,11 +1019,11 @@ class Translator (object) :
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            return ast.IfExp(lineno=st.srow, col_offset=st.scol,
-                             test=self.do(st[2], ctx),
+            return self.ST.IfExp(lineno=st.srow, col_offset=st.scol,
+                                 test=self.do(st[2], ctx),
                              body=self.do(st[0], ctx),
                              orelse=self.do(st[4], ctx))
-    def do_test_nocond (self, st, ctx=ast.Load) :
+    def do_test_nocond (self, st, ctx) :
         """test_nocond: or_test | lambdef_nocond
         -> ast.AST
 
@@ -1013,7 +1031,7 @@ class Translator (object) :
         "Module(body=[Expr(value=ListComp(elt=Name(id='x', ctx=Load()), generators=[comprehension(target=Name(id='x', ctx=Store()), iter=Tuple(elts=[Lambda(args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=Name(id='True', ctx=Load())), Lambda(args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=Name(id='False', ctx=Load()))], ctx=Load()), ifs=[Call(func=Name(id='x', ctx=Load()), args=[], keywords=[], starargs=None, kwargs=None)])]))])"
         """
         return self.do(st[0], ctx)
-    def do_lambdef (self, st, ctx=ast.Load) :
+    def do_lambdef (self, st, ctx) :
         """lambdef: 'lambda' [varargslist] ':' test
         -> ast.Lambda
 
@@ -1023,20 +1041,20 @@ class Translator (object) :
         "Module(body=[Expr(value=Lambda(args=arguments(args=[arg(arg='x', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Num(n=1))))])"
         """
         if len(st) == 3 :
-            return ast.Lambda(lineno=st.srow, col_offset=st.scol,
-                              args=ast.arguments(lineno=st.srow,
-                                                 col_offset=st.scol,
-                                                 args=[], vararg=None,
-                                                 varargannotation=None,
-                                                 kwonlyargs=[], kwarg=None,
-                                                 kwargannotation=None,
-                                                 defaults=[], kw_defaults=[]),
-                              body=self.do(st[-1], ctx))
+            return self.ST.Lambda(lineno=st.srow, col_offset=st.scol,
+                                  args=self.ST.arguments(lineno=st.srow,
+                                                         col_offset=st.scol,
+                                                         args=[], vararg=None,
+                                                         varargannotation=None,
+                                                         kwonlyargs=[], kwarg=None,
+                                                         kwargannotation=None,
+                                                         defaults=[], kw_defaults=[]),
+                                  body=self.do(st[-1], ctx))
         else :
-            return ast.Lambda(lineno=st.srow, col_offset=st.scol,
-                              args=self.do(st[1], ctx),
-                              body=self.do(st[-1], ctx))
-    def do_lambdef_nocond (self, st, ctx=ast.Load) :
+            return self.ST.Lambda(lineno=st.srow, col_offset=st.scol,
+                                  args=self.do(st[1], ctx),
+                                  body=self.do(st[-1], ctx))
+    def do_lambdef_nocond (self, st, ctx) :
         """lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
         -> ast.Lambda
 
@@ -1046,7 +1064,7 @@ class Translator (object) :
         tree = self.do_lambdef(st, ctx)
         tree.st = st
         return tree
-    def do_or_test (self, st, ctx=ast.Load) :
+    def do_or_test (self, st, ctx) :
         """or_test: and_test ('or' and_test)*
         -> ast.AST
 
@@ -1056,7 +1074,7 @@ class Translator (object) :
         "Module(body=[Expr(value=BoolOp(op=Or(), values=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load()), Name(id='z', ctx=Load())]))])"
         """
         return self._do_boolean(st, ctx)
-    def do_and_test (self, st, ctx=ast.Load) :
+    def do_and_test (self, st, ctx) :
         """and_test: not_test ('and' not_test)*
         -> ast.AST
 
@@ -1066,7 +1084,7 @@ class Translator (object) :
         "Module(body=[Expr(value=BoolOp(op=And(), values=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load()), Name(id='z', ctx=Load())]))])"
         """
         return self._do_boolean(st, ctx)
-    def do_not_test (self, st, ctx=ast.Load) :
+    def do_not_test (self, st, ctx) :
         """not_test: 'not' not_test | comparison
         -> ast.AST
 
@@ -1076,7 +1094,7 @@ class Translator (object) :
         "Module(body=[Expr(value=UnaryOp(op=Not(), operand=UnaryOp(op=Not(), operand=Name(id='x', ctx=Load()))))])"
         """
         return self._do_unary(st, ctx)
-    def do_comparison (self, st, ctx=ast.Load) :
+    def do_comparison (self, st, ctx) :
         """comparison: star_expr (comp_op star_expr)*
         -> ast.AST
 
@@ -1088,12 +1106,12 @@ class Translator (object) :
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            return ast.Compare(lineno=st.srow, col_offset=st.scol,
-                               left=self.do(st[0], ctx),
-                               ops = [self.do(child, ctx)
-                                      for child in st[1::2]],
-                               comparators = [self.do(child, ctx)
-                                              for child in st[2::2]])
+            return self.ST.Compare(lineno=st.srow, col_offset=st.scol,
+                                   left=self.do(st[0], ctx),
+                                   ops = [self.do(child, ctx)
+                                          for child in st[1::2]],
+                                   comparators = [self.do(child, ctx)
+                                                  for child in st[2::2]])
     _comparison = {"<" : ast.Lt,
                    ">" : ast.Gt,
                    "==" : ast.Eq,
@@ -1105,7 +1123,7 @@ class Translator (object) :
                    "not in" : ast.NotIn,
                    "is" : ast.Is,
                    "is not" : ast.IsNot}
-    def do_comp_op (self, st, ctx=ast.Load) :
+    def do_comp_op (self, st, ctx) :
         """comp_op: '<'|'>'|'=='|'>='|'<='|'!='|'<>'|'in'|'not' 'in'|'is'
                 |'is' 'not'
         -> ast.cmpop
@@ -1135,7 +1153,7 @@ class Translator (object) :
         """
         text = " ".join(child.text for child in st)
         return self._comparison[text](lineno=st.srow, col_offset=st.scol)
-    def do_star_expr (self, st, ctx=ast.Load) :
+    def do_star_expr (self, st, ctx) :
         """star_expr: ['*'] expr
         -> ast.AST
 
@@ -1147,10 +1165,10 @@ class Translator (object) :
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            return ast.Starred(lineno=st.srow, col_offset=st.scol,
-                               value=self.do(st[1], ctx),
-                               ctx=ctx())
-    def do_expr (self, st, ctx=ast.Load) :
+            return self.ST.Starred(lineno=st.srow, col_offset=st.scol,
+                                   value=self.do(st[1], ctx),
+                                   ctx=ctx())
+    def do_expr (self, st, ctx) :
         """expr: xor_expr ('|' xor_expr)*
         -> ast.AST
 
@@ -1162,7 +1180,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=Num(n=1), op=BitOr(), right=Num(n=2)), op=BitOr(), right=Num(n=3)))])'
         """
         return self._do_binary(st, ctx)
-    def do_xor_expr (self, st, ctx=ast.Load) :
+    def do_xor_expr (self, st, ctx) :
         """xor_expr: and_expr ('^' and_expr)*
         -> ast.AST
 
@@ -1174,7 +1192,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=Num(n=1), op=BitXor(), right=Num(n=2)), op=BitXor(), right=Num(n=3)))])'
         """
         return self._do_binary(st, ctx)
-    def do_and_expr (self, st, ctx=ast.Load) :
+    def do_and_expr (self, st, ctx) :
         """and_expr: shift_expr ('&' shift_expr)*
         -> ast.AST
 
@@ -1186,7 +1204,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=Num(n=1), op=BitAnd(), right=Num(n=2)), op=BitAnd(), right=Num(n=3)))])'
         """
         return self._do_binary(st, ctx)
-    def do_shift_expr (self, st, ctx=ast.Load) :
+    def do_shift_expr (self, st, ctx) :
         """shift_expr: arith_expr (('<<'|'>>') arith_expr)*
         -> ast.AST
 
@@ -1198,7 +1216,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=Num(n=1), op=LShift(), right=Num(n=2)), op=RShift(), right=Num(n=3)))])'
         """
         return self._do_binary(st, ctx)
-    def do_arith_expr (self, st, ctx=ast.Load) :
+    def do_arith_expr (self, st, ctx) :
         """arith_expr: term (('+'|'-') term)*
         -> ast.AST
 
@@ -1210,7 +1228,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=Num(n=1), op=Add(), right=Num(n=2)), op=Sub(), right=Num(n=3)))])'
         """
         return self._do_binary(st, ctx)
-    def do_term (self, st, ctx=ast.Load) :
+    def do_term (self, st, ctx) :
         """term: factor (('*'|'/'|'%'|'//') factor)*
         -> ast.AST
 
@@ -1226,7 +1244,7 @@ class Translator (object) :
         'Module(body=[Expr(value=BinOp(left=BinOp(left=BinOp(left=BinOp(left=Num(n=1), op=Mult(), right=Num(n=2)), op=Div(), right=Num(n=3)), op=Mod(), right=Num(n=4)), op=FloorDiv(), right=Num(n=5)))])'
         """
         return self._do_binary(st, ctx)
-    def do_factor (self, st, ctx=ast.Load) :
+    def do_factor (self, st, ctx) :
         """factor: ('+'|'-'|'~') factor | power
         -> ast.AST
 
@@ -1249,13 +1267,13 @@ class Translator (object) :
             return self.do(st[0], ctx)
         else :
             tree = self._do_unary(st, ctx)
-            if (isinstance(tree.op, ast.USub)
-                and isinstance(tree.operand, ast.Num)
+            if (isinstance(tree.op, self.ST.USub)
+                and isinstance(tree.operand, self.ST.Num)
                 and tree.operand.n > 0) :
-                tree = ast.Num(lineno=st.srow, col_offset=st.scol,
-                               n = -tree.operand.n)
+                tree = self.ST.Num(lineno=st.srow, col_offset=st.scol,
+                                   n = -tree.operand.n)
             return tree
-    def do_power (self, st, ctx=ast.Load) :
+    def do_power (self, st, ctx) :
         """power: atom trailer* ['**' factor]
         -> ast.AST
 
@@ -1276,14 +1294,14 @@ class Translator (object) :
                 trailer = self.do(child, ctx)
                 left = trailer(left, st.srow, st.scol)
             if power :
-                return ast.BinOp(lineno=st.srow, col_offset=st.scol,
-                                 left=left,
-                                 op=ast.Pow(lineno=st[-2].srow,
-                                            col_offset=st[-2].scol),
-                                 right=power)
+                return self.ST.BinOp(lineno=st.srow, col_offset=st.scol,
+                                     left=left,
+                                     op=self.ST.Pow(lineno=st[-2].srow,
+                                                    col_offset=st[-2].scol),
+                                     right=power)
             else :
                 return left
-    def do_atom (self, st, ctx=ast.Load) :
+    def do_atom (self, st, ctx) :
         """atom: ('(' [yield_expr|testlist_comp] ')' |
             '[' [testlist_comp] ']' |
             '{' [dictorsetmaker] '}' |
@@ -1328,35 +1346,35 @@ class Translator (object) :
         """
         kind, text = st[0].kind, st[0].text
         if kind == self.NUMBER :
-            return ast.Num(lineno=st.srow, col_offset=st.scol,
-                           n=ast.literal_eval(text))
+            return self.ST.Num(lineno=st.srow, col_offset=st.scol,
+                               n=self.ST.literal_eval(text))
         elif kind == self.NAME :
-            return ast.Name(lineno=st.srow, col_offset=st.scol,
-                            id=text, ctx=ctx())
+            return self.ST.Name(lineno=st.srow, col_offset=st.scol,
+                                id=text, ctx=ctx())
         elif kind == self.STRING :
-            return ast.Str(lineno=st.srow, col_offset=st.scol,
-                           s="".join(ast.literal_eval(child.text)
-                                     for child in st))
+            return self.ST.Str(lineno=st.srow, col_offset=st.scol,
+                               s="".join(self.ST.literal_eval(child.text)
+                                         for child in st))
         elif text == "..." :
-            return ast.Ellipsis(lineno=st.srow, col_offset=st.scol)
+            return self.ST.Ellipsis(lineno=st.srow, col_offset=st.scol)
         elif text == "[" :
             if len(st) == 2 :
-                return ast.List(lineno=st.srow, col_offset=st.scol,
-                                elts=[], ctx=ctx())
+                return self.ST.List(lineno=st.srow, col_offset=st.scol,
+                                    elts=[], ctx=ctx())
             else :
                 loop, elts, atom = self.do(st[1], ctx)
                 if atom is not None :
                     elts=[atom]
                 if loop is None :
-                    return ast.List(lineno=st.srow, col_offset=st.scol,
-                                    elts=elts, ctx=ctx())
+                    return self.ST.List(lineno=st.srow, col_offset=st.scol,
+                                        elts=elts, ctx=ctx())
                 else :
-                    return ast.ListComp(lineno=st.srow, col_offset=st.scol,
-                                        elt=loop, generators=elts)
+                    return self.ST.ListComp(lineno=st.srow, col_offset=st.scol,
+                                            elt=loop, generators=elts)
         elif text == "(" :
             if len(st) == 2 :
-                return ast.Tuple(lineno=st.srow, col_offset=st.scol,
-                                 elts=[], ctx=ctx())
+                return self.ST.Tuple(lineno=st.srow, col_offset=st.scol,
+                                     elts=[], ctx=ctx())
             elif st[1].symbol == "yield_expr" :
                 return self.do(st[1], ctx)
             else :
@@ -1364,18 +1382,18 @@ class Translator (object) :
                 if atom is not None :
                     return atom
                 elif loop is None :
-                    return ast.Tuple(lineno=st.srow, col_offset=st.scol,
-                                     elts=elts, ctx=ctx())
+                    return self.ST.Tuple(lineno=st.srow, col_offset=st.scol,
+                                         elts=elts, ctx=ctx())
                 else :
-                    return ast.GeneratorExp(lineno=st.srow, col_offset=st.scol,
-                                            elt=loop, generators=elts)
+                    return self.ST.GeneratorExp(lineno=st.srow, col_offset=st.scol,
+                                                elt=loop, generators=elts)
         else : # text == "{"
             if len(st) == 2 :
-                return ast.Dict(lineno=st.srow, col_offset=st.scol,
-                                keys=[], values=[])
+                return self.ST.Dict(lineno=st.srow, col_offset=st.scol,
+                                    keys=[], values=[])
             else :
                 return self.do(st[1], ctx)
-    def do_testlist_comp (self, st, ctx=ast.Load) :
+    def do_testlist_comp (self, st, ctx) :
         """testlist_comp: test ( comp_for | (',' test)* [','] )
         -> ast.AST?, ast.AST+
 
@@ -1390,7 +1408,7 @@ class Translator (object) :
             return None, [self.do(child, ctx) for child in st[::2]], None
         else :
             return self.do(st[0], ctx), self.do(st[1], ctx)[0], None
-    def do_trailer (self, st, ctx=ast.Load) :
+    def do_trailer (self, st, ctx) :
         """trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
         -> (tree, line, column -> ast.AST)
 
@@ -1418,37 +1436,39 @@ class Translator (object) :
         hd = st[0].text
         if hd == "." :
             def trail (tree, lineno, col_offset) :
-                return ast.Attribute(lineno=lineno, col_offset=col_offset,
-                                     value=tree,
-                                     attr=st[1].text,
-                                     ctx=ctx())
+                return self.ST.Attribute(lineno=lineno,
+                                         col_offset=col_offset,
+                                         value=tree,
+                                         attr=st[1].text,
+                                         ctx=ctx())
         elif hd == "[" :
             subscript = self.do(st[1], ctx)
             if len(subscript) == 1 :
                 subscript = subscript[0]
             else :
-                subscript = ast.ExtSlice(lineno=st[1].srow,
-                                         col_offset=st[1].scol,
-                                         dims=subscript,
-                                         ctx=ctx())
+                subscript = self.ST.ExtSlice(lineno=st[1].srow,
+                                             col_offset=st[1].scol,
+                                             dims=subscript,
+                                             ctx=ctx())
             def trail (tree, lineno, col_offset) :
-                return ast.Subscript(lineno=lineno, col_offset=col_offset,
-                                     value=tree,
-                                     slice=subscript,
-                                     ctx=ctx())
+                return self.ST.Subscript(lineno=lineno,
+                                         col_offset=col_offset,
+                                         value=tree,
+                                         slice=subscript,
+                                         ctx=ctx())
         elif len(st) == 2 : # hd = "("
             def trail (tree, lineno, col_offset) :
-                return ast.Call(lineno=lineno, col_offset=col_offset,
-                                func=tree, args=[], keywords=[],
-                                starargs=None, kwargs=None)
+                return self.ST.Call(lineno=lineno, col_offset=col_offset,
+                                    func=tree, args=[], keywords=[],
+                                    starargs=None, kwargs=None)
         else : # hd = "("
             def trail (tree, lineno, col_offset) :
                 args, keywords, starargs, kwargs = self.do(st[1], ctx)
-                return ast.Call(lineno=lineno, col_offset=col_offset,
-                                func=tree, args=args, keywords=keywords,
-                                starargs=starargs, kwargs=kwargs)
+                return self.ST.Call(lineno=lineno, col_offset=col_offset,
+                                    func=tree, args=args, keywords=keywords,
+                                    starargs=starargs, kwargs=kwargs)
         return trail
-    def do_subscriptlist (self, st, ctx=ast.Load) :
+    def do_subscriptlist (self, st, ctx) :
         """subscriptlist: subscript (',' subscript)* [',']
         -> ast.Slice+
 
@@ -1474,7 +1494,7 @@ class Translator (object) :
         "Module(body=[Expr(value=Subscript(value=Name(id='l', ctx=Load()), slice=ExtSlice(dims=[Slice(lower=Num(n=1), upper=Num(n=2), step=Num(n=3)), Slice(lower=Num(n=4), upper=Num(n=5), step=Num(n=6))]), ctx=Load()))])"
         """
         return [self.do(child, ctx) for child in st[::2]]
-    def do_subscript (self, st, ctx=ast.Load) :
+    def do_subscript (self, st, ctx) :
         """subscript: test | [test] ':' [test] [sliceop]
         -> ast.Slice | ast.Index
 
@@ -1499,47 +1519,47 @@ class Translator (object) :
         """
         count = len(st)
         if count == 1 and st[0].text == ":" :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=None, upper=None, step=None)
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=None, upper=None, step=None)
         elif count == 1 :
-            return ast.Index(lineno=st.srow, col_offset=st.scol,
-                             value=self.do(st[0], ctx))
+            return self.ST.Index(lineno=st.srow, col_offset=st.scol,
+                                 value=self.do(st[0], ctx))
         elif count == 4 :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=self.do(st[0], ctx),
-                             upper=self.do(st[2], ctx),
-                             step=self.do(st[3], ctx))
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=self.do(st[0], ctx),
+                                 upper=self.do(st[2], ctx),
+                                 step=self.do(st[3], ctx))
         elif count == 3 and st[-1].symbol == "test" :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=self.do(st[0], ctx),
-                             upper=self.do(st[2], ctx),
-                             step=None)
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=self.do(st[0], ctx),
+                                 upper=self.do(st[2], ctx),
+                                 step=None)
         elif count == 3 and st[0].text == ":" :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=None,
-                             upper=self.do(st[1], ctx),
-                             step=self.do(st[2], ctx))
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=None,
+                                 upper=self.do(st[1], ctx),
+                                 step=self.do(st[2], ctx))
         elif count == 3 :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=self.do(st[0], ctx),
-                             upper=None,
-                             step=self.do(st[2], ctx))
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=self.do(st[0], ctx),
+                                 upper=None,
+                                 step=self.do(st[2], ctx))
         elif count == 2 and st[-1].symbol == "sliceop" :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=None,
-                             upper=None,
-                             step=self.do(st[1], ctx))
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=None,
+                                 upper=None,
+                                 step=self.do(st[1], ctx))
         elif count == 2 and st[0].text == ":" :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=None,
-                             upper=self.do(st[1], ctx),
-                             step=None)
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=None,
+                                 upper=self.do(st[1], ctx),
+                                 step=None)
         else :
-            return ast.Slice(lineno=st.srow, col_offset=st.scol,
-                             lower=self.do(st[0], ctx),
-                             upper=None,
-                             step=None)
-    def do_sliceop (self, st, ctx=ast.Load) :
+            return self.ST.Slice(lineno=st.srow, col_offset=st.scol,
+                                 lower=self.do(st[0], ctx),
+                                 upper=None,
+                                 step=None)
+    def do_sliceop (self, st, ctx) :
         """sliceop: ':' [test]
         -> ast.AST
 
@@ -1549,11 +1569,11 @@ class Translator (object) :
         "Module(body=[Expr(value=Subscript(value=Name(id='l', ctx=Load()), slice=Slice(lower=None, upper=None, step=Num(n=3)), ctx=Load()))])"
         """
         if len(st) == 1 :
-            return ast.Name(lineno=st.srow, col_offset=st.scol,
-                            id="None", ctx=ctx())
+            return self.ST.Name(lineno=st.srow, col_offset=st.scol,
+                                id="None", ctx=ctx())
         else :
             return self.do(st[1], ctx)
-    def do_exprlist (self, st, ctx=ast.Load) :
+    def do_exprlist (self, st, ctx) :
         """exprlist: star_expr (',' star_expr)* [',']
         -> ast.AST+
 
@@ -1565,7 +1585,7 @@ class Translator (object) :
         tree = self.do_testlist(st, ctx)
         tree.st = st
         return tree
-    def do_testlist (self, st, ctx=ast.Load) :
+    def do_testlist (self, st, ctx) :
         """testlist: test (',' test)* [',']
         -> ast.AST | ast.Tuple
 
@@ -1578,9 +1598,9 @@ class Translator (object) :
         if len(lst) == 1 :
             return lst[0]
         else :
-            return ast.Tuple(lineno=st.srow, col_offset=st.scol,
-                             elts=lst, ctx=ctx())
-    def do_dictorsetmaker (self, st, ctx=ast.Load) :
+            return self.ST.Tuple(lineno=st.srow, col_offset=st.scol,
+                                 elts=lst, ctx=ctx())
+    def do_dictorsetmaker (self, st, ctx) :
         """dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
                   (test (comp_for | (',' test)* [','])) )
         -> ast.Dict | ast.DictComp | ast.Set | ast.SetComp
@@ -1596,25 +1616,25 @@ class Translator (object) :
         """
         if st[1].text == ":" :
             if st[3].text == "," :
-                return ast.Dict(lineno=st.srow, col_offset=st.scol,
-                                keys=[self.do(child, ctx)
-                                      for child in st[::4]],
-                                values=[self.do(child, ctx)
-                                        for child in st[2::4]])
+                return self.ST.Dict(lineno=st.srow, col_offset=st.scol,
+                                    keys=[self.do(child, ctx)
+                                          for child in st[::4]],
+                                    values=[self.do(child, ctx)
+                                            for child in st[2::4]])
             else :
-                return ast.DictComp(lineno=st.srow, col_offset=st.scol,
-                                    key=self.do(st[0], ctx),
-                                    value=self.do(st[2], ctx),
-                                    generators=self.do(st[3], ctx)[0])
+                return self.ST.DictComp(lineno=st.srow, col_offset=st.scol,
+                                        key=self.do(st[0], ctx),
+                                        value=self.do(st[2], ctx),
+                                        generators=self.do(st[3], ctx)[0])
         else :
             loop, elts, atom = self.do_testlist_comp(st, ctx)
             if loop is None :
-                return ast.Set(lineno=st.srow, col_offset=st.scol,
-                               elts=elts)
+                return self.ST.Set(lineno=st.srow, col_offset=st.scol,
+                                   elts=elts)
             else :
-                return ast.SetComp(lineno=st.srow, col_offset=st.scol,
-                                   elt=loop, generators=elts)
-    def do_classdef (self, st, ctx=ast.Load) :
+                return self.ST.SetComp(lineno=st.srow, col_offset=st.scol,
+                                       elt=loop, generators=elts)
+    def do_classdef (self, st, ctx) :
         """classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
         -> ast.ClassDef
 
@@ -1626,25 +1646,25 @@ class Translator (object) :
         "Module(body=[ClassDef(name='c', bases=[Name(id='object', ctx=Load())], keywords=[keyword(arg='foo', value=Name(id='bar', ctx=Load()))], starargs=None, kwargs=None, body=[Pass()], decorator_list=[])])"
         """
         if len(st) <= 6 :
-            return ast.ClassDef(lineno=st.srow, col_offset=st.scol,
-                                name=st[1].text,
-                                bases=[],
-                                keywords=[],
-                                starargs=None,
-                                kwargs=None,
-                                body=self.do(st[-1], ctx),
-                                decorator_list=[])
+            return self.ST.ClassDef(lineno=st.srow, col_offset=st.scol,
+                                    name=st[1].text,
+                                    bases=[],
+                                    keywords=[],
+                                    starargs=None,
+                                    kwargs=None,
+                                    body=self.do(st[-1], ctx),
+                                    decorator_list=[])
         else :
             args, keywords, starargs, kwargs = self.do(st[3], ctx)
-            return ast.ClassDef(lineno=st.srow, col_offset=st.scol,
-                                name=st[1].text,
-                                bases=args,
-                                keywords=keywords,
-                                starargs=starargs,
-                                kwargs=kwargs,
-                                body=self.do(st[-1], ctx),
-                                decorator_list=[])
-    def do_arglist (self, st, ctx=ast.Load) :
+            return self.ST.ClassDef(lineno=st.srow, col_offset=st.scol,
+                                    name=st[1].text,
+                                    bases=args,
+                                    keywords=keywords,
+                                    starargs=starargs,
+                                    kwargs=kwargs,
+                                    body=self.do(st[-1], ctx),
+                                    decorator_list=[])
+    def do_arglist (self, st, ctx) :
         """arglist: (argument ',')* (argument [',']
                          |'*' test (',' argument)* [',' '**' test]
                          |'**' test)
@@ -1680,7 +1700,7 @@ class Translator (object) :
                 del nodes[:2]
             else :
                 arg = self.do(nodes[0], ctx)
-                if isinstance(arg, ast.keyword) :
+                if isinstance(arg, self.ST.keyword) :
                     if arg.arg in allkw :
                         raise ParseError(nodes[0].text,
                                          reason="keyword argument repeated")
@@ -1693,7 +1713,7 @@ class Translator (object) :
                     args.append(arg)
                 del nodes[0]
         return args, keywords, starargs, kwargs
-    def do_argument (self, st, ctx=ast.Load) :
+    def do_argument (self, st, ctx) :
         """argument: test [comp_for] | test '=' test
         -> ast.keyword | ast.GeneratorExp
 
@@ -1708,17 +1728,17 @@ class Translator (object) :
         if len(st) == 1 :
             return test
         elif len(st) == 3 :
-            if not isinstance(test, ast.Name) :
+            if not isinstance(test, self.ST.Name) :
                 raise ParseError(st[0].text, reason="keyword can't be an"
                                  " expression")
-            return ast.keyword(lineno=st.srow, col_offset=st.scol,
-                               arg=test.id,
-                               value=self.do(st[2], ctx))
+            return self.ST.keyword(lineno=st.srow, col_offset=st.scol,
+                                   arg=test.id,
+                                   value=self.do(st[2], ctx))
         else :
             comp, ifs = self.do(st[1], ctx)
-            return ast.GeneratorExp(lineno=st.srow, col_offset=st.scol,
-                                    elt=test, generators=comp)
-    def do_comp_iter (self, st, ctx=ast.Load) :
+            return self.ST.GeneratorExp(lineno=st.srow, col_offset=st.scol,
+                                        elt=test, generators=comp)
+    def do_comp_iter (self, st, ctx) :
         """comp_iter: comp_for | comp_if
         -> comprehension*, ast.AST*
 
@@ -1726,7 +1746,7 @@ class Translator (object) :
         "Module(body=[Expr(value=ListComp(elt=Name(id='a', ctx=Load()), generators=[comprehension(target=Name(id='b', ctx=Store()), iter=Name(id='c', ctx=Load()), ifs=[Name(id='d', ctx=Load()), Name(id='e', ctx=Load())]), comprehension(target=Name(id='f', ctx=Store()), iter=Name(id='g', ctx=Load()), ifs=[Name(id='h', ctx=Load())])]))])"
         """
         return self.do(st[0], ctx)
-    def do_comp_for (self, st, ctx=ast.Load) :
+    def do_comp_for (self, st, ctx) :
         """comp_for: 'for' exprlist 'in' or_test [comp_iter]
         -> comprehension+, []
 
@@ -1734,17 +1754,19 @@ class Translator (object) :
         "Module(body=[Expr(value=ListComp(elt=Name(id='a', ctx=Load()), generators=[comprehension(target=Name(id='b', ctx=Store()), iter=Name(id='c', ctx=Load()), ifs=[Name(id='d', ctx=Load()), Name(id='e', ctx=Load())]), comprehension(target=Name(id='f', ctx=Store()), iter=Name(id='g', ctx=Load()), ifs=[Name(id='h', ctx=Load())])]))])"
         """
         if len(st) == 4 :
-            return [ast.comprehension(lineno=st.srow, col_offset=st.scol,
-                                      target=self.do(st[1], ast.Store),
-                                      iter=self.do(st[3], ctx),
-                                      ifs=[])], []
+            return [self.ST.comprehension(lineno=st.srow,
+                                          col_offset=st.scol,
+                                          target=self.do(st[1], ast.Store),
+                                          iter=self.do(st[3], ctx),
+                                          ifs=[])], []
         else :
             comp, ifs = self.do(st[4], ctx)
-            return [ast.comprehension(lineno=st.srow, col_offset=st.scol,
-                                      target=self.do(st[1], ast.Store),
-                                      iter=self.do(st[3], ctx),
-                                      ifs=ifs)] + comp, []
-    def do_comp_if (self, st, ctx=ast.Load) :
+            return [self.ST.comprehension(lineno=st.srow,
+                                          col_offset=st.scol,
+                                          target=self.do(st[1], ast.Store),
+                                          iter=self.do(st[3], ctx),
+                                          ifs=ifs)] + comp, []
+    def do_comp_if (self, st, ctx) :
         """comp_if: 'if' test_nocond [comp_iter]
         -> comprehension*, ast.AST+
 
@@ -1756,7 +1778,7 @@ class Translator (object) :
         else :
             comp, ifs = self.do(st[2], ctx)
             return comp, [self.do(st[1], ctx)] + ifs
-    def do_yield_expr (self, st, ctx=ast.Load) :
+    def do_yield_expr (self, st, ctx) :
         """yield_expr: 'yield' [testlist]
         -> ast.Yield
 
@@ -1768,11 +1790,11 @@ class Translator (object) :
         'Module(body=[Expr(value=Yield(value=Tuple(elts=[Num(n=42), Num(n=43)], ctx=Load())))])'
         """
         if len(st) == 2 :
-            return ast.Yield(lineno=st.srow, col_offset=st.scol,
-                             value=self.do(st[1], ctx))
+            return self.ST.Yield(lineno=st.srow, col_offset=st.scol,
+                                 value=self.do(st[1], ctx))
         else :
-            return ast.Yield(lineno=st.srow, col_offset=st.scol,
-                             value=None)
+            return self.ST.Yield(lineno=st.srow, col_offset=st.scol,
+                                 value=None)
     @classmethod
     def parse (cls, expr, mode="exec", filename="<string>") :
         tree = cls(cls.parser.parseString(expr.strip() + "\n",
@@ -1780,11 +1802,11 @@ class Translator (object) :
         if mode == "exec" :
             return tree
         elif mode == "eval" :
-            if len(tree.body) > 1 or not isinstance(tree.body[0], ast.Expr) :
+            if len(tree.body) > 1 or not isinstance(tree.body[0], self.ST.Expr) :
                 raise ParseError(None, reason="invalid syntax")
-            return ast.Expression(body=tree.body[0].value)
+            return self.ST.Expression(body=tree.body[0].value)
         elif mode == "single" :
-            return ast.Interactive(body=tree.body)
+            return self.ST.Interactive(body=tree.body)
         else :
             raise ValueError("arg 2 must be 'exec', 'eval' or 'single'")
 
