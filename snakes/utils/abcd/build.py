@@ -3,6 +3,7 @@ from snakes.utils.abcd import CompilationError, DeclarationError
 from snakes.lang.abcd.parser import ast
 from snakes.lang import unparse
 import snakes.utils.abcd.transform as transform
+from snakes.data import MultiSet
 from snakes import *
 
 class Decl (object) :
@@ -79,6 +80,7 @@ class Builder (object) :
             self.globals = up.globals
         else :
             self.globals = snk.Evaluator()
+        self.instances = MultiSet()
     # utilities
     def _raise (self, error, message) :
         """raise an exception with appropriate location
@@ -399,9 +401,13 @@ class Builder (object) :
         binder = transform.ArgsBinder(args, buffers, nets, tasks)
         spec = binder.visit(decl.node.body)
         if node.asname :
-            path = self.path + [str(node.asname)]
+            name = str(node.asname)
         else :
-            path = self.path + [node.st.source()]
+            name = node.st.source()
+        if name in self.instances :
+            name = "%s#%s" % (name, self.instances(name))
+        self.instances.add(name)
+        path = self.path + [name]
         builder = self.__class__(self.snk, path, self)
         return builder.build(spec)
     # control flow operations
