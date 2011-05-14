@@ -74,7 +74,9 @@ class Builder (object) :
         self.env = {"True": Decl(None, kind=Decl.CONST, value=True),
                     "False": Decl(None, kind=Decl.CONST, value=False),
                     "None": Decl(None, kind=Decl.CONST, value=None),
-                    "dot": Decl(self.snk.dot, kind=Decl.CONST, value=None)}
+                    "dot": Decl(None, kind=Decl.CONST, value=self.snk.dot),
+                    "BlackToken": Decl(None, kind=Decl.TYPE,
+                                       type=self.snk.Instance(self.snk.BlackToken))}
         self.stack = []
         if up :
             self.globals = up.globals
