@@ -41,7 +41,7 @@ class Evaluator (object) :
         """
         self._env = other._env
         other.attached.add(self)
-        for e in self.attached :
+        for e in list(self.attached) :
             e.attach(self)
     def detach (self, other) :
         """Make this instance namespace independent
