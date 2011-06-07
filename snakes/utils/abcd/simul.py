@@ -96,7 +96,7 @@ class Simulator (object) :
         self._modes = tk.Listbox(self._modes_frame,
                                  xscrollcommand=self._modes_x.set,
                                  yscrollcommand=self._modes_y.set,
-                                 width=30,
+                                 width=50,
                                  font="monospace",
                                  activestyle="none",
                                  selectbackground="green",
@@ -135,6 +135,7 @@ class Simulator (object) :
         self._trace_y.grid(row=0, column=1, sticky=tk.N+tk.S)
         self._trace = tk.Listbox(self._trace_frame,
                                  font="monospace",
+                                 width=50,
                                  activestyle="none",
                                  selectbackground="blue",
                                  xscrollcommand=self._trace_x.set,
@@ -153,6 +154,7 @@ class Simulator (object) :
         # source
         self._source = ScrolledText.ScrolledText(self._pan_right,
                                                  font="monospace",
+                                                 width=70,
                                                  height=min([self.srclength,
                                                              25]))
         self._pan_right.add(self._source)
@@ -176,6 +178,7 @@ class Simulator (object) :
         # states
         self._state = ScrolledText.ScrolledText(self._pan_right,
                                                 font="monospace",
+                                                width=70,
                                                 state=tk.DISABLED,
                                                 height=10)
         self._pan_right.add(self._state)
