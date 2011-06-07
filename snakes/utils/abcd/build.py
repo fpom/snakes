@@ -81,7 +81,8 @@ class Builder (object) :
         if up :
             self.globals = up.globals
         else :
-            self.globals = snk.Evaluator()
+            self.globals = snk.Evaluator(dot=self.snk.dot,
+                                         BlackToken=self.snk.BlackToken)
         self.instances = MultiSet()
     # utilities
     def _raise (self, error, message) :
@@ -219,7 +220,8 @@ class Builder (object) :
             net.globals.update(self.globals)
             # add info about source file
             net.label(srcfile=str(node.st.text.filename))
-            net.rename(str(node.st.text.filename))
+            # add assertions
+            net.label(asserts=node.asserts)
         return net
     def _build_TaskNet (self, node) :
         self._raise(NotImplementedError, "tasks not (yet) supported")

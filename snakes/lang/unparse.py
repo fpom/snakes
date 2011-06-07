@@ -378,12 +378,12 @@ class Unparser:
         for o, e in zip(t.ops, t.comparators):
             self.write(" " + self.cmpops[o.__class__.__name__] + " ")
             self.dispatch(e)
-            self.write(")")
+        self.write(")")
 
-    boolops = {_ast.And: 'and', _ast.Or: 'or'}
+    boolops = {"And": 'and', "Or": 'or'}
     def _BoolOp(self, t):
         self.write("(")
-        s = " %s " % self.boolops[t.op.__class__]
+        s = " %s " % self.boolops[t.op.__class__.__name__]
         interleave(lambda: self.write(s), self.dispatch, t.values)
         self.write(")")
 

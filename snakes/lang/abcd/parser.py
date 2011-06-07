@@ -43,21 +43,37 @@ class Translator (PyTranslator) :
 
         <<< symbol FOO, BAR
         ... [egg+(spam) if spam == ham] ; [spam-(FOO, BAR)]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))), asserts=[])"
         """
         return self.do(st[0])
     def do_abcd_main (self, st, ctx) :
-        """abcd_main: (NEWLINE | abcd_global)* abcd_expr
+        """abcd_main: (NEWLINE | abcd_global)* abcd_expr (abcd_prop)*
         -> ast.AbcdSpec
 
         <<< symbol FOO, BAR
         ... [egg+(spam) if spam == ham] ; [spam-(FOO, BAR)]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdFlowOp(left=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='spam', ctx=Load()))], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Eq()], comparators=[Name(id='ham', ctx=Load())])), op=Sequence(), right=AbcdAction(accesses=[SimpleAccess(buffer='spam', arc=Consume(), tokens=Tuple(elts=[Name(id='FOO', ctx=Load()), Name(id='BAR', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load()))), asserts=[])"
         """
+        expr = len(st)-1
+        for i, child in enumerate(st) :
+            if child.symbol == "abcd_expr" :
+                expr = i
+                break
         return self.ST.AbcdSpec(lineno=st.srow, col_offset=st.scol,
-                                context=[self.do(child) for child in st[:-1]
+                                context=[self.do(child) for child in st[:expr]
                                          if child.kind != self.NEWLINE],
-                                body=self.do(st[-1]))
+                                body=self.do(st[expr]),
+                                asserts=[self.do(child) for child in st[expr+1:]])
+    def do_abcd_prop (self, st, ctx) :
+        """abcd_prop: 'assert' test (NEWLINE)*
+        -> ast.test
+
+        <<< [True]
+        ... assert True
+        ... assert False
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[Name(id='True', ctx=Load()), Name(id='False', ctx=Load())])"
+        """
+        return self.do(st[1])
     def do_abcd_global (self, st, ctx) :
         """abcd_global: (import_stmt | abcd_symbol | abcd_typedef
                | abcd_const | abcd_decl)
@@ -70,7 +86,7 @@ class Translator (PyTranslator) :
         ... net Foo() : [True]
         ... buffer bar : t = ()
         ... [True]
-        "AbcdSpec(context=[Import(names=[alias(name='module', asname=None)]), ImportFrom(module='module', names=[alias(name='content', asname=None)], level=0), AbcdSymbol(symbols=['EGG', 'SPAM', 'HAM']), AbcdTypedef(name='t', type=EnumType(items=[Name(id='EGG', ctx=Load()), Name(id='SPAM', ctx=Load()), Name(id='HAM', ctx=Load())])), AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))), AbcdBuffer(name='bar', type=NamedType(name='t'), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[Import(names=[alias(name='module', asname=None)]), ImportFrom(module='module', names=[alias(name='content', asname=None)], level=0), AbcdSymbol(symbols=['EGG', 'SPAM', 'HAM']), AbcdTypedef(name='t', type=EnumType(items=[Name(id='EGG', ctx=Load()), Name(id='SPAM', ctx=Load()), Name(id='HAM', ctx=Load())])), AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])), AbcdBuffer(name='bar', type=NamedType(name='t'), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         return self.do(st[0])
     def do_abcd_spec (self, st, ctx) :
@@ -82,7 +98,7 @@ class Translator (PyTranslator) :
         ...     net Bar () : [False]
         ...     [True]
         ... Foo()
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False)))], body=AbcdAction(accesses=[], guard=True)))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False), asserts=[]))], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None), asserts=[])"
         """
         tree = self.do_abcd_main(st, ctx)
         tree.st = st
@@ -96,7 +112,7 @@ class Translator (PyTranslator) :
         ...     net Bar () : [False]
         ...     [True]
         ... Foo()
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False)))], body=AbcdAction(accesses=[], guard=True)))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[AbcdBuffer(name='bar', type=NamedType(name='spam'), capacity=None, content=Tuple(elts=[], ctx=Load())), AbcdNet(name='Bar', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False), asserts=[]))], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdInstance(net='Foo', asname=None, args=[], keywords=[], starargs=None, kwargs=None), asserts=[])"
         """
         tree = self.do_abcd_global(st, ctx)
         tree.st = st
@@ -107,10 +123,10 @@ class Translator (PyTranslator) :
 
         <<< const FOO = 5
         ... [True]
-        "AbcdSpec(context=[AbcdConst(name='FOO', value=Num(n=5))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdConst(name='FOO', value=Num(n=5))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< const FOO = 1, 2, 3
         ... [True]
-        "AbcdSpec(context=[AbcdConst(name='FOO', value=Tuple(elts=[Num(n=1), Num(n=2), Num(n=3)], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdConst(name='FOO', value=Tuple(elts=[Num(n=1), Num(n=2), Num(n=3)], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         return self.ST.AbcdConst(lineno=st.srow, col_offset=st.scol,
                                  name=st[1].text, value=self.do(st[3], ctx))
@@ -120,10 +136,10 @@ class Translator (PyTranslator) :
 
         <<< symbol FOO
         ... [True]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO'])], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO'])], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< symbol FOO, BAR
         ... [True]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         return self.ST.AbcdSymbol(lineno=st.srow, col_offset=st.scol,
                                   symbols=self.do(st[1]))
@@ -133,10 +149,10 @@ class Translator (PyTranslator) :
 
         <<< symbol FOO
         ... [True]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO'])], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO'])], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< symbol FOO, BAR
         ... [True]
-        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdSymbol(symbols=['FOO', 'BAR'])], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         return [child.text for child in st[::2]]
     def _do_flowop (self, st, op) :
@@ -153,11 +169,11 @@ class Translator (PyTranslator) :
         -> ast.process
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< [True] | [False]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Parallel(), right=AbcdAction(accesses=[], guard=False)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Parallel(), right=AbcdAction(accesses=[], guard=False)), asserts=[])'
         <<< [True] | [False] | [True]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Parallel(), right=AbcdAction(accesses=[], guard=False)), op=Parallel(), right=AbcdAction(accesses=[], guard=True)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Parallel(), right=AbcdAction(accesses=[], guard=False)), op=Parallel(), right=AbcdAction(accesses=[], guard=True)), asserts=[])'
 
         """
         return self._do_flowop(st, self.ST.Parallel)
@@ -166,11 +182,11 @@ class Translator (PyTranslator) :
         -> ast.process
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< [True] + [False]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)), asserts=[])'
         <<< [True] + [False] + [True]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)), op=Choice(), right=AbcdAction(accesses=[], guard=True)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)), op=Choice(), right=AbcdAction(accesses=[], guard=True)), asserts=[])'
         """
         return self._do_flowop(st, self.ST.Choice)
     def do_abcd_iter_expr (self, st, ctx) :
@@ -178,11 +194,11 @@ class Translator (PyTranslator) :
         -> ast.process
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< [True] * [False]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Loop(), right=AbcdAction(accesses=[], guard=False)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Loop(), right=AbcdAction(accesses=[], guard=False)), asserts=[])'
         <<< [True] * [False] * [True]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Loop(), right=AbcdAction(accesses=[], guard=False)), op=Loop(), right=AbcdAction(accesses=[], guard=True)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Loop(), right=AbcdAction(accesses=[], guard=False)), op=Loop(), right=AbcdAction(accesses=[], guard=True)), asserts=[])'
         """
         return self._do_flowop(st, self.ST.Loop)
     def do_abcd_seq_expr (self, st, ctx) :
@@ -190,11 +206,11 @@ class Translator (PyTranslator) :
         -> ast.process
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< [True] ; [False]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Sequence(), right=AbcdAction(accesses=[], guard=False)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Sequence(), right=AbcdAction(accesses=[], guard=False)), asserts=[])'
         <<< [True] ; [False] ; [True]
-        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Sequence(), right=AbcdAction(accesses=[], guard=False)), op=Sequence(), right=AbcdAction(accesses=[], guard=True)))'
+        'AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Sequence(), right=AbcdAction(accesses=[], guard=False)), op=Sequence(), right=AbcdAction(accesses=[], guard=True)), asserts=[])'
         """
         return self._do_flowop(st, self.ST.Sequence)
     def do_abcd_base_expr (self, st, ctx) :
@@ -202,9 +218,9 @@ class Translator (PyTranslator) :
         -> ast.process
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< ([True])
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         """
         if st[0].text == "(" :
             return self.do(st[1])
@@ -217,11 +233,11 @@ class Translator (PyTranslator) :
         -> ast.AbcdAction | ast.AbcdInstance
 
         <<< [True]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[])'
         <<< [False]
-        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False))'
+        'AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=False), asserts=[])'
         <<< Foo(1, 2)
-        "AbcdSpec(context=[], body=AbcdInstance(net='Foo', asname=None, args=[Num(n=1), Num(n=2)], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='Foo', asname=None, args=[Num(n=1), Num(n=2)], keywords=[], starargs=None, kwargs=None), asserts=[])"
         """
         if len(st) == 1 :
             return self.do(st[0])
@@ -247,9 +263,9 @@ class Translator (PyTranslator) :
         -> ast.access+
 
         <<< [foo-(1)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Consume(), tokens=Num(n=1))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Consume(), tokens=Num(n=1))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo-(1), bar+(2)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Consume(), tokens=Num(n=1)), SimpleAccess(buffer='bar', arc=Produce(), tokens=Num(n=2))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Consume(), tokens=Num(n=1)), SimpleAccess(buffer='bar', arc=Produce(), tokens=Num(n=2))], guard=Name(id='True', ctx=Load())), asserts=[])"
         """
         return [self.do(child) for child in st[::2]]
     _arc = {"+" : ast.Produce,
@@ -267,25 +283,25 @@ class Translator (PyTranslator) :
         -> ast.access
 
         <<< [egg+(x), spam-(y), ham?(z), foo<<(bar)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='x', ctx=Load())), SimpleAccess(buffer='spam', arc=Consume(), tokens=Name(id='y', ctx=Load())), SimpleAccess(buffer='ham', arc=Test(), tokens=Name(id='z', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='bar', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='egg', arc=Produce(), tokens=Name(id='x', ctx=Load())), SimpleAccess(buffer='spam', arc=Consume(), tokens=Name(id='y', ctx=Load())), SimpleAccess(buffer='ham', arc=Test(), tokens=Name(id='z', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='bar', ctx=Load()))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo<<(spam(egg) for egg in ham)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Fill(), tokens=ListComp(elt=Call(func=Name(id='spam', ctx=Load()), args=[Name(id='egg', ctx=Load())], keywords=[], starargs=None, kwargs=None), generators=[comprehension(target=Name(id='egg', ctx=Store()), iter=Name(id='ham', ctx=Load()), ifs=[])]))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='foo', arc=Fill(), tokens=ListComp(elt=Call(func=Name(id='spam', ctx=Load()), args=[Name(id='egg', ctx=Load())], keywords=[], starargs=None, kwargs=None), generators=[comprehension(target=Name(id='egg', ctx=Store()), iter=Name(id='ham', ctx=Load()), ifs=[])]))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [bar-(l), foo<<(l)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='bar', arc=Consume(), tokens=Name(id='l', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='l', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='bar', arc=Consume(), tokens=Name(id='l', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Name(id='l', ctx=Load()))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [bar-(l), foo<<(l,)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='bar', arc=Consume(), tokens=Name(id='l', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Tuple(elts=[Name(id='l', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SimpleAccess(buffer='bar', arc=Consume(), tokens=Name(id='l', ctx=Load())), SimpleAccess(buffer='foo', arc=Fill(), tokens=Tuple(elts=[Name(id='l', ctx=Load())], ctx=Load()))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [spam>>(ham) if spam is egg]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[FlushAccess(buffer='spam', target='ham')], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Is()], comparators=[Name(id='egg', ctx=Load())])))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[FlushAccess(buffer='spam', target='ham')], guard=Compare(left=Name(id='spam', ctx=Load()), ops=[Is()], comparators=[Name(id='egg', ctx=Load())])), asserts=[])"
         <<< [count<>(n = n+1)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[SwapAccess(buffer='count', target=Name(id='n', ctx=Load()), tokens=BinOp(left=Name(id='n', ctx=Load()), op=Add(), right=Num(n=1)))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[SwapAccess(buffer='count', target=Name(id='n', ctx=Load()), tokens=BinOp(left=Name(id='n', ctx=Load()), op=Add(), right=Num(n=1)))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo.spawn(child, 1, 2, 3)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[Spawn(net='foo', pid=Name(id='child', ctx=Load()), args=[Num(n=1), Num(n=2), Num(n=3)])], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[Spawn(net='foo', pid=Name(id='child', ctx=Load()), args=[Num(n=1), Num(n=2), Num(n=3)])], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo.wait(child, y, z)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[Wait(net='foo', pid=Name(id='child', ctx=Load()), args=[Name(id='y', ctx=Load()), Name(id='z', ctx=Load())])], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[Wait(net='foo', pid=Name(id='child', ctx=Load()), args=[Name(id='y', ctx=Load()), Name(id='z', ctx=Load())])], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo.suspend(pid)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[Suspend(net='foo', pid=Name(id='pid', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[Suspend(net='foo', pid=Name(id='pid', ctx=Load()))], guard=Name(id='True', ctx=Load())), asserts=[])"
         <<< [foo.resume(pid)]
-        "AbcdSpec(context=[], body=AbcdAction(accesses=[Resume(net='foo', pid=Name(id='pid', ctx=Load()))], guard=Name(id='True', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdAction(accesses=[Resume(net='foo', pid=Name(id='pid', ctx=Load()))], guard=Name(id='True', ctx=Load())), asserts=[])"
         """
         if st[1].text in ("+", "?", "-") :
             return self.ST.SimpleAccess(lineno=st.srow, col_offset=st.scol,
@@ -348,19 +364,19 @@ class Translator (PyTranslator) :
         -> ast.AbcdInstance
 
         <<< sub()
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[], keywords=[], starargs=None, kwargs=None), asserts=[])"
         <<< sub(1, 2, 3)
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1), Num(n=2), Num(n=3)], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1), Num(n=2), Num(n=3)], keywords=[], starargs=None, kwargs=None), asserts=[])"
         <<< sub(1, *l)
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1)], keywords=[], starargs=Name(id='l', ctx=Load()), kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1)], keywords=[], starargs=Name(id='l', ctx=Load()), kwargs=None), asserts=[])"
         <<< sub(1, **d)
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1)], keywords=[], starargs=None, kwargs=Name(id='d', ctx=Load())))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[Num(n=1)], keywords=[], starargs=None, kwargs=Name(id='d', ctx=Load())), asserts=[])"
         <<< sub(a=1, b=2)
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[], keywords=[keyword(arg='a', value=Num(n=1)), keyword(arg='b', value=Num(n=2))], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname=None, args=[], keywords=[keyword(arg='a', value=Num(n=1)), keyword(arg='b', value=Num(n=2))], starargs=None, kwargs=None), asserts=[])"
         <<< foo::sub()
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname='foo', args=[], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname='foo', args=[], keywords=[], starargs=None, kwargs=None), asserts=[])"
         <<< foo::sub(1, 2)
-        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname='foo', args=[Num(n=1), Num(n=2)], keywords=[], starargs=None, kwargs=None))"
+        "AbcdSpec(context=[], body=AbcdInstance(net='sub', asname='foo', args=[Num(n=1), Num(n=2)], keywords=[], starargs=None, kwargs=None), asserts=[])"
         """
         if len(st) in (3, 6) :
             args, keywords, starargs, kwargs = [], [], None, None
@@ -382,10 +398,10 @@ class Translator (PyTranslator) :
 
         <<< net Foo () : [True]
         ... [False]
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)))], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         <<< net Foo (x, y) : [True]
         ... [False]
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)))], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None)], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         """
         params = self.do(st[2])
         return self.ST.AbcdNet(lineno=st.srow, col_offset=st.scol,
@@ -398,7 +414,7 @@ class Translator (PyTranslator) :
 
         <<< task Foo (int) -> () : [True]
         ... [False]
-        "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)), input=[NamedType(name='int')], output=[])], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]), input=[NamedType(name='int')], output=[])], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         """
         return self.ST.AbcdTask(lineno=st.srow, col_offset=st.scol,
                                 name=st[1].text,
@@ -411,7 +427,7 @@ class Translator (PyTranslator) :
 
         <<< task Foo () -> (int, int, int|bool) : [True]
         ... [False]
-        "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)), input=[], output=[NamedType(name='int'), NamedType(name='int'), UnionType(types=[NamedType(name='int'), NamedType(name='bool')])])], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdTask(name='Foo', body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]), input=[], output=[NamedType(name='int'), NamedType(name='int'), UnionType(types=[NamedType(name='int'), NamedType(name='bool')])])], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         """
         return [self.do(child) for child in st[1:-1:2]]
     def do_abcd_suite (self, st, ctx) :
@@ -421,11 +437,11 @@ class Translator (PyTranslator) :
         <<< net Foo () :
         ...    [True]
         ... [False]
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)))], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         <<< net Foo () : ([True]
         ...     + [False])
         ... [False]
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False))))], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdFlowOp(left=AbcdAction(accesses=[], guard=True), op=Choice(), right=AbcdAction(accesses=[], guard=False)), asserts=[]))], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         """
         if len(st) == 1 :
             return self.ST.AbcdSpec(lineno=st.srow, col_offset=st.scol,
@@ -439,25 +455,25 @@ class Translator (PyTranslator) :
 
         <<< buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< buffer foo : int = 1, 2
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=None, content=Tuple(elts=[Num(n=1), Num(n=2)], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=None, content=Tuple(elts=[Num(n=1), Num(n=2)], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< buffer foo : int|bool = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=UnionType(types=[NamedType(name='int'), NamedType(name='bool')]), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=UnionType(types=[NamedType(name='int'), NamedType(name='bool')]), capacity=None, content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< @capacity(max=5)
         ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[None, Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[None, Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< @capacity(min=2)
         ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), None], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), None], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< @capacity(min=2, max=5)
         ... buffer foo : int = ()
         ... [True]
-        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdBuffer(name='foo', type=NamedType(name='int'), capacity=[Num(n=2), Num(n=5)], content=Tuple(elts=[], ctx=Load()))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         if len(st) == 6 : # no decorator, no array
             return self.ST.AbcdBuffer(lineno=st.srow, col_offset=st.scol,
@@ -504,7 +520,7 @@ class Translator (PyTranslator) :
 
         <<< typedef foo : int
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         return self.ST.AbcdTypedef(lineno=st.srow, col_offset=st.scol,
                                    name=st[1].text,
@@ -515,10 +531,10 @@ class Translator (PyTranslator) :
 
         <<< typedef foo : int
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : int | bool
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=UnionType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=UnionType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         if len(st) == 1 :
             return self.do(st[0])
@@ -531,10 +547,10 @@ class Translator (PyTranslator) :
 
         <<< typedef foo : int
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : int & bool
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=IntersectionType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=IntersectionType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         if len(st) == 1 :
             return self.do(st[0])
@@ -547,10 +563,10 @@ class Translator (PyTranslator) :
 
         <<< typedef foo : int
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : int * bool
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=CrossType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=CrossType(types=[NamedType(name='int'), NamedType(name='bool')]))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         if len(st) == 1 :
             return self.do(st[0])
@@ -564,19 +580,19 @@ class Translator (PyTranslator) :
 
         <<< typedef foo : list(int)
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=ListType(items=NamedType(name='int')))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=ListType(items=NamedType(name='int')))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : set(int)
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=SetType(items=NamedType(name='int')))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=SetType(items=NamedType(name='int')))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : dict(int, bool)
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=DictType(keys=NamedType(name='int'), values=NamedType(name='bool')))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=DictType(keys=NamedType(name='int'), values=NamedType(name='bool')))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : enum(1, 2, 3)
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=EnumType(items=[Num(n=1), Num(n=2), Num(n=3)]))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=EnumType(items=[Num(n=1), Num(n=2), Num(n=3)]))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         <<< typedef foo : int
         ... [True]
-        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True))"
+        "AbcdSpec(context=[AbcdTypedef(name='foo', type=NamedType(name='int'))], body=AbcdAction(accesses=[], guard=True), asserts=[])"
         """
         if len(st) == 1 :
             return self.ST.NamedType(lineno=st.srow, col_offset=st.scol,
@@ -614,7 +630,7 @@ class Translator (PyTranslator) :
 
         <<< net Foo (x, y, n:net, b:buffer, t:task) : [True]
         ... [False]
-        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None), arg(arg='n', annotation=Name(id='net', ctx=Load())), arg(arg='b', annotation=Name(id='buffer', ctx=Load())), arg(arg='t', annotation=Name(id='task', ctx=Load()))], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True)))], body=AbcdAction(accesses=[], guard=False))"
+        "AbcdSpec(context=[AbcdNet(name='Foo', args=arguments(args=[arg(arg='x', annotation=None), arg(arg='y', annotation=None), arg(arg='n', annotation=Name(id='net', ctx=Load())), arg(arg='b', annotation=Name(id='buffer', ctx=Load())), arg(arg='t', annotation=Name(id='task', ctx=Load()))], vararg=None, varargannotation=None, kwonlyargs=[], kwarg=None, kwargannotation=None, defaults=[], kw_defaults=[]), body=AbcdSpec(context=[], body=AbcdAction(accesses=[], guard=True), asserts=[]))], body=AbcdAction(accesses=[], guard=False), asserts=[])"
         """
         if len(st) == 1 :
             return st[0].text, None

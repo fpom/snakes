@@ -6,7 +6,7 @@ $ELLIPSIS '...'
 
 file_input: abcd_main ENDMARKER
 
-abcd_main: (NEWLINE | abcd_global)* abcd_expr [abcd_prop]
+abcd_main: (NEWLINE | abcd_global)* abcd_expr abcd_prop*
 abcd_global: import_stmt | abcd_symbol | abcd_typedef | abcd_const | abcd_decl
 abcd_spec: (NEWLINE | abcd_decl)* abcd_expr
 abcd_decl: abcd_net | abcd_task | abcd_buffer
@@ -49,9 +49,7 @@ abcd_instance: [NAME ':' ':'] NAME '(' [arglist] ')'
 
 tfpdef: NAME [':' ('net' | 'buffer' | 'task')]
 
-#TODO: use CTL* formulas instead of a simple test
-#      => 'assert' ctl_prop ',' test
-abcd_prop: assert_stmt
+abcd_prop: 'assert' test (NEWLINE)*
 
 #
 # the rest is from SNAKES/Python grammar
