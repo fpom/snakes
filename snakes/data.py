@@ -333,7 +333,7 @@ class MultiSet (hdict) :
         @return: simple string representation of the multiset
         @rtype: C{str}
         """
-        return "{%s}" % ", ".join(str(x) for x in self)
+        return "{%s}" % ", ".join(repr(x) for x in self)
     def __repr__ (self) :
         """Return a string representation of the multiset that is
         suitable for C{eval}
