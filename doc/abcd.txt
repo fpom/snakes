@@ -10,7 +10,7 @@ source:
 
  - snakes/lang/abcd/abcd.pgen is the concrete grammar and
 
- - snakes/lang/abcd/abcd/asdl is the abstract syntax
+ - snakes/lang/abcd/abcd.asdl is the abstract syntax
 
 
 Introduction

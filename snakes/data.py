@@ -734,7 +734,7 @@ class Substitution (object) :
         @return: a simple string representation
         @rtype: C{str}
         """
-        return "{%s}" % ", ".join(["%s -> %s" % (str(var), str(val))
+        return "{%s}" % ", ".join(["%s -> %r" % (str(var), str(val))
                                    for var, val in self.items()])
     def __repr__ (self) :
         """Return a string representation suitable for C{eval}.

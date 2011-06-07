@@ -83,7 +83,8 @@ class Translator (object) :
             return self.do(st[0], ctx)
         else :
             return self.ST.UnaryOp(lineno=st.srow, col_offset=st.scol,
-                                   op=self._unary[st[0].text](),
+                                   op=self._unary[st[0].text](lineno=st[0].srow,
+                                                              col_offset=st[0].scol),
                                    operand=self.do(st[1], ctx))
     # binary operations
     _binary = {"+" : ast.Add,
@@ -105,15 +106,15 @@ class Translator (object) :
             return self.do(st[0], ctx)
         else :
             values=[self.do(child, ctx) for child in st[::2]]
-            ops = [self._binary[child.text] for child in st[1::2]]
+            ops = [(self._binary[child.text], child) for child in st[1::2]]
             while len(values) > 1 :
                 left = values.pop(0)
                 right = values.pop(0)
-                operator = ops.pop(0)
+                operator, node = ops.pop(0)
                 values.insert(0, self.ST.BinOp(lineno=st.srow,
                                                col_offset=st.scol,
                                                left=left,
-                                               op=operator(),
+                                               op=operator(node.srow, node.scol),
                                                right=right))
             return values[0]
     # boolean operation
@@ -124,7 +125,8 @@ class Translator (object) :
             return self.do(st[0], ctx)
         else :
             return self.ST.BoolOp(lineno=st.srow, col_offset=st.scol,
-                                  op=self._boolean[st[1].text](),
+                                  op=self._boolean[st[1].text](lineno=st[1].srow,
+                                                               col_offset=st[1].scol),
                                   values=[self.do(child, ctx)
                                           for child in st[::2]])
     # start of rule handlers

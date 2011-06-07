@@ -1,6 +1,6 @@
 module ABCD version "$Revision: 1 $"
 {
-        abcd = AbcdSpec(decl* context, process body)
+        abcd = AbcdSpec(decl* context, process body, expr* asserts)
 
         decl = AbcdTypedef(identifier name, abcdtype type)
 	      | AbcdBuffer(identifier name, abcdtype type,

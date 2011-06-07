@@ -1,9 +1,9 @@
 # this file has been automatically generated running:
 # snakes/lang/asdl.py --output=snakes/lang/abcd/asdl.py snakes/lang/abcd/abcd.asdl
-# timestamp: 2010-06-02 11:21:08.948802
+# timestamp: 2011-05-31 19:45:20.176175
 
 from snakes.lang import ast
-from snkast import *
+from ast import *
 
 class _AST (ast.AST):
     def __init__ (self, **ARGS):
@@ -15,12 +15,13 @@ class abcd (_AST):
     pass
 
 class AbcdSpec (abcd):
-    _fields = ('context', 'body')
+    _fields = ('context', 'body', 'asserts')
     _attributes = ()
-    def __init__ (self, body, context=[], **ARGS):
+    def __init__ (self, body, context=[], asserts=[], **ARGS):
         abcd.__init__(self, **ARGS)
         self.context = list(context)
         self.body = body
+        self.asserts = list(asserts)
 
 class decl (_AST):
     pass
