@@ -219,6 +219,7 @@ class Builder (object) :
             net.globals.update(self.globals)
             # add info about source file
             net.label(srcfile=str(node.st.text.filename))
+            net.rename(str(node.st.text.filename))
         return net
     def _build_TaskNet (self, node) :
         self._raise(NotImplementedError, "tasks not (yet) supported")
