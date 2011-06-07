@@ -236,7 +236,7 @@ def main (args=sys.argv[1:]) :
         target = getattr(options, "gv%s" % engine)
         if target :
             draw(net, engine, target)
-    trace = []
+    trace, lineno = [], None
     if options.check :
         lineno, trace = Checker(net).run()
     if options.simul :
