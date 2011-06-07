@@ -241,7 +241,7 @@ def main (args=sys.argv[1:]) :
         lineno, trace = Checker(net).run()
     if options.simul :
         Simulator(snk, source, net, trace, lineno).run()
-    elif trace is not None :
+    elif trace :
         if lineno is None :
             print("unsafe execution:")
         else :
