@@ -1,0 +1,387 @@
+ABCD specification language
+===========================
+
+This document presents the ABCD language and compiler that is provided
+with SNAKES.
+
+WARNING: this documentation needs update since ABCD syntax has changed
+a bit. A precise (but not user-friendly) syntax can be found in the
+source:
+
+ - snakes/lang/abcd/abcd.pgen is the concrete grammar and
+
+ - snakes/lang/abcd/abcd.asdl is the abstract syntax
+
+
+Introduction
+------------
+
+ABCD (Asynchronous Box Calculus with Data) is a specification language
+whose semantics is given in terms of coloured Petri net. The formal
+semantics will not be defined here, but only an intuition of it. ABCD
+can be seen as both an Python based implementation and a variant of
+several algebras of Petri nets:
+
+ - with respect to the versatile box calculus
+   (http://lacl.univ-paris12.fr/pommereau/publis/2007-dasd.html), ABCD
+   does not provide tasks and abort mechanism, but it allows nested
+   parallelism;
+
+ - with respect to the box calculus with coloured buffers or the box
+   calculus with high-level buffers
+   (http://lacl.univ-paris12.fr/pommereau/publis/2002-bcd.html and
+   http://lacl.univ-paris12.fr/pommereau/publis/2004-dads.html), ABCD
+   does not provide synchronous communication operations.
+
+
+Syntax
+------
+
+The syntax of ABCD is a mix between Python and a process algebra. An
+ABCD specification is structured as follows:
+
+   1. a possibly empty list of definitions, each being either
+      1. a Python ``def`` statement (function definition)
+      2. a Python ``import`` of ``from`` statement
+      3. an ABCD communication buffer definition
+      4. an ABCD sub-net definition (similar to a sub-program)
+   2. an ABCD process (similar to the ``main`` function of a C program)
+
+Like in Python, block and sub-blocks are defined through indentation,
+and comments begin with ``#`` and end with the line. Unlike Python,
+scoping is lexical, with name masking as usual.
+
+
+Python definitions
+^^^^^^^^^^^^^^^^^^
+
+Functions definitions and module imports are exactly as in Python.
+Classes definition is not allowed, to do so, one must create a
+separate Python module and import its content.
+
+The following is an example of valid ABCD definitions:
+
+    from foo import *
+    from bar import spam
+    import math
+
+    def sqrt (x) :
+        return int(math.sqrt(x))
+
+
+Buffers definitions
+^^^^^^^^^^^^^^^^^^^
+
+An ABCD buffer is implemented in the Petri nets semantics as a
+coloured place, so a buffer is:
+
+typed
+   values that can be inserted in the buffer must belong to a given
+   type; using ``object`` allows to put anything in the buffer.
+
+unbounded
+   there is no a priori limit to the number of values that can be
+   inserted in a buffer, not even to the number of copies of a given
+   value within a buffer.
+
+unordered
+   the order in which values are retrieved from a buffer is non
+   deterministic and is absolutely not related to the order of
+   insertion.
+
+In order to contain the combinatorial explosion during the analysis of
+the Petri net resulting from an ABCD specification, it is recommended
+to take these aspects into account. In particular, it could be good
+to:
+
+ - define buffer types as small as possible, allowing just the
+   expected values and no more;
+
+ - implement some policy in order to limit the number of values
+   simultaneously stored in a buffer. Anyway, if the buffer is
+   unbounded, it is likely that the resulting Petri net cannot be
+   analysed;
+
+ - implement a FIFO policy whenever possible, for instance by storing
+   numbered pairs ``(num, obj)`` instead of just ``obj`` and by
+   maintaining a counter for the next value to insert and the next to
+   get.
+
+In order to declare a buffer, one has to write:
+
+    buffer NAME : TYPE = INIT
+
+where ``NAME`` is the name of the buffer (a Python identifier),
+``TYPE`` is its type (a Python type name or a more complex type
+specification, see below), and ``INIT`` is the initial content of the
+buffer: ``()`` if empty, or a comma separated list of values.
+
+For instance, an empty buffer of integers and a buffer of strings with
+two values can be declared as:
+
+    buffer count : int = ()
+    buffer messages : str = 'hello', 'world'
+
+Buffer types can be:
+
+Python classes
+    for instance ``int``, ``str``, ``float``, ``bool``, ``object``,
+    etc., including user defined classes.
+
+Enumerated types
+    for instance ``enum(1, 3, 'foo', True)`` allows all the value listed
+    between the parenthesis but no other value.
+
+Union types
+    for instance, ``int|float`` allows for integer as well as floating
+    point numbers. Intersection types, using operator ``&``, are also
+    allowed even if it hard to find a real usage for them.
+
+Sets of typed values
+    for instance, ``{int|float}`` defines sets of numbers (integers or
+    floating point).
+
+Lists of typed values
+    for instance, ``[str]`` defines lists of strings.
+
+Dictionary types
+    for instance, ``str:int`` specifies ``dict`` objects whose keys
+    are strings and values are integers.
+
+Cross product of types
+    for instance, ``(int, str)`` specifies tuples of length two whose
+    first item is an integer and second item is a string. Tuples of
+    length one *must* use a trailing comma; for instance, ``(int,)``
+    stands for integer singletons, but ``(int)`` is equivalent to just
+    ``int`` as usual in Python.
+
+Parentheses are allowed in order to combine complex types together, as
+in ``(int|float):(str|NoneType)``.
+
+
+Sub-nets definitions
+^^^^^^^^^^^^^^^^^^^^
+
+A sub-net is declared as follows:
+
+    net NAME (PARAMS) :
+        BLOCK
+
+where ``NAME`` is the name of the sub-net (a Python identifier),
+``PARAMS`` is a list of parameters (as in Python with default values
+allowed but not ``*`` or ``**`` arguments) and BLOCK is an indented
+block that follows the syntax of an ABCD specification (with optional
+definitions and a mandatory process term).
+
+Objects (Python functions or imports, and buffers) defined inside a
+sub-net are local to it and cannot be accessed from the outside. But,
+objects defined before the sub-net (unless nested in another sub-net)
+are visible from within the sub-net and can be used.
+
+
+Process terms
+^^^^^^^^^^^^^
+
+An ABCD process is defined as a term on a process algebra whose
+operators are control flow operators:
+
+sequential composition
+    the execution of ``A ; B`` starts with the execution of ``A``,
+    followed by the execution of ``B``
+
+choice composition
+    the execution of ``A + B`` is either the execution of ``A`` or
+    that of ``B``, which is chosen non-deterministically.
+
+loop composition
+
+    the execution of ``A * B`` starts by an arbitrary number of
+    executions of ``A``, followed by exactly one execution of ``B``,
+    the choice to loop or terminate is non-deterministic. So, ``A *
+    B`` is equivalent to ``B + (A ; B) + (A ; A ; B) + ...``.
+
+parallel composition
+    the execution of ``A | B`` is that of both ``A`` and ``B``
+    concurrently.
+
+Base terms of the algebra are either atomic processes or sub-net
+instantiations. An atomic process, also called an action, is described
+by a term enclosed in square brackets ``[...]``. The semantics of an
+action is a Petri net transition. We distinguish:
+
+``[True]``
+    the silent action that can always be executed and performs no
+    buffer access.
+
+``[False]``
+    the deadlock action that can never be executed.
+
+complex actions
+    such an action involve buffer accesses and an optional condition.
+    If ``expr`` denotes a Python expression, ``obj`` a Python constant
+    and ``var`` a Python identifier, buffer accesses may be:
+
+ - ``buffer+(expr)`` evaluated ``expr`` and adds the resulting value
+   to the buffer; this results in the semantics as an arc from the
+   transition to the buffer place, labeled by ``expr``.
+
+ - ``buffer-(obj)`` consumes the value ``obj`` from the buffer; this
+   results in the semantics as an arc from the buffer place to the
+   transition, labeled by ``obj``.
+
+ - ``buffer-(var)`` binds the variable ``var`` to a value present in
+   the buffer and consumes it; this results in the semantics as an arc
+   from the buffer place to the transition, labeled by ``var``.
+
+ - ``buffer?(obj)`` or ``buffer?(var)`` are similar except that they
+   just test the presence of a value but do not consume it; this is
+   semantically a read arc.
+
+ - ``buffer>>(var)`` consumes all the values in the buffer and bind
+   the resulting multiset to the variable ``var``; this is
+   semantically a flush arc.
+
+ - ``buffer<<(expr)`` evaluates the expression ``expr`` (the result
+   must be iterable) and adds all its values to the buffer; this is
+   semantically a fill arc.
+
+For instance:
+
+    [count-(x), count+(x+1), shift?(j), buf+(j+x) if x<10]
+
+This action can be execution if the following hold:
+
+ - buffer ``count`` must hold a value that it is bound to ``x``
+
+ - buffer ``shift`` mush hold a value that is bound to ``j``
+
+ - the type of buffer ``count`` must allow the value resulting from
+   the evaluation of ``x+1``
+
+ - the type of buffer ``buf`` must allow the value resulting from the
+   evaluation of ``j+x``
+
+ - expression ``x<10`` must evaluate to ``True``
+
+If all these condition hold, the action can be executed, which results in:
+
+ - the chosen value for ``x`` is removed from buffer ``count``
+
+ - a new value corresponding to the evaluation of ``x+1` is added to
+   ``count``
+
+ - a new value corresponding to the evaluation of ``j+x`` is added to
+   ``buf``
+
+This execution is atomic: it can be considered that all buffers accesses
+and conditions evaluation are performed simultaneously and
+instantaneously.
+
+If ``count`` or ``shift`` contain more than one value, only those that
+allow to fulfill the conditions listed above are considered. Among
+those valuations, one is chosen non deterministically in order to
+execute the action.
+
+Note that the variables (like ``var``) used in an action do not need
+to be declared and are local to this action. These are variables
+exactly like in mathematics. Moreover, if a variable is used more than
+once in an action, the execution gives it a single consistent value.
+For instance, ``[count-(x), shit?(x) if x != 0]`` is executable only
+if a same non-zero value can be found both in ``count`` and ``shift``.
+
+
+Example
+-------
+
+Let's consider a simple railroad crossing involving:
+
+ - one track where trains can arrive repeatedly;
+
+ - one road crossing the track;
+
+ - a pair of gates that prevent cars to go on the track when a train
+   is approaching;
+
+ - a red light that prevent the train to cross the road before the
+   gates completely close.
+
+When a train is approaching, the light is turned red and the gates are
+asked to go down. When they arrive down, the light is reset to green.
+When the train leaves the gates, they are asked to go up.
+
+This system can be specified in ABCD as follows. We first specify
+global buffers to model the red light and a communication channel
+between trains and the gates:
+
+    # light is initially 'green'
+    buffer light : in('red', 'green') = 'green'
+    # no command is available initially
+    buffer command : in('up', 'down') = ()
+
+Then we specify the behavior of the gates. We provide for it an
+internal buffer allowing to easily observe its current state.
+
+    net gate () :
+        # gates are initially 'open'
+        buffer state : in('open', 'moving', 'closed') = 'open'
+        # a sequence of actions
+        # receive the command 'down' and start moving
+        ([command-('down'), state-('open'), state+('moving')] ;
+        # finish to close and reset the light to 'green'
+         [state-('moving'), state+('closed'), light-('red'), light+('green')] ;
+	# receive the command 'up' and start moving
+         [command-('up'), state-('closed'), state+('moving')] ;
+        # finish to open
+         [state-('moving'), state+('open')])
+        # this sequence is infinitely repeated because the loop exit
+    	# cannot be executed
+        * [False]
+
+Then we specify the track on which trains can repeatedly arrive
+
+    net track () :
+        # we also need to observe trains position
+        buffer crossing : bool = False
+        # here also an sequence is infinitely repeated
+        # a train is approaching so the light is turned red and the
+	# gates are asked to close
+        ([command+('down'), light-('green'), light+('red')] ;
+        # the train must wait for green light before to go further and
+	# cross the road
+         [light?('green'), crossing-(False), crossing+(True)] ;
+        # when the train leaves, gates are asked to open
+         [crossing-(True), crossing+(False), command+('up')])
+        * [False]
+
+The full system is specified by running in parallel one instance of
+the gates and one of the track.
+
+    gate() | track()
+
+The Petri net from this specification can be drawn and saved to PNML
+by invoking:
+
+    abcd --pnml railroad.pnml --dot railroad.png railroad.abcd
+
+This creates both ``railroad.png`` and ``railroad.pnml``, the former
+can be viewed in order to check how is the Petri net semantics, and
+the latter can be used to verify the system. On such a small system,
+SNAKES performs quickly enough for the verification. So we can use it
+to iterate the marking graph and search for an insecure state, ie, in
+which gates are open and train. The following program does the job:
+
+    from snakes.nets import *
+
+    n = loads(",railroad.pnml")
+    g = StateGraph(n)
+    for s in g :
+        m = g.net.get_marking()
+        if ("train().crossing" in m
+            and True in m["train().crossing"]
+            and "closed" not in m["gate().state"]) :
+            print s, m
+    print "checked", len(g), "states"
+
+Here, no insecure marking is found. This would not be the case if we
+would remove the red light since a train could always arrive on the
+road faster than the gate could close.

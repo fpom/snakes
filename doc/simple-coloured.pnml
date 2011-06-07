@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <net id="mynet">
+  <place id="p2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+  </place>
+  <place id="p1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <object type="int">
+        1
+       </object>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+     <item>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+  </place>
+  <transition id="t"/>
+  <arc id="p1:t" source="p1" target="t">
+   <inscription>
+    <variable>
+     x
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="t:p2" source="t" target="p2">
+   <inscription>
+    <expression>
+     x+1
+    </expression>
+   </inscription>
+  </arc>
+ </net>
+</pnml>

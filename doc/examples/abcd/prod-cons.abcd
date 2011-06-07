@@ -1,0 +1,18 @@
+# shared buffer between producers and consumers
+buffer bag : int = ()
+
+net prod () :
+    # produces 10 tokens: 1..9 in bag
+    buffer count : int = 0
+    [count-(x), count+(x+1), bag+(x) if x < 10] * [count-(x) if x == 10]
+
+net odd () :
+    # consumes odd tokens in bag
+    [bag-(x) if (x % 2) == 1] * [False]
+
+net even () :
+    # consumes even tokens un bag
+    [bag-(x) if (x % 2) == 0] * [False]
+
+# main process with one instance of each net
+odd() | even() | prod()
