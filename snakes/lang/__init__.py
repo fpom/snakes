@@ -36,7 +36,7 @@ def getvars (expr) :
     return names.names - set(['None', 'True', 'False'])
 
 class Unparser(_unparse.Unparser) :
-    boolops = {ast.And: 'and', ast.Or: 'or'}
+    boolops = {"And": 'and', "Or": 'or'}
     def _Interactive (self, tree) :
         for stmt in tree.body :
             self.dispatch(stmt)

@@ -114,7 +114,8 @@ class Translator (object) :
                 values.insert(0, self.ST.BinOp(lineno=st.srow,
                                                col_offset=st.scol,
                                                left=left,
-                                               op=operator(node.srow, node.scol),
+                                               op=operator(lineno=node.srow,
+                                                           col_offset=node.scol),
                                                right=right))
             return values[0]
     # boolean operation
