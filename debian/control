@@ -10,7 +10,7 @@ Standards-Version: 3.7.2
 Package: python-snakes
 Architecture: all
 XB-Python-Version: ${python:Versions}
-Depends: python (>=2.5), python-central, graphviz
+Depends: python (>=2.5), python-central, graphviz, python-tk
 Description: SNAKES is the Net Algebra Kit for Editors and Simulators
  SNAKES is a general purpose Petri net Python library allowing to
  define and execute most classes of Petri nets. It features a plugin
