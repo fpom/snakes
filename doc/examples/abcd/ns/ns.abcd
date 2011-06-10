@@ -3,11 +3,11 @@ buffer nw : object = ()
 # implementation of nonces and Dolev-Yao attacker
 from dolev_yao import *
 
-net Alice (this, agents) :
+net Alice (this, who: buffer) :
     # protocol initiater
     buffer peer : int = ()
     buffer peer_nonce : Nonce = ()
-    [agents?(B), peer+(B), nw+("crypt", ("pub", B), this, Nonce(this))]
+    [who?(B), peer+(B), nw+("crypt", ("pub", B), this, Nonce(this))]
     ; [nw-("crypt", ("pub", this), Na, Nb), peer_nonce+(Nb) if Na == Nonce(this)]
     ; [peer?(B), peer_nonce?(Nb), nw+("crypt", ("pub", B), Nb)]
 

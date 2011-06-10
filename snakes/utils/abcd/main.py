@@ -217,6 +217,8 @@ def main (args=sys.argv[1:]) :
     dirname = os.path.dirname(abcd)
     if dirname and dirname not in sys.path :
         sys.path.append(dirname)
+    elif "." not in sys.path :
+        sys.path.append(".")
     try :
         snk = snakes.plugins.load(options.plugins, "snakes.nets", "snk")
     except :
