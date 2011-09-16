@@ -1,5 +1,5 @@
 # get BlackToken
-from snakes.nets import *
+#from snakes.nets import *
 
 buffer fork1 : BlackToken = dot
 buffer fork2 : BlackToken = dot

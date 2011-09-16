@@ -343,6 +343,16 @@ class Unparser:
         interleave(lambda: self.write(", "), writem, zip(t.keys, t.values))
         self.write("}")
 
+    def _Set(self, t) :
+        self.write("set([")
+        if len(t.elts) == 1:
+            (elt,) = t.elts
+            self.dispatch(elt)
+            self.write(",")
+        else:
+            interleave(lambda: self.write(", "), self.dispatch, t.elts)
+        self.write("])")
+
     def _Tuple(self, t):
         self.write("(")
         if len(t.elts) == 1:

@@ -1616,8 +1616,13 @@ class Translator (object) :
         'Module(body=[Expr(value=Dict(keys=[Num(n=1), Num(n=3)], values=[Num(n=2), Num(n=4)]))])'
         <<< {x:y for x, y in l}
         "Module(body=[Expr(value=DictComp(key=Name(id='x', ctx=Load()), value=Name(id='y', ctx=Load()), generators=[comprehension(target=Tuple(elts=[Name(id='x', ctx=Store()), Name(id='y', ctx=Store())], ctx=Store()), iter=Name(id='l', ctx=Load()), ifs=[])]))])"
+        <<< {42}
+        'Module(body=[Expr(value=Set(elts=[Num(n=42)]))])'
         """
-        if st[1].text == ":" :
+        if len(st) == 1 :
+            return self.ST.Set(lineno=st.srow, col_offset=st.scol,
+                               elts=[self.do(st[0], ctx)])
+        elif st[1].text == ":" :
             if st[3].text == "," :
                 return self.ST.Dict(lineno=st.srow, col_offset=st.scol,
                                     keys=[self.do(child, ctx)
