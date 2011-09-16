@@ -1,5 +1,2 @@
-To do:
- ! snakes.plugins.clusters.Cluster._cluster does not have all nodes
- + snakes.plugins.export
- ! apix gets wrong full name for classmethods
- ! respect PNML definition for basic types (str, int, ...)
+* add name to transitions, eg, [buff-(x) as name]
+  make it consistent with instance names?
