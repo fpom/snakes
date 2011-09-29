@@ -599,13 +599,15 @@ class Translator (PyTranslator) :
                                      name=st[0].text)
         elif len(st) == 3 :
             return self.do(st[1])
-        elif st[0].text in ("list", "set") :
+        elif st[0].text in ("list", "set", "tuple") :
             if len(st) > 4 :
                 raise ParseError(st.text,
                                  reason="too many arguments for %s type"
                                  % st[0].text)
             if st[0].text == "list" :
                 tree = self.ST.ListType
+            elif st[0].text == "tuple" :
+                tree = self.ST.TupleType
             else :
                 tree = self.ST.SetType
             return tree(lineno=st.srow, col_offset=st.scol,

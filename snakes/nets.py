@@ -1961,7 +1961,7 @@ class Place (Node) :
         """
         for t in tokens :
             if not self._check(t) :
-                raise ValueError("forbidden token '%s'" % t)
+                raise ValueError("forbidden token '%s'" % (t,))
     def __str__ (self) :
         """
         Return the name of the place.

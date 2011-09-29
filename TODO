@@ -1,2 +1,3 @@
 * add name to transitions, eg, [buff-(x) as name]
   make it consistent with instance names?
+* zero test/inhibitor arc
