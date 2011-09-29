@@ -188,7 +188,11 @@ class Builder (object) :
             status = self.snk.buffer(name)
             for place in net.status(status) :
                 place = net.place(place)
-                place.reset(decl.marking)
+                try :
+                    place.reset(decl.marking)
+                except ValueError as err :
+                    self._raise(CompilationError,
+                                "invalid initial marking (%s)" % err)
                 if decl.capacity is None :
                     cap = None
                 else :
@@ -533,6 +537,9 @@ class Builder (object) :
                                        for child in node.types))
     def build_ListType (self, node) :
         return self.snk.List(self.build(node.items))
+    def build_TupleType (self, node) :
+        return self.snk.Collection(self.snk.Instance(tuple),
+                                   (self.build(node.items)))
     def build_SetType (self, node) :
         return self.snk.Set(self.build(node.items))
     def build_DictType (self, node) :

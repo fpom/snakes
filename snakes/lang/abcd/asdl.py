@@ -1,6 +1,6 @@
 # this file has been automatically generated running:
 # snakes/lang/asdl.py --output=snakes/lang/abcd/asdl.py snakes/lang/abcd/abcd.asdl
-# timestamp: 2011-05-31 19:45:20.176175
+# timestamp: 2011-09-29 11:07:13.505687
 
 from snakes.lang import ast
 from ast import *
@@ -966,6 +966,15 @@ class CrossType (abcdtype):
         self.col_offset = int(col_offset)
 
 class ListType (abcdtype):
+    _fields = ('items',)
+    _attributes = ('lineno', 'col_offset')
+    def __init__ (self, items, lineno=0, col_offset=0, **ARGS):
+        abcdtype.__init__(self, **ARGS)
+        self.items = items
+        self.lineno = int(lineno)
+        self.col_offset = int(col_offset)
+
+class TupleType (abcdtype):
     _fields = ('items',)
     _attributes = ('lineno', 'col_offset')
     def __init__ (self, items, lineno=0, col_offset=0, **ARGS):

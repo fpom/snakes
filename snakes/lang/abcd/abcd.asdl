@@ -39,6 +39,7 @@ module ABCD version "$Revision: 1 $"
                  | IntersectionType(abcdtype* types)
 		 | CrossType(abcdtype* types)
 		 | ListType(abcdtype items)
+		 | TupleType(abcdtype items)
 		 | SetType(abcdtype items)
 		 | DictType(abcdtype keys, abcdtype values)
 		 | EnumType(expr* items)
