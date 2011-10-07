@@ -836,7 +836,8 @@ class Collection (Type) :
         @param max: the greatest allowed value
         @type max: any value in C{items}
         """
-        self._collection = self._class = collection
+        self._collection = collection
+        self._class = collection._class
         self._items = items
         self._max = max
         self._min = min
