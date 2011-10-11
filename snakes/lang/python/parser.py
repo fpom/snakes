@@ -1810,11 +1810,11 @@ class Translator (object) :
         if mode == "exec" :
             return tree
         elif mode == "eval" :
-            if len(tree.body) > 1 or not isinstance(tree.body[0], self.ST.Expr) :
+            if len(tree.body) > 1 or not isinstance(tree.body[0], cls.ST.Expr) :
                 raise ParseError(None, reason="invalid syntax")
-            return self.ST.Expression(body=tree.body[0].value)
+            return cls.ST.Expression(body=tree.body[0].value)
         elif mode == "single" :
-            return self.ST.Interactive(body=tree.body)
+            return cls.ST.Interactive(body=tree.body)
         else :
             raise ValueError("arg 2 must be 'exec', 'eval' or 'single'")
 
