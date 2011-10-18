@@ -387,7 +387,7 @@ class Translator (object) :
         "Module(body=[Delete(targets=[Name(id='x', ctx=Del())]), Pass(), Import(names=[alias(name='spam', asname='egg')])])"
         """
         return [self.do(child, ctx) for child in st[::2]
-                if child != self.NEWLINE]
+                if child.kind != self.NEWLINE]
     def do_small_stmt (self, st, ctx) :
         """small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
                      import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
