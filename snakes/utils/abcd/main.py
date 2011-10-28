@@ -192,7 +192,7 @@ def save_pnml (net, target) :
 ## main
 ##
 
-def main (args=sys.argv[1:]) :
+def main (args=sys.argv[1:], src=None) :
     global snk
     # get options
     try:
@@ -202,10 +202,13 @@ def main (args=sys.argv[1:]) :
     except :
         die(ERR_OPT, str(sys.exc_info()[1]))
     # read source
-    try :
-        source = open(abcd).read()
-    except :
-        die(ERR_IO, "could not read input file %r" % abcd)
+    if src is not None :
+        source = src
+    else :
+        try :
+            source = open(abcd).read()
+        except :
+            die(ERR_IO, "could not read input file %r" % abcd)
     # parse
     try :
         node = parse(source, filename=abcd)
@@ -252,6 +255,7 @@ def main (args=sys.argv[1:]) :
                   % (lineno, asserts[lineno].st.source()))
         for trans, mode in trace :
             print("  %s %s" % (trans, mode))
+    return net
 
 if __name__ == "__main__" :
     main()
