@@ -1875,7 +1875,7 @@ def testparser (translator) :
         try :
             assert "<<<" in getattr(translator, "do_" + rule).__doc__
         except AttributeError :
-            print("missing handler for rule %r" % rule)
+            print("no handler for rule %r" % rule)
             continue
         except TypeError :
             print("missing doc for rule %r" % rule)

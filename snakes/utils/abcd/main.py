@@ -196,7 +196,10 @@ def main (args=sys.argv[1:], src=None) :
     global snk
     # get options
     try:
-        getopts(args)
+        if src is None :
+            getopts(args)
+        else :
+            getopts(list(args) + ["<string>"])
     except SystemExit :
         raise
     except :
