@@ -1,6 +1,6 @@
 # this file has been automatically generated running:
 # snakes/lang/asdl.py --output=snakes/lang/ctlstar/asdl.py snakes/lang/ctlstar/ctlstar.asdl
-# timestamp: 2011-11-10 08:14:05.853702
+# timestamp: 2011-11-14 14:19:40.884092
 
 from snakes.lang import ast
 from ast import *
@@ -593,7 +593,7 @@ class Boolean (atom):
         self.lineno = int(lineno)
         self.col_offset = int(col_offset)
 
-class AtomInstance (atom):
+class Instance (atom):
     _fields = ('name', 'args')
     _attributes = ('lineno', 'col_offset')
     def __init__ (self, name, args=[], lineno=0, col_offset=0, **ARGS):
@@ -680,12 +680,23 @@ class Place (ctlarg):
         self.lineno = int(lineno)
         self.col_offset = int(col_offset)
 
-class Parameter (ctlarg):
-    _fields = ('name', 'type')
+class Token (ctlarg):
+    _fields = ('name', 'place')
     _attributes = ('lineno', 'col_offset')
-    def __init__ (self, name, type, lineno=0, col_offset=0, **ARGS):
+    def __init__ (self, name, place, lineno=0, col_offset=0, **ARGS):
         ctlarg.__init__(self, **ARGS)
         self.name = name
+        self.place = place
+        self.lineno = int(lineno)
+        self.col_offset = int(col_offset)
+
+class Argument (ctlarg):
+    _fields = ('name', 'value', 'type')
+    _attributes = ('lineno', 'col_offset')
+    def __init__ (self, name, value, type, lineno=0, col_offset=0, **ARGS):
+        ctlarg.__init__(self, **ARGS)
+        self.name = name
+        self.value = value
         self.type = type
         self.lineno = int(lineno)
         self.col_offset = int(col_offset)
@@ -929,24 +940,26 @@ class Tuple (expr):
 class ctldecl (_AST):
     pass
 
-class AtomDef (ctldecl):
-    _fields = ('name', 'args', 'body')
+class Atom (ctldecl):
+    _fields = ('name', 'args', 'params', 'body')
     _attributes = ('lineno', 'col_offset')
-    def __init__ (self, name, args=[], body=[], lineno=0, col_offset=0, **ARGS):
+    def __init__ (self, name, args=[], params=[], body=[], lineno=0, col_offset=0, **ARGS):
         ctldecl.__init__(self, **ARGS)
         self.name = name
         self.args = list(args)
+        self.params = list(params)
         self.body = list(body)
         self.lineno = int(lineno)
         self.col_offset = int(col_offset)
 
 class Property (ctldecl):
-    _fields = ('name', 'args', 'body')
+    _fields = ('name', 'args', 'params', 'body')
     _attributes = ('lineno', 'col_offset')
-    def __init__ (self, name, body, args=[], lineno=0, col_offset=0, **ARGS):
+    def __init__ (self, name, body, args=[], params=[], lineno=0, col_offset=0, **ARGS):
         ctldecl.__init__(self, **ARGS)
         self.name = name
         self.args = list(args)
+        self.params = list(params)
         self.body = body
         self.lineno = int(lineno)
         self.col_offset = int(col_offset)
@@ -958,3 +971,16 @@ class alias (_AST):
         _AST.__init__(self, **ARGS)
         self.name = name
         self.asname = asname
+
+class ctlparam (_AST):
+    pass
+
+class Parameter (ctlparam):
+    _fields = ('name', 'type')
+    _attributes = ('lineno', 'col_offset')
+    def __init__ (self, name, type, lineno=0, col_offset=0, **ARGS):
+        ctlparam.__init__(self, **ARGS)
+        self.name = name
+        self.type = type
+        self.lineno = int(lineno)
+        self.col_offset = int(col_offset)

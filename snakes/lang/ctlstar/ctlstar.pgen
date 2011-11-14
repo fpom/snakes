@@ -9,9 +9,8 @@ ctl_atomdef: 'atom' NAME '(' [ctl_parameters] ')' ':' suite
 ctl_propdef: 'prop' NAME '(' [ctl_parameters] ')' ':' ctl_suite
 ctl_suite: ( ctl_formula NEWLINE
 	    | NEWLINE INDENT ctl_formula NEWLINE+ DEDENT )
-
 ctl_parameters: (ctl_param ',')* ctl_param
-ctl_param: NAME ( '=' STRING+ | ':' NAME )
+ctl_param: NAME ( '=' '@' STRING+ | ':' NAME )
 
 ctl_formula: ctl_or_formula [ ctl_connector ctl_or_formula ]
 ctl_connector: ( '=' '>' | '<=' '>' )
@@ -31,8 +30,9 @@ ctl_atom_formula: ( 'empty' '(' ctl_place ')'
                      'in' ctl_place '(' ctl_atom_formula ')'
 		   | 'exists' [ 'distinct' ] NAME (',' NAME)*
                      'in' ctl_place '(' ctl_atom_formula ')' )
-ctl_arguments: (NAME '=' test ',')* NAME '=' test
-ctl_place: STRING+ | NAME
+ctl_arguments: (NAME '=' ctl_place_or_test ',')* NAME '=' ctl_place_or_test
+ctl_place: '@' STRING+ | NAME
+ctl_place_or_test: test | '@' STRING+
 
 #
 # the rest is from SNAKES/Python grammar

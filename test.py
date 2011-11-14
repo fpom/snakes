@@ -22,6 +22,8 @@ modules = ["snakes",
            "snakes.hashables",
            "snakes.lang",
            "snakes.lang.python.parser",
+           "snakes.lang.abcd.parser",
+           "snakes.lang.ctlstar.parser",
            "snakes.data",
            "snakes.typing",
            "snakes.nets",
@@ -34,7 +36,9 @@ modules = ["snakes",
            "snakes.plugins.hello",
            "snakes.plugins.gv",
            "snakes.plugins.clusters",
-           "snakes.plugins.labels"]
+           "snakes.plugins.labels",
+           "snakes.utils.abcd.build",
+           ]
 
 stop = False
 if len(sys.argv) > 1 :

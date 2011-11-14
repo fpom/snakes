@@ -40,8 +40,8 @@ class Translator (PyTranslator) :
 
         <<< atom foo () : return True
         ... prop bar () : True
-        ... has('my place', x)
-        "Spec(atoms=[AtomDef(name='foo', args=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[Property(name='bar', args=[], body=Boolean(val=True))], main=InPlace(data=[Name(id='x', ctx=Load())], place=Place(name=None, place='my place')))"
+        ... has(@'my place', x)
+        "Spec(atoms=[Atom(name='foo', args=[], params=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[Property(name='bar', args=[], params=[], body=Boolean(val=True))], main=InPlace(data=[Name(id='x', ctx=Load())], place=Place(name=None, place='my place')))"
         """
         atoms, props, main = [], [], None
         for i, child in enumerate(st) :
@@ -59,57 +59,63 @@ class Translator (PyTranslator) :
                             atoms=atoms, properties=props, main=main)
     def do_ctl_atomdef (self, st, ctx) :
         """ctl_atomdef: 'atom' NAME '(' [ctl_parameters] ')' ':' suite
-        -> ast.AtomDef
+        -> ast.Atom
 
         <<< atom foo () : return True
-        "Spec(atoms=[AtomDef(name='foo', args=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[], main=None)"
+        "Spec(atoms=[Atom(name='foo', args=[], params=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[], main=None)"
         <<< atom bar () :
         ...     return True
-        "Spec(atoms=[AtomDef(name='bar', args=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[], main=None)"
-        <<< atom egg (p = 'my place', x : int, q : place) :
+        "Spec(atoms=[Atom(name='bar', args=[], params=[], body=[Return(value=Name(id='True', ctx=Load()))])], properties=[], main=None)"
+        <<< atom egg (p = @'my place', x : int, q : place) :
         ...     return x in p and x in q
-        "Spec(atoms=[AtomDef(name='egg', args=[Place(name='p', place='my place'), Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=[Return(value=BoolOp(op=And(), values=[Compare(left=Name(id='x', ctx=Load()), ops=[In()], comparators=[Name(id='p', ctx=Load())]), Compare(left=Name(id='x', ctx=Load()), ops=[In()], comparators=[Name(id='q', ctx=Load())])]))])], properties=[], main=None)"
+        "Spec(atoms=[Atom(name='egg', args=[Place(name='p', place='my place')], params=[Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=[Return(value=BoolOp(op=And(), values=[Compare(left=Name(id='x', ctx=Load()), ops=[In()], comparators=[Name(id='p', ctx=Load())]), Compare(left=Name(id='x', ctx=Load()), ops=[In()], comparators=[Name(id='q', ctx=Load())])]))])], properties=[], main=None)"
         """
         if len(st) == 7 :
-            return self.ST.AtomDef(lineno=st.srow, col_offset=st.scol,
-                                   name=st[1].text,
-                                   args=self.do(st[3], ctx),
-                                   body=self.do(st[-1], ctx))
+            args, params = self.do(st[3], ctx)
+            return self.ST.Atom(lineno=st.srow, col_offset=st.scol,
+                                name=st[1].text,
+                                args=args,
+                                params=params,
+                                body=self.do(st[-1], ctx))
         else :
-            return self.ST.AtomDef(lineno=st.srow, col_offset=st.scol,
-                                   name=st[1].text,
-                                   args=[],
-                                   body=self.do(st[-1], ctx))
+            return self.ST.Atom(lineno=st.srow, col_offset=st.scol,
+                                name=st[1].text,
+                                args=[],
+                                params=[],
+                                body=self.do(st[-1], ctx))
     def do_ctl_propdef (self, st, ctx) :
         """ctl_propdef: 'prop' NAME '(' [ctl_parameters] ')' ':' ctl_suite
         -> ast.Property
 
         <<< prop foo () : True
-        "Spec(atoms=[], properties=[Property(name='foo', args=[], body=Boolean(val=True))], main=None)"
-        <<< prop bar (p = 'my place', x : int, q : place) : True
-        "Spec(atoms=[], properties=[Property(name='bar', args=[Place(name='p', place='my place'), Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=Boolean(val=True))], main=None)"
-        <<< prop egg (p = 'my place', x : int, q : place) : True
-        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place'), Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=Boolean(val=True))], main=None)"
+        "Spec(atoms=[], properties=[Property(name='foo', args=[], params=[], body=Boolean(val=True))], main=None)"
+        <<< prop bar (p = @'my place', x : int, q : place) : True
+        "Spec(atoms=[], properties=[Property(name='bar', args=[Place(name='p', place='my place')], params=[Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=Boolean(val=True))], main=None)"
+        <<< prop egg (p = @'my place', x : int, q : place) : True
+        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place')], params=[Parameter(name='x', type='int'), Parameter(name='q', type='place')], body=Boolean(val=True))], main=None)"
         """
         if len(st) == 7 :
+            args, params = self.do(st[3], ctx)
             return self.ST.Property(lineno=st.srow, col_offset=st.scol,
                                     name=st[1].text,
-                                    args=self.do(st[3], ctx),
+                                    args=args,
+                                    params=params,
                                     body=self.do(st[-1], ctx))
         else :
             return self.ST.Property(lineno=st.srow, col_offset=st.scol,
                                     name=st[1].text,
                                     args=[],
+                                    params=[],
                                     body=self.do(st[-1], ctx))
     def do_ctl_suite (self, st, ctx) :
         """ctl_suite: ( ctl_formula NEWLINE | NEWLINE INDENT ctl_formula DEDENT )
         -> ast.form
 
         <<< prop foo () : True
-        "Spec(atoms=[], properties=[Property(name='foo', args=[], body=Boolean(val=True))], main=None)"
+        "Spec(atoms=[], properties=[Property(name='foo', args=[], params=[], body=Boolean(val=True))], main=None)"
         <<< prop bar () :
         ...    True
-        "Spec(atoms=[], properties=[Property(name='bar', args=[], body=Boolean(val=True))], main=None)"
+        "Spec(atoms=[], properties=[Property(name='bar', args=[], params=[], body=Boolean(val=True))], main=None)"
         """
         if len(st) == 2 :
             return self.do(st[0], ctx)
@@ -117,49 +123,82 @@ class Translator (PyTranslator) :
             return self.do(st[2], ctx)
     def do_ctl_parameters (self, st, ctx) :
         """ctl_parameters: (ctl_param ',')* ctl_param
-        -> [ast.ctlarg]
+        -> [ast.ctlarg], [ast.ctlparam]
 
-        <<< prop foo (p = 'my place', q : place, x : int, r : place) : True
-        "Spec(atoms=[], properties=[Property(name='foo', args=[Place(name='p', place='my place'), Parameter(name='q', type='place'), Parameter(name='x', type='int'), Parameter(name='r', type='place')], body=Boolean(val=True))], main=None)"
+        <<< prop foo (p = @'my place', q : place, x : int, r : place) : True
+        "Spec(atoms=[], properties=[Property(name='foo', args=[Place(name='p', place='my place')], params=[Parameter(name='q', type='place'), Parameter(name='x', type='int'), Parameter(name='r', type='place')], body=Boolean(val=True))], main=None)"
         <<< prop bar (x : int) : True
-        "Spec(atoms=[], properties=[Property(name='bar', args=[Parameter(name='x', type='int')], body=Boolean(val=True))], main=None)"
-        <<< prop egg (p = 'my place') : True
-        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place')], body=Boolean(val=True))], main=None)"
+        "Spec(atoms=[], properties=[Property(name='bar', args=[], params=[Parameter(name='x', type='int')], body=Boolean(val=True))], main=None)"
+        <<< prop egg (p = @'my place') : True
+        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place')], params=[], body=Boolean(val=True))], main=None)"
+        <<< prop spam (p = @'my place', q : int, p : place) : True
+        Traceback (most recent call last):
+        ...
+        ParseError: ... duplicate parameter 'p'
         """
-        return [self.do(child, ctx) for child in st[::2]]
+        args, params = [], []
+        seen = set()
+        for child in st[::2] :
+            node = self.do(child, ctx)
+            if node.name in seen :
+                raise ParseError(child, reason="duplicate parameter %r"
+                                 % node.name)
+            seen.add(node.name)
+            if isinstance(node, self.ST.Place) :
+                args.append(node)
+            else :
+                params.append(node)
+        return args, params
     def do_ctl_param (self, st, ctx) :
-        """ctl_param: NAME ( '=' STRING+ | ':' NAME )
-        -> ast.ctlarg
+        """ctl_param: NAME ( '=' '@' STRING+ | ':' NAME )
+        -> ast.ctlarg|ast.ctlparam
 
-        <<< prop foo (p = 'my place', q : place, x : int, r : place) : True
-        "Spec(atoms=[], properties=[Property(name='foo', args=[Place(name='p', place='my place'), Parameter(name='q', type='place'), Parameter(name='x', type='int'), Parameter(name='r', type='place')], body=Boolean(val=True))], main=None)"
+        <<< prop foo (p = @'my place', q : place, x : int, r : place) : True
+        "Spec(atoms=[], properties=[Property(name='foo', args=[Place(name='p', place='my place')], params=[Parameter(name='q', type='place'), Parameter(name='x', type='int'), Parameter(name='r', type='place')], body=Boolean(val=True))], main=None)"
         <<< prop bar (x : int) : True
-        "Spec(atoms=[], properties=[Property(name='bar', args=[Parameter(name='x', type='int')], body=Boolean(val=True))], main=None)"
-        <<< prop egg (p = 'my place') : True
-        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place')], body=Boolean(val=True))], main=None)"
+        "Spec(atoms=[], properties=[Property(name='bar', args=[], params=[Parameter(name='x', type='int')], body=Boolean(val=True))], main=None)"
+        <<< prop egg (p = @'my place') : True
+        "Spec(atoms=[], properties=[Property(name='egg', args=[Place(name='p', place='my place')], params=[], body=Boolean(val=True))], main=None)"
         """
         if st[1].text == "=" :
             return self.ST.Place(lineno=st.srow, col_offset=st.scol,
                                  name=st[0].text,
                                  place="".join(self.ST.literal_eval(c.text)
-                                               for c in st[2:]))
+                                               for c in st[3:]))
         else :
             return self.ST.Parameter(lineno=st.srow, col_offset=st.scol,
                                      name=st[0].text,
                                      type=st[2].text)
     def do_ctl_arguments (self, st, ctx) :
-        """ctl_arguments: (NAME '=' test ',')* NAME '=' test
+        """ctl_arguments: (NAME '=' ctl_place_or_test ',')* NAME '=' ctl_place_or_test
         -> [(str, ast.expr)]
 
         <<< foo(x=3, p='my place')
-        "Spec(atoms=[], properties=[], main=AtomInstance(name='foo', args=[arg(arg='x', annotation=Num(n=3)), arg(arg='p', annotation=Str(s='my place'))]))"
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='x', annotation=Num(n=3)), arg(arg='p', annotation=Str(s='my place'))]))"
         <<< foo(x=3)
-        "Spec(atoms=[], properties=[], main=AtomInstance(name='foo', args=[arg(arg='x', annotation=Num(n=3))]))"
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='x', annotation=Num(n=3))]))"
         <<< foo(p='my place')
-        "Spec(atoms=[], properties=[], main=AtomInstance(name='foo', args=[arg(arg='p', annotation=Str(s='my place'))]))"
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='p', annotation=Str(s='my place'))]))"
+        <<< foo(x=3, p=@'my place')
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='x', annotation=Num(n=3)), arg(arg='p', annotation=Place(name=None, place='my place'))]))"
+        <<< foo(x=3)
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='x', annotation=Num(n=3))]))"
+        <<< foo(p=@'my place')
+        "Spec(atoms=[], properties=[], main=Instance(name='foo', args=[arg(arg='p', annotation=Place(name=None, place='my place'))]))"
         """
         return [self.ST.arg(name.text, self.do(value, ctx))
                 for name, value in zip(st[::4], st[2::4])]
+    def do_ctl_place_or_test (self, st, ctx) :
+        """ctl_place_or_test: test | '@' STRING+
+        -> ast.expr | ast.Place
+
+        <<< Foo(s='string', p=@'place', q=place_also)
+        "Spec(atoms=[], properties=[], main=Instance(name='Foo', args=[arg(arg='s', annotation=Str(s='string')), arg(arg='p', annotation=Place(name=None, place='place')), arg(arg='q', annotation=Name(id='place_also', ctx=Load()))]))"
+        """
+        if st[0].symbol == "test" :
+            return self.do(st[0], ctx)
+        else :
+            return self.do_ctl_place(st, ctx)
     def do_ctl_formula (self, st, ctx) :
         """ctl_formula: ctl_or_formula [ ctl_connector ctl_or_formula ]
         -> ast.form
@@ -340,11 +379,11 @@ class Translator (PyTranslator) :
 
         <<< empty(p)
         "Spec(atoms=[], properties=[], main=EmptyPlace(place=Parameter(name='p', type='place')))"
-        <<< empty('my' 'place')
+        <<< empty(@'my' 'place')
         "Spec(atoms=[], properties=[], main=EmptyPlace(place=Place(name=None, place='myplace')))"
         <<< marked(p)
         "Spec(atoms=[], properties=[], main=MarkedPlace(place=Parameter(name='p', type='place')))"
-        <<< marked('my place')
+        <<< marked(@'my place')
         "Spec(atoms=[], properties=[], main=MarkedPlace(place=Place(name=None, place='my place')))"
         <<< has(p, x)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load())], place=Parameter(name='p', type='place')))"
@@ -357,7 +396,7 @@ class Translator (PyTranslator) :
         <<< False
         'Spec(atoms=[], properties=[], main=Boolean(val=False))'
         <<< myprop(x=1, p='my place')
-        "Spec(atoms=[], properties=[], main=AtomInstance(name='myprop', args=[arg(arg='x', annotation=Num(n=1)), arg(arg='p', annotation=Str(s='my place'))]))"
+        "Spec(atoms=[], properties=[], main=Instance(name='myprop', args=[arg(arg='x', annotation=Num(n=1)), arg(arg='p', annotation=Str(s='my place'))]))"
         <<< forall x in p (has(q, y))
         "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x'], place=Parameter(name='p', type='place'), child=InPlace(data=[Name(id='y', ctx=Load())], place=Parameter(name='q', type='place')), distinct=False))"
         <<< forall x, y in p (has(q, x+y, x-y))
@@ -388,9 +427,13 @@ class Translator (PyTranslator) :
             else :
                 node = self.ST.InPlace
                 start = 4
+            place = self.do(st[-4], ctx)
+            if (isinstance(place, self.ST.Parameter)
+                and place.type != "place") :
+                raise ParseError(st[-4], reason="'place' parameter expected")
             return node(lineno=st.srow, col_offset=st.scol,
                         data=[self.do(c, ctx) for c in st[start::2]],
-                        place=self.do(st[-4], ctx))
+                        place=place)
         elif st[0].text in ("forall", "exists") :
             op = (self.ST.All if st[0].text == "forall"
                   else self.ST.Exists)
@@ -403,22 +446,22 @@ class Translator (PyTranslator) :
                                       child=self.do(st[-2], ctx),
                                       distinct=distinct)
         else :
-            return self.ST.AtomInstance(lineno=st.srow, col_offset=st.scol,
-                                        name=st[0].text,
-                                        args=self.do(st[2], ctx))
+            return self.ST.Instance(lineno=st.srow, col_offset=st.scol,
+                                    name=st[0].text,
+                                    args=self.do(st[2], ctx))
     def do_ctl_place (self, st, ctx) :
-        """ctl_place: STRING+ | NAME
+        """ctl_place: '@' STRING+ | NAME
         -> ast.ctlarg
 
-        <<< has('my place', x)
+        <<< has(@'my place', x)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load())], place=Place(name=None, place='my place')))"
-        <<< has('another' 'place', y)
+        <<< has(@'another' 'place', y)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='y', ctx=Load())], place=Place(name=None, place='anotherplace')))"
-        <<< has('my place', x, y)
+        <<< has(@'my place', x, y)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Name(id='x', ctx=Load())))"
-        <<< has not('my place', x)
+        <<< has not(@'my place', x)
         "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load())], place=Place(name=None, place='my place')))"
-        <<< has not('my place', x, y)
+        <<< has not(@'my place', x, y)
         "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Name(id='x', ctx=Load())))"
         """
         if st[0].symbol == "NAME" :
@@ -429,7 +472,7 @@ class Translator (PyTranslator) :
             return self.ST.Place(lineno=st.srow, col_offset=st.scol,
                                  name=None,
                                  place="".join(self.ST.literal_eval(c.text)
-                                               for c in st))
+                                               for c in st[1:]))
 
 parse = Translator.parse
 
