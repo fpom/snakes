@@ -41,6 +41,7 @@ if __name__ == "__main__" :
                     "snakes.lang.pylib",
                     "snakes.lang.python",
                     "snakes.lang.abcd",
+                    "snakes.lang.ctlstar",
                     "snakes.plugins",
                     "snakes.utils",
                     "snakes.utils.abcd",

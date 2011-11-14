@@ -1,23 +1,25 @@
 module CTLstar version "$Revision: 1 $"
 {
         ctlstar = Spec(ctldecl* atoms, ctldecl* properties, form? main)
-
 	      attributes (int lineno, int col_offset)
 
-        ctldecl = AtomDef(identifier name, ctlarg* args, stmt* body)
-	         | Property(identifier name, ctlarg* args, expr body)
-
+        ctldecl = Atom(identifier name, ctlarg* args, ctlparams* params,
+                       stmt* body)
+	         | Property(identifier name, ctlargs* args,
+                            ctlparams* params, form body)
 	      attributes (int lineno, int col_offset)
 
 	ctlarg = Place(identifier name, string place)
-	       	| Parameter(identifier name, identifier type)
+	        | Token(identifier name, string place)
+		| Argument(identifier name, expr value, identifier type)
+	      attributes (int lineno, int col_offset)
 
+	ctlparam = Parameter(identifier name, identifier type)
 	      attributes (int lineno, int col_offset)
 
 	form = atom
 	      | CtlUnary(ctlunary op, form child)
 	      | CtlBinary(ctlbinary op, form left, form right)
-
 	      attributes (int lineno, int col_offset)
 
 	ctlunary = notop | All | Exists | Next | Future | Globally
@@ -32,13 +34,12 @@ module CTLstar version "$Revision: 1 $"
 	      | MarkedPlace(ctlarg place)
 	      | Deadlock
 	      | Boolean(bool val)
-	      | AtomInstance(identifier name, arg* args)
+	      | Instance(identifier name, arg* args)
 	      | Quantifier(ctlunary op,
                            identifier* vars,
                            ctlarg place,
                            form child,
                            bool distinct)
-
 	      attributes (int lineno, int col_offset)
 
 	--------------------------------------------------------------

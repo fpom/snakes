@@ -371,8 +371,8 @@ class Unparser:
         self.write(")")
 
     binop = { "Add":"+", "Sub":"-", "Mult":"*", "Div":"/", "Mod":"%",
-                    "LShift":">>", "RShift":"<<", "BitOr":"|", "BitXor":"^", "BitAnd":"&",
-                    "FloorDiv":"//", "Pow": "**"}
+              "LShift":">>", "RShift":"<<", "BitOr":"|", "BitXor":"^", "BitAnd":"&",
+              "FloorDiv":"//", "Pow": "**"}
     def _BinOp(self, t):
         self.write("(")
         self.dispatch(t.left)
@@ -381,7 +381,7 @@ class Unparser:
         self.write(")")
 
     cmpops = {"Eq":"==", "NotEq":"!=", "Lt":"<", "LtE":"<=", "Gt":">", "GtE":">=",
-                        "Is":"is", "IsNot":"is not", "In":"in", "NotIn":"not in"}
+              "Is":"is", "IsNot":"is not", "In":"in", "NotIn":"not in"}
     def _Compare(self, t):
         self.write("(")
         self.dispatch(t.left)
