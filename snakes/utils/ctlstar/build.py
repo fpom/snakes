@@ -1,6 +1,6 @@
 from snakes.lang.ctlstar.parser import parse
 from snakes.lang.ctlstar import asdl as ast
-from snakes.lang import getvars, unparse
+from snakes.lang import getvars, bind
 import _ast
 
 class SpecError (Exception) :
@@ -18,40 +18,6 @@ def astcopy (node) :
         else :
             attr[name] = astcopy(value)
     return node.__class__(**attr)
-
-class Binder (ast.NodeTransformer) :
-    def __init__ (self, bind) :
-        ast.NodeTransformer.__init__(self)
-        self.bind = [bind]
-    def visit (self, node) :
-        return ast.NodeTransformer.visit(self, astcopy(node))
-    def visit_ListComp (self, node) :
-        """
-        >>> tree = ast.parse('x+y+[x+y+z for x, y in l]')
-        >>> unparse(Binder({'x':ast.Name('hello')}).visit(tree))
-        '((hello + y) + [((x + y) + z) for (x, y) in l])'
-        >>> unparse(Binder({'y':ast.Name('hello')}).visit(tree))
-        '((x + hello) + [((x + y) + z) for (x, y) in l])'
-        >>> unparse(Binder({'z':ast.Name('hello')}).visit(tree))
-        '((x + y) + [((x + y) + hello) for (x, y) in l])'
-        """
-        bind = self.bind[-1].copy()
-        for comp in node.generators :
-            for name in getvars(comp.target) :
-                if name in bind :
-                    del bind[name]
-        self.bind.append(bind)
-        node.elt = self.visit(node.elt)
-        self.bind.pop(-1)
-        return node
-    def visit_Name (self, node) :
-        if node.id in self.bind[-1] :
-            return astcopy(self.bind[-1][node.id])
-        else :
-            return astcopy(node)
-
-def bind (node, ctx) :
-    return Binder(ctx).visit(node)
 
 class Builder (object) :
     def __init__ (self, spec) :
