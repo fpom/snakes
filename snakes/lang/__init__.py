@@ -66,9 +66,33 @@ def unparse (st) :
 class Renamer (ast.NodeTransformer) :
     def __init__ (self, map_names) :
         ast.NodeTransformer.__init__(self)
-        self.map = map_names
+        self.map = [map_names]
+    def visit_ListComp (self, node) :
+        bind = self.map[-1].copy()
+        for comp in node.generators :
+            for name in getvars(comp.target) :
+                if name in bind :
+                    del bind[name]
+        self.map.append(bind)
+        node.elt = self.visit(node.elt)
+        self.map.pop(-1)
+        return node
+    def visit_SetComp (self, node) :
+        return self.visit_ListComp(node)
+    def visit_DictComp (self, node) :
+        bind = self.map[-1].copy()
+        for comp in node.generators :
+            for name in getvars(comp.target) :
+                if name in bind :
+                    del bind[name]
+        self.map.append(bind)
+        node.key = self.visit(node.key)
+        node.value = self.visit(node.value)
+        self.map.pop(-1)
+        return node
     def visit_Name (self, node) :
-        return ast.copy_location(ast.Name(id=self.map.get(node.id, node.id),
+        return ast.copy_location(ast.Name(id=self.map[-1].get(node.id,
+                                                              node.id),
                                           ctx=ast.Load()), node)
 
 def rename (expr, map={}, **ren) :
@@ -77,10 +101,37 @@ def rename (expr, map={}, **ren) :
     '((t + y) < z)'
     >>> rename('x+y<z+f(3,t)', f='g', t='z', z='t')
     '((x + y) < (t + g(3, z)))'
+    >>> rename('[x+y for x in range(3)]', x='z')
+    '[(x + y) for x in range(3)]'
+    >>> rename('[x+y for x in range(3)]', y='z')
+    '[(x + z) for x in range(3)]'
     """
     map_names = dict(map)
     map_names.update(ren)
     transf = Renamer(map_names)
+    return unparse(transf.visit(ast.parse(expr)))
+
+class Binder (Renamer) :
+    def visit_Name (self, node) :
+        if node.id in self.map[-1] :
+            return self.map[-1][node.id]
+        else :
+            return node
+
+def bind (expr, map={}, **ren) :
+    """
+    >>> bind('x+y<z', x=ast.Num(n=2))
+    '((2 + y) < z)'
+    >>> bind('x+y<z', y=ast.Num(n=2))
+    '((x + 2) < z)'
+    >>> bind('[x+y for x in range(3)]', x=ast.Num(n=2))
+    '[(x + y) for x in range(3)]'
+    >>> bind('[x+y for x in range(3)]', y=ast.Num(n=2))
+    '[(x + 2) for x in range(3)]'
+    """
+    map_names = dict(map)
+    map_names.update(ren)
+    transf = Binder(map_names)
     return unparse(transf.visit(ast.parse(expr)))
 
 if __name__ == "__main__" :
