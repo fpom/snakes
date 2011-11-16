@@ -45,6 +45,7 @@ if __name__ == "__main__" :
                     "snakes.plugins",
                     "snakes.utils",
                     "snakes.utils.abcd",
+                    "snakes.utils.ctlstar",
                     ],
           data_files=(doc_files()
                       + [("share/emacs/site-lisp", ["utils/abcd-mode.el",
