@@ -1,6 +1,6 @@
 # this file has been automatically generated running:
 # snakes/lang/asdl.py --output=snakes/lang/ctlstar/asdl.py snakes/lang/ctlstar/ctlstar.asdl
-# timestamp: 2011-11-14 14:19:40.884092
+# timestamp: 2011-11-16 13:30:34.219385
 
 from snakes.lang import ast
 from ast import *
