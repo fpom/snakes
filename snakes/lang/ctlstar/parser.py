@@ -388,7 +388,7 @@ class Translator (PyTranslator) :
         <<< has(p, x)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load())], place=Parameter(name='p', type='place')))"
         <<< has not(p, x, y)
-        "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Name(id='x', ctx=Load())))"
+        "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Parameter(name='p', type='place')))"
         <<< deadlock
         'Spec(atoms=[], properties=[], main=Deadlock())'
         <<< True
@@ -400,15 +400,15 @@ class Translator (PyTranslator) :
         <<< forall x in p (has(q, y))
         "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x'], place=Parameter(name='p', type='place'), child=InPlace(data=[Name(id='y', ctx=Load())], place=Parameter(name='q', type='place')), distinct=False))"
         <<< forall x, y in p (has(q, x+y, x-y))
-        "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load()))), distinct=False))"
+        "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=Parameter(name='q', type='place')), distinct=False))"
         <<< forall distinct x, y in p (has(q, x+y, x-y))
-        "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load()))), distinct=True))"
+        "Spec(atoms=[], properties=[], main=Quantifier(op=All(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=Parameter(name='q', type='place')), distinct=True))"
         <<< exists x in p (has(q, y))
         "Spec(atoms=[], properties=[], main=Quantifier(op=Exists(), vars=['x'], place=Parameter(name='p', type='place'), child=InPlace(data=[Name(id='y', ctx=Load())], place=Parameter(name='q', type='place')), distinct=False))"
         <<< exists x, y in p (has(q, x+y, x-y))
-        "Spec(atoms=[], properties=[], main=Quantifier(op=Exists(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load()))), distinct=False))"
+        "Spec(atoms=[], properties=[], main=Quantifier(op=Exists(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=Parameter(name='q', type='place')), distinct=False))"
         <<< exists distinct x, y in p (has(q, x+y, x-y))
-        "Spec(atoms=[], properties=[], main=Quantifier(op=Exists(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load()))), distinct=True))"
+        "Spec(atoms=[], properties=[], main=Quantifier(op=Exists(), vars=['x', 'y'], place=Parameter(name='p', type='place'), child=InPlace(data=[BinOp(left=Name(id='x', ctx=Load()), op=Add(), right=Name(id='y', ctx=Load())), BinOp(left=Name(id='x', ctx=Load()), op=Sub(), right=Name(id='y', ctx=Load()))], place=Parameter(name='q', type='place')), distinct=True))"
         """
         if st[0].text in ("True", "False") :
             return self.ST.Boolean(lineno=st.srow, col_offset=st.scol,
@@ -423,16 +423,16 @@ class Translator (PyTranslator) :
         elif st[0].text == "has" :
             if st[1].text == "not" :
                 node = self.ST.NotInPlace
-                start = 5
+                start = 3
             else :
                 node = self.ST.InPlace
-                start = 4
-            place = self.do(st[-4], ctx)
+                start = 2
+            place = self.do(st[start], ctx)
             if (isinstance(place, self.ST.Parameter)
                 and place.type != "place") :
                 raise ParseError(st[-4], reason="'place' parameter expected")
             return node(lineno=st.srow, col_offset=st.scol,
-                        data=[self.do(c, ctx) for c in st[start::2]],
+                        data=[self.do(c, ctx) for c in st[start+2::2]],
                         place=place)
         elif st[0].text in ("forall", "exists") :
             op = (self.ST.All if st[0].text == "forall"
@@ -458,11 +458,11 @@ class Translator (PyTranslator) :
         <<< has(@'another' 'place', y)
         "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='y', ctx=Load())], place=Place(name=None, place='anotherplace')))"
         <<< has(@'my place', x, y)
-        "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Name(id='x', ctx=Load())))"
+        "Spec(atoms=[], properties=[], main=InPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Place(name=None, place='my place')))"
         <<< has not(@'my place', x)
         "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load())], place=Place(name=None, place='my place')))"
         <<< has not(@'my place', x, y)
-        "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Name(id='x', ctx=Load())))"
+        "Spec(atoms=[], properties=[], main=NotInPlace(data=[Name(id='x', ctx=Load()), Name(id='y', ctx=Load())], place=Place(name=None, place='my place')))"
         """
         if st[0].symbol == "NAME" :
             return self.ST.Parameter(lineno=st.srow, col_offset=st.scol,
