@@ -231,23 +231,35 @@ class Translator (PyTranslator) :
                                        col_offset=st.scol)
 
     def do_ctl_or_formula (self, st, ctx) :
-        """ctl_or_formula: ctl_and_formula [ 'or' ctl_and_formula ]
+        """ctl_or_formula: ctl_and_formula ('or' ctl_and_formula)*
         -> ast.form
 
         <<< True or False
         'Spec(atoms=[], properties=[], main=CtlBinary(op=Or(), left=Boolean(val=True), right=Boolean(val=False)))'
+        <<< True or False or True
+        'Spec(atoms=[], properties=[], main=CtlBinary(op=Or(), left=CtlBinary(op=Or(), left=Boolean(val=True), right=Boolean(val=False)), right=Boolean(val=True)))'
+        <<< True or False or False and True and False
+        'Spec(atoms=[], properties=[], main=CtlBinary(op=Or(), left=CtlBinary(op=Or(), left=Boolean(val=True), right=Boolean(val=False)), right=CtlBinary(op=And(), left=CtlBinary(op=And(), left=Boolean(val=False), right=Boolean(val=True)), right=Boolean(val=False))))'
         """
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            op = self._ctl_binary_op[st[1].text](lineno=st[1].srow,
-                                                 col_offset=st[1].scol)
-            return self.ST.CtlBinary(lineno=st.srow, col_offset=st.scol,
-                                     op=op,
-                                     left=self.do(st[0], ctx),
-                                     right=self.do(st[2], ctx))
+            values = [self.do(child, ctx) for child in st[::2]]
+            ops = [self._ctl_binary_op[child.text](lineno=child.srow,
+                                                   col_offset=child.scol)
+                   for child in st[1::2]]
+            while len(values) > 1 :
+                left = values.pop(0)
+                right = values.pop(0)
+                operator = ops.pop(0)
+                values.insert(0, self.ST.CtlBinary(lineno=st.srow,
+                                                   col_offset=st.scol,
+                                                   left=left,
+                                                   op=operator,
+                                                   right=right))
+            return values[0]
     def do_ctl_and_formula (self, st, ctx) :
-        """ctl_and_formula: ctl_not_formula [ 'and' ctl_not_formula ]
+        """ctl_and_formula: ctl_not_formula ('and' ctl_not_formula)*
         -> ast.form
 
         <<< True and False

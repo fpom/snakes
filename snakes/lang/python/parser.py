@@ -105,7 +105,7 @@ class Translator (object) :
         if len(st) == 1 :
             return self.do(st[0], ctx)
         else :
-            values=[self.do(child, ctx) for child in st[::2]]
+            values = [self.do(child, ctx) for child in st[::2]]
             ops = [(self._binary[child.text], child) for child in st[1::2]]
             while len(values) > 1 :
                 left = values.pop(0)
