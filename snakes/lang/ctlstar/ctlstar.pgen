@@ -14,8 +14,8 @@ ctl_param: NAME ( '=' '@' STRING+ | ':' NAME )
 
 ctl_formula: ctl_or_formula [ ctl_connector ctl_or_formula ]
 ctl_connector: ( '=' '>' | '<=' '>' )
-ctl_or_formula: ctl_and_formula [ 'or' ctl_and_formula ]
-ctl_and_formula: ctl_not_formula [ 'and' ctl_not_formula ]
+ctl_or_formula: ctl_and_formula ('or' ctl_and_formula)*
+ctl_and_formula: ctl_not_formula ('and' ctl_not_formula)*
 ctl_not_formula: ('not' ctl_not_formula | ctl_binary_formula)
 ctl_binary_formula: ctl_unary_formula [ ctl_binary_op ctl_unary_formula ]
 ctl_unary_formula: [ ctl_unary_op ] (ctl_atom_formula | '(' ctl_formula ')')
