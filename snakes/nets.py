@@ -2888,7 +2888,7 @@ class PetriNet (object) :
         # 1844414626 = hash("snakes.nets.PetriNet")
         return reduce(operator.xor,
                       (hash(self.name),)
-                      + tuple(hash(n) for i in self._node), 1844414626)
+                      + tuple(hash(n) for n in self._node), 1844414626)
     def copy (self, name=None) :
         """Return a complete copy of the net, including places,
         transitions, arcs and declarations.
