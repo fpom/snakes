@@ -24,7 +24,7 @@ class Evaluator (object) :
         """Initialize like a dict
         """
         self._env = dict(*larg, **karg)
-        self.attached = set()
+        self.attached = []
     def __call__ (self, expr, locals={}) :
         """Evaluate an expression
         """
@@ -40,14 +40,15 @@ class Evaluator (object) :
         namespace.
         """
         self._env = other._env
-        other.attached.add(self)
+        other.attached.append(self)
+        # FIXME: should not need to use list() to remove infinite recursion
         for e in list(self.attached) :
             e.attach(self)
     def detach (self, other) :
         """Make this instance namespace independent
         """
         self._env = self._env.copy()
-        other.attached.discard(self)
+        other.attached.remove(self)
     def update (self, other) :
         """Update namespace from another evaluator
         """
@@ -80,17 +81,6 @@ class Evaluator (object) :
         """Test for inequality of namespaces
         """
         return not self.__eq__(other)
-    def __hashone__ (self, pair) :
-        try :
-            return hash(pair)
-        except :
-            return hash(pair[0])
-    def __hash__ (self) :
-        """Return hash value
-        """
-        return reduce(operator.xor,
-                      (self.__hashone__(i) for  i in self),
-                      113110355)
 
 ##
 ## net element
