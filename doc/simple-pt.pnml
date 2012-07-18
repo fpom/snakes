@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <net id="Simple P/T net">
+  <place id="p2">
+   <initialMarking>
+    <text>
+     0
+    </text>
+   </initialMarking>
+  </place>
+  <place id="p1">
+   <initialMarking>
+    <text>
+     1
+    </text>
+   </initialMarking>
+  </place>
+  <transition id="t2"/>
+  <transition id="t1"/>
+  <arc id="p2:t2" source="p2" target="t2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="t2:p1" source="t2" target="p1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="p1:t1" source="p1" target="t1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="t1:p2" source="t1" target="p2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+ </net>
+</pnml>

@@ -1,0 +1,638 @@
+This document describes the PNML extensions used bu SNAKES. See
+http://www.pnml.org for the definition of the standard PNML. In the
+following, we use a simplified RELAX NG Compact Syntax (see
+http://relaxng.org). For each element, we provide the Python class
+that implements it (see API reference for details), a list of its
+attributes and children elements.
+
+##
+## Petri net elements
+##
+
+element pnml {
+  element net { ... }*
+}
+# Several nets may be provided in one PNML file.
+
+element net {                  # class snakes.nets.PetriNet
+  attribute id { text }        # identity of the net
+  element place { ... }*       # places in the net
+  element transition { ... }*  # transitions in the net
+  element arc { ... }*         # arcs in the net
+}
+
+element place {                     # class snakes.nets.Place
+  attribute id { text }             # identity of the place
+  element type { ... }?             # for a coloured place
+  element initialMarking {          # marking
+    ( element text { num:integer }  # for a P/T place
+     | element multiset { ... } )   # for a coloured place
+  }?
+}
+# A P/T place is identified in SNAKES by the fact it has a typing
+# constraint "tBlackToken". In such a case, its initial marking is
+# given as the number of black tokens held by the place, which
+# respects the PNML standard. In the other cases, the place is
+# considered to be coloured and its type constraint is given by an
+# element <type> and its marking is given by an element <multiset>.
+
+element transition {            # class snakes.nets.Transition
+  attribute id { text }         # identity of the transition
+  element guard {
+    element expression { ... }  # guard if not True
+  }?
+}
+# When the guard is True, like in P/T nets, it is not saved in the
+# PNML so that the result respects PNML standard. Otherwise, the guard
+# is saved inside a tag <guard>.
+
+element declare {
+  statement
+}
+# One <declare> tag is added to <net> for each Python statement run
+# using PetriNet.declare() for this net.
+
+element global {
+  attribute name { name:string }  # object's name
+  element * { ... }               # value
+}
+# One <global> is added to <net> for each entry in net.globals that
+# is not obtained through the use of PetriNet.declare().
+
+##
+## Arcs
+##
+
+element arc {
+  attribute id { text }      # identity of the arc
+  attribute source { text }  # identity of source node
+  attribute target { text }  # identity of target node
+  element inscription {
+    element text {           # for a P/T net
+      weight:int
+    }?
+    element * { ... }?       # for a coloured net
+  }
+}
+# When the net is a P/T net, a weight is given for the arcs, which
+# respects the PNML standard. Otherwise, the inscription is one of the
+# possible inscriptions given below.
+
+element value {           # class snakes.nets.Value
+  element object { ... }  # value transported on an arc
+}
+
+element variable {  # class snakes.nets.Variable
+  name:string       # name of the variable
+}
+
+element expression {  # class snakes.nets.Expression
+  expr:string         # text of the expression (Python code)
+}
+
+element test {                   #  class snakes.nets.Test
+  ( element value { ... }
+   | element variable { ... }
+   | element expression { ... }
+   | element multiarc { ... }
+   | element tuple { ... } )     # tested annotation
+}
+
+element multiarc {               # class snakes.nets.MultiArc
+  ( element value { ... }
+   | element variable { ... }
+   | element expression { ... }
+   | element multiarc { ... }
+   | element tuple { ... } )*    # list of encapsulated annotations
+}
+
+element tuple {                  # class snakes.nets.Tuple
+  ( element value { ... }
+   | element variable { ... }
+   | element expression { ... }
+   | element multiarc { ... }
+   | element tuple { ... } )*    # list of encapsulated annotations
+}
+
+
+##
+## Auxiliary tags
+##
+
+element token {  # class snakes.nets.BlackToken
+}                # a standard black token
+
+element marking {               # class snakes.nets.Marking
+  element place {               # one for each marked place
+    attribute id { text }       # identity of the place
+    element tokens {
+      element multiset { ... }  # marking of the place
+    }
+  }*
+}
+
+element multiset {            # class snakes.data.MultiSet
+  element item {              # items in the multiset
+    element value {
+      element object { ... }  # value of one item
+    }
+    element multiplicity {    # number of time it is repeated
+      num:integer
+    }
+  }*
+}
+
+element substitution {        # class snakes.data.Substitution
+  element item {              # mapped variables
+    element name {
+      name:string             # variable name
+    }
+    element value {
+      element object { ... }  # associated value
+    }
+  }*
+}
+
+##
+## Python objects
+##
+
+element object {
+  attribute type { ... }  # type of the object
+  ...                     # depends of attribute type
+}
+
+element object {
+  attribute type { "int" }  # object is an integer
+  value:integer
+}
+
+element object {
+  attribute type { "float" }  # object is a float
+  value:float
+}
+
+element object {
+  attribute type { "str" }  # object is a string
+  value:string
+}
+
+element object {
+  attribute type { "bool" }  # object is a Boolean
+  ( "True" | "False" )
+}
+
+element object {
+  attribute type { "list" }  # object is a list
+  element object { ... }*    # list items
+}
+
+element object {
+  attribute type { "tuple" }  # object is a tuple
+  element object { ... }*     # tuple items
+}
+
+element object {
+  attribute type { "set" }  # object is a set
+  element object { ... }*   # set items
+}
+
+element object {
+  attribute type { "method" }    # object is a class method
+  attribute name { path:string}  # path to method, including module name
+}
+
+element object {
+  attribute type { "function" }  # object is a function
+  attribute name { path:string}  # path to function, including module name
+}
+
+element object {
+  attribute type { "class" }     # object is a class
+  attribute name { path:string}  # path to class, including module name
+}
+
+element object {
+  attribute type { "module" }    # object is a module
+  attribute name { path:string}  # path to module
+}
+
+element object {
+  attribute type { "pickle" }  # object that cannot be handled symbolically
+  data:string                  # pickled object
+}
+
+element object {
+  attribute type { "NoneType" }  # object is the value None
+}
+
+##
+## Typing constraints
+##
+
+element type {
+  attribute domain { text }  # kind of typing constraint
+  ...                        # depending on domain
+}
+# Module snakes.typing defines a full algebra of types, all are saved
+# to an element <type>. The  attribute "domain" is then the key to
+# decompose correctly a type. Below is a list of the different
+# domains, with the structure of the corresponding type
+
+element type {                         # class snakes.typing._And
+  attribute domain { "intersection" }  # intersection of two types
+  element left {                       # left operand type
+    element type { ... }
+  }
+  element right {                      # right operand type
+    element type { ... }
+  }
+}
+
+element type {                  # class snakes.typing._Or
+  attribute domain { "union" }  # union of two types
+  element left {                # left operand type
+    element type { ... }
+  }
+  element right {               # right operand type
+    element type { ... }
+  }
+}
+
+element type {                       # class snakes.typing._Sub
+  attribute domain { "difference" }  # difference of two types
+  element left {                     # left operand type
+    element type { ... }
+  }
+  element right {                    # right operand type
+    element type { ... }
+  }
+}
+
+element type {                # class snakes.typing._Xor
+  attribute domain { "xor" }  # exclusive union of two types
+  element left {              # left operand type
+    element type { ... }
+  }
+  element right {             # right operand type
+    element type { ... }
+  }
+}
+
+element type {                       # class snakes.typing._Invert
+  attribute domain { "complement" }  # complement of a type
+  element type { ... }               # complemented type
+}
+
+element type {                      # class snakes.typing._All
+  attribute domain { "universal" }  # type with all possible values
+}
+
+element type {                  # class snakes.typing._Nothing
+  attribute domain { "empty" }  # type with no value
+}
+
+element type {                     # class snakes.typing.Instance
+  attribute domain { "instance" }  # type whose values are instances
+  element object { ... }           # class of the instances
+}
+
+element type {                    # class snakes.typing.TypeCheck
+  attribute domain { "checker" }  # type defined by a Boolean function
+  element checker {
+    element object { ... }        # the Boolean function
+  }
+  element iterator {
+    element object { ... }        # a function to enumerate the values
+  }
+}
+
+element type {                 # class snakes.typing.OneOf
+  attribute domain { "enum" }  # enumerated type
+  element object { ... }*      # values in the type
+}
+
+element type {                       # class snakes.typing.Collection
+  attribute domain { "collection" }  # flat container type (list, set, ...)
+  element container {
+    element type { ... }             # type of the container
+  }
+  element items {
+    element type { ... }             # type of the contained items
+  }
+  element min {
+    element object { ... }           # smallest allowed number of elements
+  }
+  element max {
+    element object { ... }           # biggest allowed number of elements
+  }
+}
+
+element type {                    # class snakes.typing.Mapping
+  attribute domain { "mapping" }  # dictionary-like container type
+  element container {
+    element type { ... }          # type of the container
+  }
+  element keys {
+    element type { ... }          # type of the contained keys
+  }
+  element items {
+    element type { ... }          # type of the contained items
+  }
+}
+
+element type {                  # class snakes.typing.Range
+  attribute domain { "range" }  # values in a range
+  element min {
+    element object { ... }      # smallest allowed value
+  }
+  element min {
+    element object { ... }      # smallest excluded value
+  }
+  element min {
+    element object { ... }      # step between consecutive values
+  }
+}
+
+element type {                    # class snakes.typing.Greater
+  attribute domain { "greater" }  # values bigger than a given one
+  element object { ... }          # biggest excluded value
+}
+
+element type {                      # class snakes.typing.GreaterOrEqual
+  attribute domain { "greatereq" }  # values not smaller than a given one
+  element object { ... }            # smallest allowed value
+}
+
+element type {                 # class snakes.typing.Less
+  attribute domain { "less" }  # values smaller than a given one
+  element object { ... }       # smallest excluded value
+}
+
+element type {                   # class snakes.typing.LessOrEqual
+  attribute domain { "lesseq" }  # values not bigger than a given one
+  element object { ... }         # biggest allowed value
+}
+
+element type {                         # class snakes.typing.CrossProduct
+  attribute domain { "crossproduct" }  # cross product of types
+  element type { ... }*                # crossed types
+}
+
+##
+## Additional elements from plugins
+##
+
+element snakes {
+  attribute version { ... }       # SNAKES' version that produced this PNML
+  element plugins {
+    element object {
+      attribute type { "tuple" }
+      element object {            # the base module 'snakes.nets' is listed also
+        attribute type { "str" } 
+        "snakes.nets"
+      }
+      element object {            # list of plugins
+        attribute type { "str" } 
+        plugin:string
+      }*
+    }
+  }
+}
+# Added to another element in order to specify the plugins necessary
+# to load properly the element. <snakes><plugins> tags can be added at
+# any position in the PNML, but they are then used globally for a
+# whole <pnml> tree.
+
+element status {            # class snakes.plugins.status.Status
+  element name {
+    name:string             # status name
+  }
+  element value {
+    element object { ... }  # attached value
+  }
+}
+# Added to <place> and <transition> when plugin 'status' is loaded.
+
+element multiaction {      # class snakes.plugins.synchro.MultiAction
+  element action { ... }*  # actions in the multi-action
+}
+# Added to <transition> when plugin 'synchro' is loaded.
+
+element action {                   # class snakes.plugins.synchro.Action
+  attribute name { name:string }   # action name
+  attribute send { send:boolean }  # send/receive action
+  element * { ... }*               # action parameters
+}
+
+element clusters {             # class snakes.plugins.clusters.Cluster
+  element node { id:string }*  # nodes at this level
+  element clusters { ... }*    # children clusters
+}
+# Added to <net> when plugin 'clusters' is loaded.
+
+element label {                  # class snakes.plugins.labels
+  attribute name { name:string}  # label name
+  element object { ... }         # label content
+}
+# Added to <net>, <place> and <transition> when plugin 'labels' is
+# loaded.
+
+element graphics {
+  element position {                      # node position
+    attribute x { xpos:(integer|float) }  # x coordinate
+    attribute y { ypos:(integer|float) }  # y coordinate
+  }
+}
+# Added to <place> and <transition> when plugin 'pos' is loaded.
+
+element query {                # snakes.plugins.query.Query
+  attribute name { name:text}  # name of the query
+  element argument { ... }*    # arguments of the query
+  element keyword {            # keyword arguments
+    attribute name { text }    # keyword name
+    element * { ... }          # associated value
+  }*
+}
+# See file 'queries.txt'
+
+element answer {
+  attribute status { "ok" | "error" }  # status of the answer
+  message:string?                      # error message if status=error
+  element * { ... }?                   # returned value if status=ok 
+}
+# See file 'queries.txt'
+
+##
+## Abstract syntax tree
+##
+
+# The following specifies the PNML translation of abstract syntax
+# trees for ABCD programs, as inserted into <net> but the ABCD
+# compiler.
+
+element ast {                        # class snakes.compyler.Tree
+  attribute name { text }            # node nature
+  attribute lineno { num:integer }?  # line number in source code
+  attribute * { ... }*               # depending on name
+  element * { ... }*                 # depending on name
+}
+# <ast> trees are obtained by direct translation of
+# snakes.compyler.Tree instances: tree name is mapped to an attribute
+# 'name', sub-trees are mapped to child tags, and attributes are
+# mapped either to attributes or to child tags <attribute> when they
+# cannot be represented as a simple string. The following lists the
+# more current patterns. The element 'lineno' will be omitted in the
+# following.
+
+element ast {
+  attribute name { "abcd" }          # start symbol
+  element ast {                      # buffer declarations
+    attribute name { "buffer" }
+    ...
+  }*
+  element ast {                      # net declarations
+    attribute name { "net" }
+    ...
+  }*
+  element attribute {                # ABCD expression
+    attribute name { "expr" }
+    ...
+  }
+}
+# An ABCD program is composed of optional buffer and net declarations,
+# followed by an ABCD expression.
+
+element ast {
+  attribute name { "buffer" }       # buffer declaration
+  attribute ident { text:string }   # buffer's name
+  element attribute {
+    attribute name { "type" }       # buffer's type
+    ...
+  }
+  element attribute {               # buffer's initial value
+    attribute name { "init" }
+    ...
+  }
+}
+
+element net {
+  attribute name { "net" }          # net declaration
+  attribute ident { text:string }   # net's name
+  element ast {                     # net's body
+    attribute name { "abcd" }
+    ...
+  }
+}
+
+element ast {
+  attribute name { "expr" }
+  element ast {
+    attribute name { ( "parallel"     # binary composition
+                      | "loop"
+                      | "sequence"
+                      | "choice" ) }
+    element ast { ... }               # first operand
+    element ast { ... }               # second operand
+  }
+}
+
+element ast {
+  attribute name { "expr" }
+  element ast {
+    attribute name { "scope" }     # name hiding
+    element ast { ... }            # first operand
+    element object {
+      attribute type { "str" }     # hidden name
+      name:string
+    }
+  }
+}
+
+element ast {
+  attribute name { "action" }                 # basic action
+  attribute net { ( name:string | "None" ) }  # reference to a net
+  attribute test { ( "False" | "True" ) }?    # trivial condition
+  element ast {
+    attribute name { "access" }               # buffer access
+    attribute buffer { name:string }          # buffer's name
+    attribute mode { ("?" | "+" | "-") }      # test, put or get
+    element attribute {
+      attribute name { "param" }              # access' parameter
+      element python { ... }                  # Python's AST of the parameter
+    }
+  }*
+  element attribute {                         # non-trivial condition
+    attribute name { "test" }
+    element python { ... }                    # Python's AST of the condition
+  }?
+}
+# A basic action can be the name of a net or a trivial action
+# '[False]'. Otherwise, it is composed of a possibly empty list of
+# buffer accesses and a condition. If the condition is 'True', it is
+# stored as attribute 'test=True", but more complex conditions are
+# stored as a Python AST in a child tag <attribute name="test">. Each
+# access is composed of a buffer name, an access mode and a parameter.
+
+# Next elements are children of a tag <attribute name="type"> and
+# defined the type of a buffer.
+
+element ast {
+  attribute name { "name }         # Python built-in type
+  attribute value { type:string }  # name of the type
+}
+
+element ast {
+  attribute name { "enum" }         # enumerated type
+  element ast {
+    attribute name { "values" }
+    element python {                # Python's AST node in this case
+      attribute class { "Tuple" }   # is a Tuple of Const
+      element attribute {
+        attribute name { "nodes" }
+        values                      # eg, "[Const('a'), Const('b')]"
+      }
+    }
+  }
+}
+
+element ast {
+  attribute name { "union" }  # union of two types
+  element ast { ... }         # first type
+  element ast { ... }         # second type
+}
+
+element ast {
+  attribute name { "intersection" }  # intersection of two types
+  element ast { ... }                # first type
+  element ast { ... }                # second type
+}
+
+element ast {
+  attribute name { "list" }  # list type
+  element ast { ... }        # items' type
+}
+
+element ast {
+  attribute name { "dict" }  # dict type
+  element ast { ... }        # keys' type
+  element ast { ... }        # values' type
+}
+
+element ast {
+  attribute name { "set" }  # set type
+  element ast { ... }       # items' type
+}
+
+# A Python AST is serialized as a <python> tag, see the section 31.3.1
+# (AST Nodes) of the Python Library Reference for a list of AST nodes.
+
+element python {
+  attribute * { text }*      # direct mapping of simple attributes
+  element attribute {        # complex attributes are serialized 
+    attribute name { text }  # in a tag <object>
+    element object { ... }
+  }*
+  data?                      # when none of the above method works,
+                             # 'repr' is used to convert the AST to text
+}

@@ -1,0 +1,855 @@
+The plugin 'queries' introduces two new classes:
+
+ - Query allows to describe and execute various kind of queries, that
+   can be serialized to PNML in order to be exchanged with another
+   program. SNAKES uses an extension of PNML, for a complete list of
+   SNAKES' PNML tags, see 'snakes-pnml.txt'.
+
+ - UDPServer is a sample server over UDP that handles a limited number
+   of simple queries. However, these queries can be nested, in the
+   client program as well as in the communication with the server, so
+   the range of possibilities is unlimited and very complex queries
+   may be constructed from those simple ones.
+
+A server program is provides in 'utils/query/snkd.py' and is general
+an robust enough to be used in real cases (but considering it only
+implements the limited set of queries exposed above). As it works in a
+disconnected mode (UDP), this server does not try to make any
+difference between possibly several clients. This may result in data
+sharing or conflicts, which makes this server more suitable to a local
+use only. Start the server with option '-h' to have details about its
+command line.
+
+A sample client is provided also, in order to allow to experiment with
+the server. (Notice that since the client is programmed in Python, it
+could use SNAKES directly, which explains why it will never be made
+more sophisticated.) It takes the form a shell-like program that
+accepts commands of the form "? command(param, ...)" where "? " is the
+prompt.
+
+First come local commands, these are commands that do not send any
+data to the server but are handled locally:
+
+ ? help()
+
+   list available commands
+
+ ? help(command)
+
+   print help about the given command
+
+ ? quit()
+
+   exits the client, end-of-file or ^C may be used equivalently
+
+ ? load(path)
+
+   loads a PNML file and return the object it represents. This is
+   useful for instance to load a Petri net on the server as in:
+   "? set('net', load('mynet.pnml'))"
+
+ ? show(obj)
+
+   prints the PNML representation of 'obj', this may be useful for
+   instance to see how a query is translated, as in:
+   "? show(set('x', [1, 2, 'hello']))"
+
+ ? verbose(mode)
+
+   turns on (mode=True), off (mode=False) or toggle (no mode given)
+   the printing of queries before they are sent to the server
+
+Then come commands that actually generate queries, there is only 4 of
+them:
+
+ ? set('name', value)
+
+   assign value to 'name', which is equivalent to the Python statement
+   "name=value". 'value' may be any Python expression. It is important
+   to notice that 'name' is assigned on the server side, in an
+   environment that initially contains Python's builtins, the content
+   of 'operator' and of 'snakes.net' modules (the later being extended
+   by all the plugins loaded before 'query').
+
+ ? get('name')
+
+   returns the value previously assigned to 'name'.
+
+ ? delete('name')
+
+   Equivalent to the Python statement "del name".
+
+ ? call(obj, ...)
+
+   equivalent to the Python statement "obj(...)". 'obj' may be a name
+   or an access to an object like 'x' or 'x.method', or even the
+   result from a nested query (see examples below).
+
+##
+## Answers
+##
+
+In case of a success with no return value, the answer is:
+
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+If there is a return value, it is given as a PNML sub-tree of tag
+<answer>. For instance:
+
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="str">hello world!</object>
+ </answer>
+</pnml>
+
+If an errors occurs during the handling of the query, an answer with
+status "error" is returned. The data in tag <answer> is the error
+message and the tag has an attribute 'error' that is the name of the
+caught exception. For instance:
+
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer error="ExceptionName" status="error">Exception message</answer>
+</pnml>
+
+##
+## Queries
+##
+
+Query arguments are passed as tags <argument> nested in <query>, the
+value of each argument is encoded in PNML using the tags presented in
+'snakes-pnml.txt'. The following is a copy/paste from a snkc session,
+interleaved with comments.
+
+First, we turn on the verbose mode.
+
+? verbose()
+dump of queries enabled
+
+The first query assigns to 'x' a list composed of an integer, a float
+and a string. This allows to illustrate how these types are encoded.
+
+? set('x', [1, 3.14, 'hello'])
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="set">
+  <argument>
+   <object type="str">x</object>
+  </argument>
+  <argument>
+   <object type="list">
+    <object type="int">1</object>
+    <object type="float">3.14</object>
+    <object type="str">hello</object>
+   </object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+If we get 'x' back, the same encoding is used again but in the other
+direction.
+
+? get('x')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="get">
+  <argument>
+   <object type="str">
+    x
+   </object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="list">
+   <object type="int">1</object>
+   <object type="float">3.14</object>
+   <object type="str">hello</object>
+  </object>
+ </answer>
+</pnml>
+
+'x' can be removed, after which trying to get it again results in an
+error.
+
+? delete('x')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="del">
+  <argument>
+   <object type="str">x</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+? get('x')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="get">
+  <argument>
+   <object type="str">x</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer error="AttributeError" status="error">
+  'module' object has no attribute 'x'
+ </answer>
+</pnml>
+
+We set a new name 's' that is a string in order to illustrate method
+calls.
+
+? set('s', 'hello world!')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="set">
+  <argument>
+   <object type="str">s</object>
+  </argument>
+  <argument>
+   <object type="str">hello world!</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+The following calls the method 'replace' of 's' passing it two string
+arguments.
+
+? call('s.replace', 'o', '_')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <object type="str">s.replace</object>
+  </argument>
+  <argument>
+   <object type="str">o</object>
+  </argument>
+  <argument>
+   <object type="str">_</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="str">hell_ w_rld!</object>
+ </answer>
+</pnml>
+
+In order to cascade calls, that is call a method of the object
+returned by the first call, we can use the function 'getattr' that
+returns a named attribute of an object. Here, we get and call the
+'split' method from the string returned by 's.replace'. This is
+exactly the same as "s.replace('o', '_').split()" in Python.
+
+? call(call('getattr', call('s.replace', 'o', '_'), 'split'))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">s.replace</object>
+      </argument>
+      <argument>
+       <object type="str">o</object>
+      </argument>
+      <argument>
+       <object type="str">_</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">split</object>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="list">
+   <object type="str">hell_</object>
+   <object type="str">w_rld!</object>
+  </object>
+ </answer>
+</pnml>
+
+Let's now apply these techniques to work with Petri nets. First we
+load a net from PNML file. In practical cases, the command 'load' from
+snkc is not available. But it is enough to read the PNML file, extract
+its '<net>...</net>' part and paste it in the middle of the 'set'
+request.
+
+? set('n', load('simple-coloured.pnml'))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="set">
+  <argument>
+   <object type="str">n</object>
+  </argument>
+  <argument>
+   <net id="mynet">
+    <place id="p2">
+     <type domain="universal"/>
+     <initialMarking>
+      <multiset/>
+     </initialMarking>
+    </place>
+    <place id="p1">
+     <type domain="universal"/>
+     <initialMarking>
+      <multiset>
+       <item>
+        <value>
+         <object type="int">1</object>
+        </value>
+        <multiplicity>1</multiplicity>
+       </item>
+       <item>
+        <value>
+         <object type="int">2</object>
+        </value>
+        <multiplicity>1</multiplicity>
+       </item>
+      </multiset>
+     </initialMarking>
+    </place>
+    <transition id="t"/>
+    <arc id="p1:t" source="p1" target="t">
+     <inscription>
+      <variable>x</variable>
+     </inscription>
+    </arc>
+    <arc id="t:p2" source="t" target="p2">
+     <inscription>
+      <expression>x+1</expression>
+     </inscription>
+    </arc>
+   </net>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+The marking of the net can then be retrieved. Only place 'p1' is
+marked by the two integer-valued tokens 1 and 2.
+
+? call('n.get_marking')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <object type="str">n.get_marking</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <marking>
+   <place id="p1">
+    <tokens>
+     <multiset>
+      <item>
+       <value>
+        <object type="int">1</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+      <item>
+       <value>
+        <object type="int">2</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+     </multiset>
+    </tokens>
+   </place>
+  </marking>
+ </answer>
+</pnml>
+
+Using the same techniques as for emulating "s.replace().split()"
+above, we can query the modes of transition 't' in net 'n'. We get in
+return a list of two substitutions that allow to fire 't'.
+
+? call(call('getattr', call('n.transition', 't'), 'modes'))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">n.transition</object>
+      </argument>
+      <argument>
+       <object type="str">t</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">modes</object>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="list">
+   <substitution>
+    <item>
+     <name>x</name>
+     <value>
+      <object type="int">1</object>
+     </value>
+    </item>
+   </substitution>
+   <substitution>
+    <item>
+     <name>x</name>
+     <value>
+      <object type="int">2</object>
+     </value>
+    </item>
+   </substitution>
+  </object>
+ </answer>
+</pnml>
+
+Instead of getting this list of modes, we could have saved it to a
+name 's'. We just need to nest the above query in a 'set' query.
+
+? set('s', call(call('getattr', call('n.transition', 't'), 'modes')))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="set">
+  <argument>
+   <object type="str">s</object>
+  </argument>
+  <argument>
+   <query name="call">
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">getattr</object>
+      </argument>
+      <argument>
+       <query name="call">
+        <argument>
+         <object type="str">n.transition</object>
+        </argument>
+        <argument>
+         <object type="str">t</object>
+        </argument>
+       </query>
+      </argument>
+      <argument>
+       <object type="str">modes</object>
+      </argument>
+     </query>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+In order to fire 't', we will call its method 'fire' and pass it one
+of the modes stored in 's'. Here, we use function 'getitem' to
+retrieve the first item in 's' (numbered 0). In a realistic example,
+it could be simpler to parse and store on the client the list of
+substitutions, instead of storing it on the server.
+
+? call(call('getattr', call('n.transition', 't'), 'fire'), call('getitem', get('s'), 0))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">n.transition</object>
+      </argument>
+      <argument>
+       <object type="str">t</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">fire</object>
+    </argument>
+   </query>
+  </argument>
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getitem</object>
+    </argument>
+    <argument>
+     <query name="get">
+      <argument>
+       <object type="str">s</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="int">0</object>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+As we can see now, both places are marked.
+
+? call('n.get_marking')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <object type="str">n.get_marking</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <marking>
+   <place id="p2">
+    <tokens>
+     <multiset>
+      <item>
+       <value>
+        <object type="int">2</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+     </multiset>
+    </tokens>
+   </place>
+   <place id="p1">
+    <tokens>
+     <multiset>
+      <item>
+       <value>
+        <object type="int">2</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+     </multiset>
+    </tokens>
+   </place>
+  </marking>
+ </answer>
+</pnml>
+
+Then we can call again 'fire', with the second available mode.
+
+? call(call('getattr', call('n.transition', 't'), 'fire'), call('getitem', get('s'), 1))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">n.transition</object>
+      </argument>
+      <argument>
+       <object type="str">t</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">fire</object>
+    </argument>
+   </query>
+  </argument>
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getitem</object>
+    </argument>
+    <argument>
+     <query name="get">
+      <argument>
+       <object type="str">s</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="int">1</object>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok"/>
+</pnml>
+
+And now only 'p2' is marked.
+
+? call('n.get_marking')
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <object type="str">n.get_marking</object>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <marking>
+   <place id="p2">
+    <tokens>
+     <multiset>
+      <item>
+       <value>
+        <object type="int">2</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+      <item>
+       <value>
+        <object type="int">3</object>
+       </value>
+       <multiplicity>1</multiplicity>
+      </item>
+     </multiset>
+    </tokens>
+   </place>
+  </marking>
+ </answer>
+</pnml>
+
+Querying the modes of 't' now results in an empty list because there
+is no more tokens in the input place of 't'.
+
+? call(call('getattr', call('n.transition', 't'), 'modes'))
+# query to localhost:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">n.transition</object>
+      </argument>
+      <argument>
+       <object type="str">t</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">modes</object>
+    </argument>
+   </query>
+  </argument>
+ </query>
+</pnml>
+# answer from 127.0.0.1:1234
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <answer status="ok">
+  <object type="list"/>
+ </answer>
+</pnml>
+
+These examples are intended to illustrate what _can_ be made, but not
+necessarily what _should_ be made. Here, we use snkc at the client
+side, so we have no way to store locally information, nor to parse the
+PNML we get from the server. So, when we need to record some data, we
+put it at the server side using a 'set' query. Doing so, we will need
+to use quite complicated queries in order to extract the bits of data
+that we will want to use. See for instance how complicated was the
+firing of a transition.
+
+In a realistic client, it is possible to store an manage locally some
+information and so avoid complex queries. It is even possible to
+completely parse and interpret PNML data received from the server.
+Both extremities have pros and cons:
+
+ - Storing everything on the server simplifies processing for the
+   client; but it increases (a lot) the complexity of queries.
+
+ - Storing everything on the client requires to parse and interpret
+   PNML data, and to manage stored information; but it simplifies
+   queries and may give more control on the amount of exchanged.
+
+Any intermediary position may be adopted: it is possible for a client
+to partially interpret PNML and to store fragments of uninterpreted
+PNML text as symbolic values. These fragments can then be inserted
+into queries where they are required.
+
+For instance, a client could parse the list of modes of a transition
+up to the tag <substitution>, which is quite a simple task. Each mode
+could then be saved locally as a fragment of PNML text
+"<substitution>...</substitution>". Then, firing a transition would
+simply require to insert such a fragment at the right position in a
+template query. For instance, let's run:
+
+? show(call(call('getattr', call('n.transition', 't'), 'fire'), 'SUBST'))
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="call">
+  <argument>
+   <query name="call">
+    <argument>
+     <object type="str">getattr</object>
+    </argument>
+    <argument>
+     <query name="call">
+      <argument>
+       <object type="str">n.transition</object>
+      </argument>
+      <argument>
+       <object type="str">t</object>
+      </argument>
+     </query>
+    </argument>
+    <argument>
+     <object type="str">fire</object>
+    </argument>
+   </query>
+  </argument>
+  <argument>
+   <object type="str">SUBST</object>
+  </argument>
+ </query>
+</pnml>
+
+Then, we just need to replace '<object type="str">SUBST</object>' with
+the saved fragment '<substitution>...</substitution>' in order to fire
+the transition with the chosen mode. A similar techniques can be
+applied to many situations. A lazy (but clever) approach would be to
+prepare a series of template queries where placeholders could be
+substituted with fragments of PNML text retrieved from the server.
+
+##
+## Keyword arguments
+##
+
+A <query> may also accepts keyword arguments like functions in Python.
+But currently no query expects that. The syntax to add keyword
+arguments is to use a tag <keyword> for each such argument, with an
+attribute 'name' that store the keyword name and with a child tag that
+stores the keyword value. For instance, a Python call "example('x', 1,
+foo=5, bar='hello')" would translate to a query:
+
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <query name="example">
+  <argument>
+   <object type="str">
+    x
+   </object>
+  </argument>
+  <argument>
+   <object type="int">
+    1
+   </object>
+  </argument>
+  <keyword name="foo">
+   <object type="int">
+    5
+   </object>
+  </keyword>
+  <keyword name="bar">
+   <object type="str">
+    hello
+   </object>
+  </keyword>
+ </query>
+</pnml>
