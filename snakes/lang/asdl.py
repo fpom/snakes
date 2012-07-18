@@ -170,16 +170,23 @@ class CodeGen (asdl.VisitorBase) :
             body = []
             cls = ["class {!s} ({!s}):".format(name, ", ".join(parents)), body]
 
+            non_default_args = []
+            default_args = []
             for f in fields:
+                if f.name.value == 'ctx':
+                    f.opt = True
+
                 if f.opt:
-                    args.append("{!s}=None".format(f.name))
+                    default_args.append("{!s}=None".format(f.name))
                     assign.append("self.{0!s} = {0!s}".format(f.name))
                 elif f.seq:
-                    args.append("{!s}=[]".format(f.name))
+                    default_args.append("{!s}=[]".format(f.name))
                     assign.append("self.{0!s} = list({0!s})".format(f.name))
                 else:
-                    args.append("{!s}".format(f.name))
+                    non_default_args.append("{!s}".format(f.name))
                     assign.append("self.{0!s} = {0!s}".format(f.name))
+
+            args = non_default_args + default_args
 
             body.append("_fields = {!r}".format( tuple(map(repr, _fields))))
             body.append("_attributes = {!r}".format( tuple(map(repr, _attributes))))
