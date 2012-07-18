@@ -113,10 +113,7 @@ class CodeGen (asdl.VisitorBase) :
         self.hierarchy[str(node.name)].append(self.current_node)
 
     def visitProduct(self, node):
-        raise NotImplementedError
-
-    def check_cyclic_dependencies(self):
-        pass
+        self.fields[self.current_node].extend(node.fields)
 
     @memoize
     def _get_fields(self, name):
@@ -246,7 +243,7 @@ def compile_asdl(infilename, outfilename):
     outfile.write(("# this file has been automatically generated running:\n"
                    "# %s\n# timestamp: %s\n\n") % (" ".join(sys.argv),
                                                    datetime.datetime.now()))
-    outfile.write(CodeGen().python(node))
+    outfile.write(CodeGen(node).python)
     outfile.close()
     infile.close()
 
