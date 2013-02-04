@@ -792,7 +792,7 @@ class Expression (ArcAnnotation) :
         @param expr: a Python expression suitable for C{eval}
         @type expr: C{str}
         """
-        self._expr = compile(expr, "", "eval")
+        self._expr = compile(expr, "<string>", "eval")
         self._str = expr.strip()
         self._true = (expr.strip() == "True")
         self.globals = Evaluator()
