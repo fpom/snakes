@@ -25,26 +25,26 @@ True
 False
 
 The various compositions are the same as sets operations, plus the
-complement: C{&}, C{|}, C{-}, C{^} and C{~} (complement).
+complement: `&`, `|`, `-`, `^` and `~` (complement).
 
-Various types are predefined (like C{tInteger}) the others can be
+Various types are predefined (like `tInteger`) the others can be
 constructed using the various classes in the module. Prefefined types
 are:
 
- - C{tAll}: any value is in the type
- - C{tNothing}: empty type
- - C{tString}: string values
- - C{tList}: lists values
- - C{tInteger}: integer values
- - C{tNatural}: non-negative integers
- - C{tPositive}: strictly positive integers
- - C{tFloat}: float values
- - C{tNumber}: integers or float values
- - C{tDict}: Python's C{dict} values
- - C{tNone}: the single value C{None}
- - C{tBoolean}: C{True} or C{False}
- - C{tTuple}: tuple values
- - C{tPair}: tuples of length two
+  * `tAll`: any value is in the type
+  * `tNothing`: empty type
+  * `tString`: string values
+  * `tList`: lists values
+  * `tInteger`: integer values
+  * `tNatural`: non-negative integers
+  * `tPositive`: strictly positive integers
+  * `tFloat`: float values
+  * `tNumber`: integers or float values
+  * `tDict`: Python's `dict` values
+  * `tNone`: the single value `None`
+  * `tBoolean`: `True` or `False`
+  * `tTuple`: tuple values
+  * `tPair`: tuples of length two
 
 Types with finitely many elements can be iterated:
 
@@ -79,20 +79,20 @@ def _iterable (obj, *types) :
 
 class Type (object) :
     """Base class for all types.
-
-    Implement operations C{&}, C{|}, C{-}, C{^} and C{~} to build new
+    
+    Implement operations `&`, `|`, `-`, `^` and `~` to build new
     types. Also implement the typechecking of several values. All the
-    subclasses should implement the method C{__contains__} to
-    typecheck a single object.
+    subclasses should implement the method `__contains__` to typecheck
+    a single object.
     """
     def __init__ (self) :
         """Abstract method
-
+        
         >>> Type()
         Traceback (most recent call last):
          ...
         NotImplementedError: abstract class
-
+        
         @raise NotImplementedError: when called
         """
         raise NotImplementedError("abstract class")
@@ -103,14 +103,14 @@ class Type (object) :
         return hash(repr(self))
     def __and__ (self, other) :
         """Intersection type.
-
+        
         >>> Instance(int) & Greater(0)
         (Instance(int) & Greater(0))
-
+        
         @param other: the other type in the intersection
-        @type other: C{Type}
+        @type other: `Type`
         @return: the intersection of both types
-        @rtype: C{Type}
+        @rtype: `Type`
         """
         if other is self :
             return self
@@ -118,14 +118,14 @@ class Type (object) :
             return _And(self, other)
     def __or__ (self, other) :
         """Union type.
-
+        
         >>> Instance(int) | Instance(bool)
         (Instance(int) | Instance(bool))
-
+        
         @param other: the other type in the union
-        @type other: C{Type}
+        @type other: `Type`
         @return: the union of both types
-        @rtype: C{Type}
+        @rtype: `Type`
         """
         if other is self :
             return self
@@ -133,14 +133,14 @@ class Type (object) :
             return _Or(self, other)
     def __sub__ (self, other) :
         """Substraction type.
-
+        
         >>> Instance(int) - OneOf([0, 1, 2])
         (Instance(int) - OneOf([0, 1, 2]))
-
+        
         @param other: the other type in the substraction
-        @type other: C{Type}
-        @return: the type C{self} minus the type C{other}
-        @rtype: C{Type}
+        @type other: `Type`
+        @return: the type `self` minus the type `other`
+        @rtype: `Type`
         """
         if other is self :
             return tNothing
@@ -148,14 +148,14 @@ class Type (object) :
             return _Sub(self, other)
     def __xor__ (self, other) :
         """Disjoint union type.
-
+        
         >>> Greater(0) ^ Instance(float)
         (Greater(0) ^ Instance(float))
-
+        
         @param other: the other type in the disjoint union
-        @type other: C{Type}
+        @type other: `Type`
         @return: the disjoint union of both types
-        @rtype: C{Type}
+        @rtype: `Type`
         """
         if other is self :
             return tNothing
@@ -163,35 +163,35 @@ class Type (object) :
             return _Xor(self, other)
     def __invert__ (self) :
         """Complementary type.
-
+        
         >>> ~ Instance(int)
         (~Instance(int))
-
+        
         @return: the complementary type
-        @rtype: C{Type}
+        @rtype: `Type`
         """
         return _Invert(self)
     def __iterable__ (self) :
         """Called to test if a type is iterable
-
+        
         Should be replaced in subclasses that are not iterable
-
+        
         @raise ValueError: if not iterable
         """
         pass
     def __call__ (self, *values) :
         """Typecheck values.
-
+        
         >>> Instance(int)(3, 4, 5)
         True
         >>> Instance(int)(3, 4, 5.0)
         False
-
+        
         @param values: values that have to be checked
-        @type values: C{object}
-        @return: C{True} if all the values are in the types, C{False}
-          otherwise
-        @rtype: C{bool}
+        @type values: `object`
+        @return: `True` if all the values are in the types, `False`
+            otherwise
+        @rtype: `bool`
         """
         for v in values :
             if v not in self :
@@ -201,21 +201,21 @@ class Type (object) :
     _typemap = None
     @classmethod
     def __pnmlload__ (cls, tree) :
-        """Load a C{Type} from a PNML tree
-
-        Uses the attribute C{__pnmltype__} to know which type
+        """Load a `Type` from a PNML tree
+        
+        Uses the attribute `__pnmltype__` to know which type
         corresponds to a tag "<type domain='xxx'>"
-
+        
         >>> s = List(tNatural | tBoolean).__pnmldump__()
         >>> Type.__pnmlload__(s)
         Collection(Instance(list),
                    ((Instance(int) & GreaterOrEqual(0))
                     | OneOf(True, False)))
-
+        
         @param tree: the PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{Type}
+        @rtype: `Type`
         """
         if cls._typemap is None :
             cls._typemap = {}
@@ -229,7 +229,7 @@ class Type (object) :
 
 class _BinaryType (Type) :
     """A type build from two other ones
-
+    
     This class allows to factorize the PNML related code for various
     binary types.
     """
@@ -254,11 +254,11 @@ class _And (_BinaryType) :
         return "(%s & %s)" % (repr(self._left), repr(self._right))
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return (value in self._left) and (value in self._right)
     def __iter__ (self) :
@@ -278,11 +278,11 @@ class _Or (_BinaryType) :
         return "(%s | %s)" % (repr(self._left), repr(self._right))
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return (value in self._left) or (value in self._right)
     def __iter__ (self) :
@@ -303,11 +303,11 @@ class _Sub (_BinaryType) :
         return "(%s - %s)" % (repr(self._left), repr(self._right))
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return (value in self._left) and (value not in self._right)
     def __iter__ (self) :
@@ -327,11 +327,11 @@ class _Xor (_BinaryType) :
         return "(%s ^ %s)" % (repr(self._left), repr(self._right))
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         if value in self._left :
             return value not in self._right
@@ -355,11 +355,11 @@ class _Invert (Type) :
         return "(~%s)" % repr(self._base)
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return (value not in self._base)
     __pnmltype__ = "complement"
@@ -389,19 +389,19 @@ class _All (Type) :
         return "tAll"
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True}
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True`
+        @rtype: `bool`
         """
         return True
     def __call__ (self, *values) :
         """Typecheck values.
-
+        
         @param values: values that have to be checked
         @type values: any objet
-        @return: C{True}
+        @return: `True`
         """
         return True
     __pnmltype__ = "universal"
@@ -440,19 +440,19 @@ class _Nothing (Type) :
         return "tNothing"
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{False}
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `False`
+        @rtype: `bool`
         """
         return False
     def __call__ (self, *values) :
         """Typecheck values.
-
+        
         @param values: values that have to be checked
         @type values: any objet
-        @return: C{False}
+        @return: `False`
         """
         return False
     def __iter__ (self) :
@@ -466,7 +466,7 @@ class _Nothing (Type) :
 
 class Instance (Type) :
     """A type whose values are all instances of one class.
-
+    
     >>> [1, 2] in Instance(list)
     True
     >>> (1, 2) in Instance(list)
@@ -474,44 +474,44 @@ class Instance (Type) :
     """
     def __init__ (self, _class) :
         """Initialize the type
-
+        
         >>> Instance(int)
         Instance(int)
-
+        
         @param _class: the class of instance
         @type _class: any class
         @return: initialized object
-        @rtype: C{Instance}
+        @rtype: `Instance`
         """
         self._class = _class
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 5 in Instance(int)
         True
         >>> 5.0 in Instance(int)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return isinstance(value, self._class)
     def __repr__ (self) :
-        """String representation of the type, suitable for C{eval}
-
+        """String representation of the type, suitable for `eval`
+        
         >>> repr(Instance(str))
         'Instance(str)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "Instance(%s)" % self._class.__name__
     __pnmltype__ = "instance"
     def __pnmldump__ (self) :
         """Dump a type to a PNML tree
-
+        
         >>> Instance(int).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -519,9 +519,9 @@ class Instance (Type) :
           <object name="int" type="class"/>
          </type>
         </pnml>
-
+        
         @return: the PNML representation of the type
-        @rtype: C{str}
+        @rtype: `str`
         """
         return Tree(self.__pnmltag__, None,
                     Tree.from_obj(self._class),
@@ -529,15 +529,15 @@ class Instance (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Builds a type from its PNML representation
-
+        
         >>> t = Instance(int).__pnmldump__()
         >>> Instance.__pnmlload__(t)
         Instance(int)
-
+        
         @param tree: the PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{Instance}
+        @rtype: `Instance`
         """
         return cls(tree.child().to_obj())
 
@@ -556,7 +556,7 @@ def _full_name (fun) :
 
 class TypeCheck (Type) :
     """A type whose values are accepted by a given function.
-
+    
     >>> def odd (val) :
     ...     return type(val) is int and (val % 2) == 1
     >>> 3 in TypeCheck(odd)
@@ -568,7 +568,7 @@ class TypeCheck (Type) :
     """
     def __init__ (self, checker, iterate=None) :
         """Initialize the type
-
+        
         >>> import operator
         >>> TypeCheck(operator.truth)
         TypeCheck(...truth)
@@ -581,13 +581,13 @@ class TypeCheck (Type) :
         ...     yield {True: 42}
         >>> TypeCheck(operator.truth, true_values)
         TypeCheck(...truth, snakes.typing.true_values)
-
+        
         @param checker: a function that checks one value and returns
-          C{True} if it is in te type and C{False} otherwise
-        @type checker: C{function(value)->bool}
-        @param iterate: C{None} or an iterator over the values of the
-          type
-        @type iterate: C{None} or C{iterator}
+            `True` if it is in te type and `False` otherwise
+        @type checker: `function(value)->bool`
+        @param iterate: `None` or an iterator over the values of the
+            type
+        @type iterate: `None` or `iterator`
         """
         self._check = checker
         self._iterate = iterate
@@ -615,7 +615,7 @@ class TypeCheck (Type) :
             raise ValueError("type not iterable")
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> def odd (val) :
         ...     return type(val) is int and (val % 2) == 1
         >>> 3 in TypeCheck(odd)
@@ -624,11 +624,11 @@ class TypeCheck (Type) :
         False
         >>> 3.0 in TypeCheck(odd)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return self._check(value)
     def __repr__ (self) :
@@ -656,7 +656,7 @@ class TypeCheck (Type) :
     __pnmltype__ = "checker"
     def __pnmldump__ (self) :
         """Dump type to a PNML tree
-
+        
         >>> import operator
         >>> TypeCheck(operator.truth).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
@@ -689,13 +689,13 @@ class TypeCheck (Type) :
           </iterator>
          </type>
         </pnml>
-
-        Note that this last example would not work as C{true_value} as
+        
+        Note that this last example would not work as `true_value` as
         been defined inside a docstring. In order to allow it to be
         re-loaded from PNML, it should be defined at module level.
-
+        
         @return: the type serialized to PNML
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree("checker", None, Tree.from_obj(self._check)),
@@ -704,7 +704,7 @@ class TypeCheck (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from a PNML tree
-
+        
         >>> import operator
         >>> TypeCheck.__pnmlload__(TypeCheck(operator.truth).__pnmldump__())
         TypeCheck(....truth)
@@ -715,41 +715,40 @@ class TypeCheck (Type) :
         ...     yield [42]
         ...     yield (42,)
         ...     yield {True: 42}
-
+        
         @param tree: the PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{TypeChecker}
+        @rtype: `TypeChecker`
         """
         return cls(tree.child("checker").child().to_obj(),
                    tree.child("iterator").child().to_obj())
 
 class OneOf (Type) :
     """A type whose values are explicitely enumerated.
-
+    
     >>> 3 in OneOf(1, 2, 3, 4, 5)
     True
     >>> 0 in OneOf(1, 2, 3, 4, 5)
     False
     """
     def __init__ (self, *values) :
-        """
-        @param values: the enumeration of the values in the type
+        """@param values: the enumeration of the values in the type
         @type values: any objects
         """
         self._values = values
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 3 in OneOf(1, 2, 3, 4, 5)
         True
         >>> 0 in OneOf(1, 2, 3, 4, 5)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return value in self._values
     def __repr__ (self) :
@@ -767,7 +766,7 @@ class OneOf (Type) :
     __pnmltype__ = "enum"
     def __pnmldump__ (self) :
         """Dump type to its PNML representation
-
+        
         >>> OneOf(1, 2, 3, 4, 5).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -789,9 +788,9 @@ class OneOf (Type) :
           </object>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     *(Tree.from_obj(val) for val in self._values),
@@ -799,21 +798,21 @@ class OneOf (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNML representation
-
+        
         >>> OneOf.__pnmlload__(OneOf(1, 2, 3, 4, 5).__pnmldump__())
         OneOf(1, 2, 3, 4, 5)
-
+        
         @param tree: PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{OneOf}
+        @rtype: `OneOf`
         """
         return cls(*(child.to_obj() for child in tree.children))
 
 class Collection (Type) :
     """A type whose values are a given container, holding items of a
     given type and ranging in a given interval.
-
+    
     >>> [0, 1.1, 2, 3.3, 4] in Collection(Instance(list), tNumber, 3, 10)
     True
     >>> [0, 1.1] in Collection(Instance(list), tNumber, 3, 10) #too short
@@ -823,18 +822,18 @@ class Collection (Type) :
     """
     def __init__ (self, collection, items, min=None, max=None) :
         """Initialise the type
-
+        
         >>> Collection(Instance(list), tNumber, 3, 10)
         Collection(Instance(list), (Instance(int) | Instance(float)), min=3, max=10)
-
+        
         @param collection: the collection type
         @type collection: any container type
         @param items: the type of the items
         @type items: any type
         @param min: the smallest allowed value
-        @type min: any value in C{items}
+        @type min: any value in `items`
         @param max: the greatest allowed value
-        @type max: any value in C{items}
+        @type max: any value in `items`
         """
         self._collection = collection
         self._class = collection._class
@@ -843,18 +842,18 @@ class Collection (Type) :
         self._min = min
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> [0, 1.1, 2, 3.3, 4] in Collection(Instance(list), tNumber, 3, 10)
         True
         >>> [0, 1.1] in Collection(Instance(list), tNumber, 3, 10) #too short
         False
         >>> [0, '1.1', 2, 3.3, 4] in Collection(Instance(list), tNumber, 3, 10) #wrong item
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         if value not in self._collection :
             return False
@@ -895,7 +894,7 @@ class Collection (Type) :
     __pnmltype__ = "collection"
     def __pnmldump__ (self) :
         """Dump type to a PNML tree
-
+        
         >>> Collection(Instance(list), tNumber, 3, 10).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -931,9 +930,9 @@ class Collection (Type) :
           </max>
          </type>
         </pnml>
-
+        
         @return: the PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree("container", None, Tree.from_obj(self._collection)),
@@ -944,16 +943,16 @@ class Collection (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load type from its PNML representation
-
+        
         >>> t = Collection(Instance(list), tNumber, 3, 10).__pnmldump__()
         >>> Collection.__pnmlload__(t)
         Collection(Instance(list), (Instance(int) | Instance(float)),
                    min=3, max=10)
-
+        
         @param tree: the PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{Collection}
+        @rtype: `Collection`
         """
         return cls(tree.child("container").child().to_obj(),
                    tree.child("items").child().to_obj(),
@@ -961,59 +960,59 @@ class Collection (Type) :
                    tree.child("max").child().to_obj())
 
 def List (items, min=None, max=None) :
-    """Shorthand for instantiating C{Collection}
-
+    """Shorthand for instantiating `Collection`
+    
     >>> List(tNumber, min=3, max=10)
     Collection(Instance(list), (Instance(int) | Instance(float)), min=3, max=10)
-
+    
     @param items: the type of the elements in the collection
-    @type items: C{Type}
+    @type items: `Type`
     @param min: the minimum number of elements in the collection
-    @type min: C{int} or C{None}
+    @type min: `int` or `None`
     @param max: the maximum number of elements in the collection
-    @type max: C{int} or C{None}
+    @type max: `int` or `None`
     @return: a type that checks the given constraints
-    @rtype: C{Collection}
+    @rtype: `Collection`
     """
     return Collection(Instance(list), items, min, max)
 
 def Tuple (items, min=None, max=None) :
-    """Shorthand for instantiating C{Collection}
-
+    """Shorthand for instantiating `Collection`
+    
     >>> Tuple(tNumber, min=3, max=10)
     Collection(Instance(tuple), (Instance(int) | Instance(float)), min=3, max=10)
-
+    
     @param items: the type of the elements in the collection
-    @type items: C{Type}
+    @type items: `Type`
     @param min: the minimum number of elements in the collection
-    @type min: C{int} or C{None}
+    @type min: `int` or `None`
     @param max: the maximum number of elements in the collection
-    @type max: C{int} or C{None}
+    @type max: `int` or `None`
     @return: a type that checks the given constraints
-    @rtype: C{Collection}
+    @rtype: `Collection`
     """
     return Collection(Instance(tuple), items, min, max)
 
 def Set (items, min=None, max=None) :
-    """Shorthand for instantiating C{Collection}
-
+    """Shorthand for instantiating `Collection`
+    
     >>> Set(tNumber, min=3, max=10)
     Collection(Instance(set), (Instance(int) | Instance(float)), min=3, max=10)
-
+    
     @param items: the type of the elements in the collection
-    @type items: C{Type}
+    @type items: `Type`
     @param min: the minimum number of elements in the collection
-    @type min: C{int} or C{None}
+    @type min: `int` or `None`
     @param max: the maximum number of elements in the collection
-    @type max: C{int} or C{None}
+    @type max: `int` or `None`
     @return: a type that checks the given constraints
-    @rtype: C{Collection}
+    @rtype: `Collection`
     """
     return Collection(Instance(set), items, min, max)
 
 class Mapping (Type) :
-    """A type whose values are mapping (eg, C{dict})
-
+    """A type whose values are mapping (eg, `dict`)
+    
     >>> {'Yes': True, 'No': False} in Mapping(tString, tAll)
     True
     >>> {True: 1, False: 0} in Mapping(tString, tAll)
@@ -1021,35 +1020,35 @@ class Mapping (Type) :
     """
     def __init__ (self, keys, items, _dict=Instance(dict)) :
         """Initialise a mapping type
-
+        
         >>> Mapping(tInteger, tFloat)
         Mapping(Instance(int), Instance(float), Instance(dict))
         >>> from snakes.data import hdict
         >>> Mapping(tInteger, tFloat, Instance(hdict))
         Mapping(Instance(int), Instance(float), Instance(hdict))
-
+        
         @param keys: the type for the keys
         @type keys: any type
         @param items: the type for the items
         @type items: any type
         @param _dict: the class that mapping must be instances of
-        @type _dict: any C{dict} like class
+        @type _dict: any `dict` like class
         """
         self._keys = keys
         self._items = items
         self._dict = _dict
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> {'Yes': True, 'No': False} in Mapping(tString, tAll)
         True
         >>> {True: 1, False: 0} in Mapping(tString, tAll)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         if not self._dict(value) :
             return False
@@ -1060,13 +1059,13 @@ class Mapping (Type) :
                 return True
         return True
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(Mapping(tString, tAll))
         'Mapping(Instance(str), tAll, Instance(dict))'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "Mapping(%s, %s, %s)" % (repr(self._keys),
                                         repr(self._items),
@@ -1074,7 +1073,7 @@ class Mapping (Type) :
     __pnmltype__ = "mapping"
     def __pnmldump__ (self) :
         """Dump type to a PNML tree
-
+        
         >>> from snakes.hashables import hdict
         >>> Mapping(tString, tAll, Instance(hdict)).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
@@ -1095,9 +1094,9 @@ class Mapping (Type) :
           </container>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree("keys", None, Tree.from_obj(self._keys)),
@@ -1107,16 +1106,16 @@ class Mapping (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load type from its PNML representation
-
+        
         >>> from snakes.hashables import hdict
         >>> t = Mapping(tString, tAll, Instance(hdict)).__pnmldump__()
         >>> Mapping.__pnmlload__(t)
         Mapping(Instance(str), tAll, Instance(hdict))
-
+        
         @param tree: PNML representation of the type
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{Mapping}
+        @rtype: `Mapping`
         """
         return cls(tree.child("keys").child().to_obj(),
                    tree.child("items").child().to_obj(),
@@ -1124,35 +1123,35 @@ class Mapping (Type) :
 
 class Range (Type) :
     """A type whose values are in a given range
-
+    
     Notice that ranges are not built into the memory so that huge
     values can be used.
-
+    
     >>> 3 in Range(1, 2**128, 2)
     True
     >>> 4 in Range(1, 2**128, 2)
     False
     """
     def __init__ (self, first, last, step=1) :
-        """The values are those that the builtin C{range(first, last, step)}
-        would return.
-
+        """The values are those that the builtin `range(first, last,
+        step)` would return.
+        
         >>> Range(1, 10)
         Range(1, 10)
         >>> Range(1, 10, 2)
         Range(1, 10, 2)
-
+        
         @param first: first element in the range
-        @type first: C{int}
+        @type first: `int`
         @param last: upper bound of the range, not belonging to it
-        @type last: C{int}
+        @type last: `int`
         @param step: step between elements in the range
-        @type step: C{int}
+        @type step: `int`
         """
         self._first, self._last, self._step = first, last, step
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 1 in Range(1, 10, 2)
         True
         >>> 2 in Range(1, 10, 2)
@@ -1161,22 +1160,22 @@ class Range (Type) :
         True
         >>> 10 in Range(1, 10, 2)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return ((self._first <= value < self._last)
                 and ((value - self._first) % self._step == 0))
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(Range(1, 2**128, 2))
         'Range(1, 340282366920938463463374607431768211456, 2)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         if self._step == 1 :
             return "Range(%s, %s)" % (self._first, self._last)
@@ -1184,18 +1183,18 @@ class Range (Type) :
             return "Range(%s, %s, %s)" % (self._first, self._last, self._step)
     def __iter__ (self) :
         """Iterate over the elements of the type
-
+        
         >>> list(iter(Range(1, 10, 3)))
         [1, 4, 7]
-
+        
         @return: an iterator over the values belonging to the range
-        @rtype: C{generator}
+        @rtype: `generator`
         """
         return iter(xrange(self._first, self._last, self._step))
     __pnmltype__ = "range"
     def __pnmldump__ (self) :
         """Dump type to a PNML tree
-
+        
         >>> Range(1, 10, 2).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1217,9 +1216,9 @@ class Range (Type) :
           </step>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree("first", None, Tree.from_obj(self._first)),
@@ -1229,14 +1228,14 @@ class Range (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNML representation
-
+        
         >>> Range.__pnmlload__(Range(1, 10, 2).__pnmldump__())
         Range(1, 10, 2)
-
+        
         @param tree: PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the loaded type
-        @rtype: C{Range}
+        @rtype: `Range`
         """
         return cls(tree.child("first").child().to_obj(),
                    tree.child("last").child().to_obj(),
@@ -1244,10 +1243,10 @@ class Range (Type) :
 
 class Greater (Type) :
     """A type whose values are greater than a minimum.
-
+    
     The minimum and the checked values can be of any type as soon as
-    they can be compared with C{>}.
-
+    they can be compared with `>`.
+    
     >>> 6 in Greater(3)
     True
     >>> 3 in Greater(3)
@@ -1255,17 +1254,17 @@ class Greater (Type) :
     """
     def __init__ (self, min) :
         """Initialises the type
-
+        
         >>> Greater(5)
         Greater(5)
-
+        
         @param min: the greatest value not included in the type
-        @type min: any C{object} that support comparison
+        @type min: any `object` that support comparison
         """
         self._min = min
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 5 in Greater(3)
         True
         >>> 5 in Greater(3.0)
@@ -1274,30 +1273,30 @@ class Greater (Type) :
         False
         >>> 1.0 in Greater(5)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         try :
             return value > self._min
         except :
             return False
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(Greater(3))
         'Greater(3)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "Greater(%s)" % repr(self._min)
     __pnmltype__ = "greater"
     def __pnmldump__ (self) :
         """Dump type to its PNML representation
-
+        
         >>> Greater(42).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1307,9 +1306,9 @@ class Greater (Type) :
           </object>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree.from_obj(self._min),
@@ -1317,35 +1316,35 @@ class Greater (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNLM representation
-
+        
         >>> Greater.__pnmlload__(Greater(42).__pnmldump__())
         Greater(42)
-
+        
         @param tree: PNML representation to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{Greater}
+        @rtype: `Greater`
         """
         return cls(tree.child().to_obj())
 
 class GreaterOrEqual (Type) :
     """A type whose values are greater or equal than a minimum.
-
-    See the description of C{Greater}
+    
+    See the description of `Greater`
     """
     def __init__ (self, min) :
         """Initialises the type
-
+        
         >>> GreaterOrEqual(5)
         GreaterOrEqual(5)
-
+        
         @param min: the minimal allowed value
-        @type min: any C{object} that support comparison
+        @type min: any `object` that support comparison
         """
         self._min = min
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 5 in GreaterOrEqual(3)
         True
         >>> 5 in GreaterOrEqual(3.0)
@@ -1354,30 +1353,30 @@ class GreaterOrEqual (Type) :
         True
         >>> 1.0 in GreaterOrEqual(5)
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         try :
             return value >= self._min
         except :
             False
     def __repr__ (self) :
-        """Return a strign representation of the type suitable for C{eval}
-
+        """Return a strign representation of the type suitable for `eval`
+        
         >>> repr(GreaterOrEqual(3))
         'GreaterOrEqual(3)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "GreaterOrEqual(%s)" % repr(self._min)
     __pnmltype__ = "greatereq"
     def __pnmldump__ (self) :
         """Dump type to its PNML representation
-
+        
         >>> GreaterOrEqual(42).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1387,9 +1386,9 @@ class GreaterOrEqual (Type) :
           </object>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree.from_obj(self._min),
@@ -1397,62 +1396,62 @@ class GreaterOrEqual (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNLM representation
-
+        
         >>> GreaterOrEqual.__pnmlload__(GreaterOrEqual(42).__pnmldump__())
         GreaterOrEqual(42)
-
+        
         @param tree: PNML representation to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{GreaterOrEqual}
+        @rtype: `GreaterOrEqual`
         """
         return cls(tree.child().to_obj())
 
 class Less (Type) :
     """A type whose values are less than a maximum.
-
-    See the description of C{Greater}
+    
+    See the description of `Greater`
     """
     def __init__ (self, max) :
         """Initialises the type
-
+        
         >>> Less(5)
         Less(5)
-
+        
         @param min: the smallest value not included in the type
-        @type min: any C{object} that support comparison
+        @type min: any `object` that support comparison
         """
         self._max = max
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 5.0 in Less(5)
         False
         >>> 4.9 in Less(5)
         True
         >>> 4 in Less(5.0)
         True
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return value < self._max
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(Less(3))
         'Less(3)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "Less(%s)" % repr(self._max)
     __pnmltype__ = "less"
     def __pnmldump__ (self) :
         """Dump type to its PNML representation
-
+        
         >>> Less(3).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1462,9 +1461,9 @@ class Less (Type) :
           </object>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree.from_obj(self._max),
@@ -1472,63 +1471,63 @@ class Less (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNML representation
-
+        
         >>> Less.__pnmlload__(Less(3).__pnmldump__())
         Less(3)
-
+        
         @param tree: PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{Less}
+        @rtype: `Less`
         """
         return cls(tree.child().to_obj())
 
 class LessOrEqual (Type) :
     """A type whose values are less than or equal to a maximum.
-
-    See the description of C{Greater}
+    
+    See the description of `Greater`
     """
     def __init__ (self, max) :
         """Initialises the type
-
+        
         >>> LessOrEqual(5)
         LessOrEqual(5)
-
+        
         @param min: the greatest value the type
-        @type min: any C{object} that support comparison
+        @type min: any `object` that support comparison
         """
 
         self._max = max
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> 5 in LessOrEqual(5.0)
         True
         >>> 5.1 in LessOrEqual(5)
         False
         >>> 1.0 in LessOrEqual(5)
         True
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         return value <= self._max
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(LessOrEqual(3))
         'LessOrEqual(3)'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "LessOrEqual(%s)" % repr(self._max)
     __pnmltype__ = "lesseq"
     def __pnmldump__ (self) :
         """Dump type to its PNML representation
-
+        
         >>> LessOrEqual(4).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1538,9 +1537,9 @@ class LessOrEqual (Type) :
           </object>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     Tree.from_obj(self._max),
@@ -1548,14 +1547,14 @@ class LessOrEqual (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNML representation
-
+        
         >>> LessOrEqual.__pnmlload__(LessOrEqual(4).__pnmldump__())
         LessOrEqual(4)
-
+        
         @param tree: PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{LessOrEqual}
+        @rtype: `LessOrEqual`
         """
         return cls(tree.child().to_obj())
 
@@ -1563,7 +1562,7 @@ class CrossProduct (Type) :
     """A type whose values are tuples, each component of them being in
     given types. The resulting type is the cartesian cross product of
     the compound types.
-
+    
     >>> (1, 3, 5) in CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10))
     True
     >>> (2, 4, 6) in CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10))
@@ -1571,37 +1570,38 @@ class CrossProduct (Type) :
     """
     def __init__ (self, *types) :
         """Initialise the type
-
+        
         >>> CrossProduct(Instance(int), Instance(float))
         CrossProduct(Instance(int), Instance(float))
-
-        @param types: the types of each component of the allowed tuples
-        @type types: C{Type}
+        
+        @param types: the types of each component of the allowed
+            tuples
+        @type types: `Type`
         """
         self._types = types
         _iterable(self, *types)
     def __repr__ (self) :
-        """Return a string representation of the type suitable for C{eval}
-
+        """Return a string representation of the type suitable for `eval`
+        
         >>> repr(CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10)))
         'CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10))'
-
+        
         @return: precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "CrossProduct(%s)" % ", ".join([repr(t) for t in self._types])
     def __contains__ (self, value) :
         """Check wether a value is in the type.
-
+        
         >>> (1, 3, 5) in CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10))
         True
         >>> (2, 4, 6) in CrossProduct(Range(1, 10), Range(1, 10, 2), Range(1, 10))
         False
-
+        
         @param value: the value to check
-        @type value: C{object}
-        @return: C{True} if C{value} is in the type, C{False} otherwise
-        @rtype: C{bool}
+        @type value: `object`
+        @return: `True` if `value` is in the type, `False` otherwise
+        @rtype: `bool`
         """
         if not isinstance(value, tuple) :
             return False
@@ -1613,16 +1613,16 @@ class CrossProduct (Type) :
         return True
     def __iter__ (self) :
         """A cross product is iterable if so are all its components.
-
+        
         >>> list(iter(CrossProduct(Range(1, 3), Range(3, 5))))
         [(1, 3), (1, 4), (2, 3), (2, 4)]
         >>> iter(CrossProduct(Range(1, 100), tAll))
         Traceback (most recent call last):
         ...
         ValueError: iteration over non-sequence
-
+        
         @return: an iterator over the values in the type
-        @rtype: C{generator}
+        @rtype: `generator`
         @raise ValueError: when one component is not iterable
         """
         self.__iterable__()
@@ -1630,7 +1630,7 @@ class CrossProduct (Type) :
     __pnmltype__ = "crossproduct"
     def __pnmldump__ (self) :
         """Dumps type to its PNML representation
-
+        
         >>> CrossProduct(Instance(int), Instance(float)).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1643,9 +1643,9 @@ class CrossProduct (Type) :
           </type>
          </type>
         </pnml>
-
+        
         @return: PNML representation of the type
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         return Tree(self.__pnmltag__, None,
                     *(Tree.from_obj(t) for t in self._types),
@@ -1653,15 +1653,15 @@ class CrossProduct (Type) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Build type from its PNML representation
-
+        
         >>> t = CrossProduct(Instance(int), Instance(float)).__pnmldump__()
         >>> CrossProduct.__pnmlload__(t)
         CrossProduct(Instance(int), Instance(float))
-
+        
         @param tree: PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: loaded type
-        @rtype: C{CrossProduct}
+        @rtype: `CrossProduct`
         """
         return cls(*(child.to_obj() for child in tree.children))
 
