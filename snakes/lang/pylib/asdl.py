@@ -111,7 +111,7 @@ class ASDLParser(spark.GenericParser, object):
         raise ASDLSyntaxError(tok.lineno, tok)
 
     def p_module_0(self, arg):
-        " module ::= Id Id version { } "
+        "module ::= Id Id version { }"
         (module, name, version, _0, _1) = arg
         if module.value != "module":
             raise ASDLSyntaxError(module.lineno,
@@ -119,7 +119,7 @@ class ASDLParser(spark.GenericParser, object):
         return Module(name, None, version)
 
     def p_module(self, arg):
-        " module ::= Id Id version { definitions } "
+        "module ::= Id Id version { definitions }"
         (module, name, version, _0, definitions, _1) = arg
         if module.value != "module":
             raise ASDLSyntaxError(module.lineno,
@@ -135,32 +135,32 @@ class ASDLParser(spark.GenericParser, object):
         return V
 
     def p_definition_0(self, arg):
-        " definitions ::= definition "
+        "definitions ::= definition"
         (definition,) = arg
         return definition
 
     def p_definition_1(self, arg):
-        " definitions ::= definition definitions "
+        "definitions ::= definition definitions"
         (definitions, definition) = arg
         return definitions + definition
 
     def p_definition(self, arg):
-        " definition ::= Id = type "
+        "definition ::= Id = type"
         (id, _, type) = arg
         return [Type(id, type)]
 
     def p_type_0(self, arg):
-        " type ::= product "
+        "type ::= product"
         (product,) = arg
         return product
 
     def p_type_1(self, arg):
-        " type ::= sum "
+        "type ::= sum"
         (sum,) = arg
         return Sum(sum)
 
     def p_type_2(self, arg):
-        " type ::= sum Id ( fields ) "
+        "type ::= sum Id ( fields )"
         (sum, id, _0, attributes, _1) = arg
         if id.value != "attributes":
             raise ASDLSyntaxError(id.lineno,
@@ -170,74 +170,74 @@ class ASDLParser(spark.GenericParser, object):
         return Sum(sum, attributes)
 
     def p_product(self, arg):
-        " product ::= ( fields ) "
+        "product ::= ( fields )"
         (_0, fields, _1) = arg
         fields.reverse()
         return Product(fields)
 
     def p_sum_0(self, arg):
-        " sum ::= constructor """
+        "sum ::= constructor"""
         (constructor,) = arg
         return [constructor]
 
     def p_sum_1(self, arg):
-        " sum ::= constructor | sum "
+        "sum ::= constructor | sum"
         (constructor, _, sum) = arg
         return [constructor] + sum
 
     def p_sum_2(self, arg):
-        " sum ::= constructor | sum "
+        "sum ::= constructor | sum"
         (constructor, _, sum) = arg
         return [constructor] + sum
 
     def p_constructor_0(self, arg):
-        " constructor ::= Id "
+        "constructor ::= Id"
         (id,) = arg
         return Constructor(id)
 
     def p_constructor_1(self, arg):
-        " constructor ::= Id ( fields ) "
+        "constructor ::= Id ( fields )"
         (id, _0, fields, _1) = arg
         fields.reverse()
         return Constructor(id, fields)
 
     def p_fields_0(self, arg):
-        " fields ::= field "
+        "fields ::= field"
         (field,) = arg
         return [field]
 
     def p_fields_1(self, arg):
-        " fields ::= field , fields "
+        "fields ::= field , fields"
         (field, _, fields) = arg
         return fields + [field]
 
     def p_field_0(self, arg):
-        " field ::= Id "
+        "field ::= Id"
         (type,) = arg
         return Field(type)
 
     def p_field_1(self, arg):
-        " field ::= Id Id "
+        "field ::= Id Id"
         (type, name) = arg
         return Field(type, name)
 
     def p_field_2(self, arg):
-        " field ::= Id * Id "
+        "field ::= Id * Id"
         (type, _, name) = arg
         return Field(type, name, seq=1)
 
     def p_field_3(self, arg):
-        " field ::= Id ? Id "
+        "field ::= Id ? Id"
         (type, _, name) = arg
         return Field(type, name, opt=1)
 
     def p_field_4(self, arg):
-        " field ::= Id * "
+        "field ::= Id *"
         (type, _) = arg
         return Field(type, seq=1)
 
     def p_field_5(self, arg):
-        " field ::= Id ? "
+        "field ::= Id ?"
         (type, _) = arg
         return Field(type, opt=1)
 
