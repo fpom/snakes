@@ -17,7 +17,8 @@ class memoize(object):
             return call
 
     def __get__(self, obj, objtype):
-        """Support instance methods."""
+        """Support instance methods.
+        """
         return partial(self.__call__, obj)
 
 def component_has_cycle(node, graph, proceeding, visited):
@@ -237,7 +238,8 @@ class CodeGen (asdl.VisitorBase) :
         return "\n".join(python(code, 0))
 
 def compile_asdl(infilename, outfilename):
-    """ Helper function to compile asdl files. """
+    """Helper function to compile asdl files.
+    """
 
     infile = open(infilename, 'r')
     outfile = open(outfilename, 'w')
