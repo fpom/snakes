@@ -1,4 +1,5 @@
-"""Basic data types and functions used in SNAKES"""
+"""Basic data types and functions used in SNAKES
+"""
 
 import operator, inspect
 from snakes.compat import *
@@ -8,7 +9,7 @@ from snakes.pnml import Tree
 
 def cross (sets) :
     """Cross-product.
-
+    
     >>> list(cross([[1, 2], [3, 4, 5]]))
     [(1, 3), (1, 4), (1, 5), (2, 3), (2, 4), (2, 5)]
     >>> list(cross([[1, 2], [3, 4, 5], [6, 7, 8, 9]]))
@@ -18,12 +19,12 @@ def cross (sets) :
      (2, 4, 8), (2, 4, 9), (2, 5, 6), (2, 5, 7), (2, 5, 8), (2, 5, 9)]
     >>> list(cross([[], [1]]))
     []
-
+    
     @param sets: the sets of values to use
-    @type sets: C{iterable(iterable(object))}
-    @return: the C{list} of obtained tuples (lists are used to allow
-      unhashable objects)
-    @rtype: C{generator(tuple(object))}
+    @type sets: `iterable(iterable(object))`
+    @return: the `list` of obtained tuples (lists are used to allow
+        unhashable objects)
+    @rtype: `generator(tuple(object))`
     """
     if len(sets) == 0 :
         pass
@@ -36,8 +37,8 @@ def cross (sets) :
                 yield (item,) + others
 
 def iterate (value) :
-    """Like Python's builtin C{iter} but consider strings as atomic.
-
+    """Like Python's builtin `iter` but consider strings as atomic.
+    
     >>> list(iter([1, 2, 3]))
     [1, 2, 3]
     >>> list(iterate([1, 2, 3]))
@@ -46,12 +47,12 @@ def iterate (value) :
     ['f', 'o', 'o']
     >>> list(iterate('foo'))
     ['foo']
-
+    
     @param value: any object
-    @type value: C{object}
-    @return: an iterator on the elements of C{value} if is is iterable
-        and is not string, an iterator on the sole C{value} otherwise
-    @rtype: C{generator}
+    @type value: `object`
+    @return: an iterator on the elements of `value` if is is iterable
+        and is not string, an iterator on the sole `value` otherwise
+    @rtype: `generator`
     """
     if isinstance(value, str) :
         return iter([value])
@@ -62,11 +63,12 @@ def iterate (value) :
             return iter([value])
 
 class WordSet (set) :
-    """A set of words being able to generate fresh words."""
+    """A set of words being able to generate fresh words.
+    """
     def fresh (self, add=False, min=1, allowed="abcdefghijklmnopqrstuvwxyz",
                base="") :
         """Create a fresh word (ie, which is not in the set).
-
+        
         >>> w = WordSet(['foo', 'bar'])
         >>> list(sorted(w))
         ['bar', 'foo']
@@ -78,13 +80,13 @@ class WordSet (set) :
         'baa'
         >>> list(sorted(w))
         ['aaa', 'baa', 'bar', 'foo']
-
-        @param add: add the created word to the set if C{add=True}
-        @type add: C{bool}
+        
+        @param add: add the created word to the set if `add=True`
+        @type add: `bool`
         @param min: minimal length of the new word
-        @type min: C{int}
+        @type min: `int`
         @param allowed: characters allowed in the new word
-        @type allowed: C{str}
+        @type allowed: `str`
         """
         if base :
             result = [base] + [allowed[0]] * max(0, min - len(base))
@@ -113,32 +115,33 @@ class WordSet (set) :
 
 class MultiSet (hdict) :
     """Set with repetitions, ie, function from values to integers.
-
+    
     MultiSets support various operations, in particular: addition
-    (C{+}), substraction (C{-}), multiplication by a non negative
-    integer (C{*k}), comparisons (C{<}, C{>}, etc.), length (C{len})"""
+    (`+`), substraction (`-`), multiplication by a non negative
+    integer (`*k`), comparisons (`<`, `>`, etc.), length (`len`)
+    """
     def __init__ (self, values=[]) :
         """Initialise the multiset, adding values to it.
-
+        
         >>> MultiSet([1, 2, 3, 1, 2])
         MultiSet([...])
         >>> MultiSet()
         MultiSet([])
-
+        
         @param values: a single value or an iterable object holding
-          values (strings are not iterated)
-        @type values: any atomic object (C{str} included) or an
-          iterable object
+            values (strings are not iterated)
+        @type values: any atomic object (`str` included) or an
+            iterable object
         """
         self.add(values)
     def copy (self) :
-        """Copy a C{MultiSet}
-
+        """Copy a `MultiSet`
+        
         >>> MultiSet([1, 2, 3, 1, 2]).copy()
         MultiSet([...])
-
+        
         @return: a copy of the multiset
-        @rtype: C{MultiSet}
+        @rtype: `MultiSet`
         """
         result = MultiSet()
         result.update(self)
@@ -202,7 +205,7 @@ class MultiSet (hdict) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load a multiset from its PNML representation
-
+        
         >>> t = MultiSet([1, 2, 3, 4, 1, 2]).__pnmldump__()
         >>> MultiSet.__pnmlload__(t)
         MultiSet([...])
@@ -214,13 +217,12 @@ class MultiSet (hdict) :
             result._add(value, times)
         return result
     def _add (self, value, times=1) :
-        """Add a single value C{times} times.
-
+        """Add a single value `times` times.
+        
         @param value: the value to add
         @type value: any object
-        @param times: the number of times that C{value} has to be
-          added
-        @type times: non negative C{int}
+        @param times: the number of times that `value` has to be added
+        @type times: non negative `int`
         """
         if times < 0 :
             raise ValueError("negative values are forbidden")
@@ -230,7 +232,7 @@ class MultiSet (hdict) :
             self[value] = times
     def add (self, values, times=1) :
         """Add values to the multiset.
-
+        
         >>> m = MultiSet()
         >>> m.add([1, 2, 2, 3], 2)
         >>> list(sorted(m.items()))
@@ -238,23 +240,24 @@ class MultiSet (hdict) :
         >>> m.add(5, 3)
         >>> list(sorted(m.items()))
         [1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5]
-
+        
         @param values: the values to add or a single value to add
-        @type values: any atomic object (C{str} included) or an
-          iterable object
+        @type values: any atomic object (`str` included) or an
+            iterable object
         @param times: the number of times each value should be added
-        @type times: non negative C{int}"""
+        @type times: non negative `int`
+        """
         self.__mutable__()
         for value in iterate(values) :
             self._add(value, times)
     def _remove (self, value, times=1) :
-        """Remove a single value C{times} times.
-
+        """Remove a single value `times` times.
+        
         @param value: the value to remove
         @type value: any object
-        @param times: the number of times that C{value} has to be
-          removed
-        @type times: non negative C{int}
+        @param times: the number of times that `value` has to be
+            removed
+        @type times: non negative `int`
         """
         if times < 0 :
             raise ValueError("negative values are forbidden")
@@ -265,7 +268,7 @@ class MultiSet (hdict) :
             del self[value]
     def remove (self, values, times=1) :
         """Remove values to the multiset.
-
+        
         >>> m = MultiSet()
         >>> m.add([1, 2, 2, 3], 2)
         >>> list(sorted(m.items()))
@@ -276,82 +279,85 @@ class MultiSet (hdict) :
         >>> m.remove([1, 3], 2)
         >>> list(sorted(m.items()))
         [2]
-
-        @param values: the values to remove or a single value to remove
-        @type values: any atomic object (C{str} included) or an
-          iterable object
+        
+        @param values: the values to remove or a single value to
+            remove
+        @type values: any atomic object (`str` included) or an
+            iterable object
         @param times: the number of times each value should be removed
-        @type times: non negative C{int}"""
+        @type times: non negative `int`
+        """
         self.__mutable__()
         for value in iterate(values) :
             self._remove(value, times)
     def __call__ (self, value) :
-        """Number of occurrences of C{value}.
-
+        """Number of occurrences of `value`.
+        
         >>> m = MultiSet([1, 1, 2, 3, 3, 3])
         >>> m(1), m(2), m(3), m(4)
         (2, 1, 3, 0)
-
+        
         @param value: the value the count
-        @type value: C{object}
-        @rtype: C{int}
+        @type value: `object`
+        @rtype: `int`
         """
         return self.get(value, 0)
     def __iter__ (self) :
         """Iterate over the values (with repetitions).
-
-        Use C{MultiSet.keys} to ignore repetitions.
-
+        
+        Use `MultiSet.keys` to ignore repetitions.
+        
         >>> list(sorted(iter(MultiSet([1, 2, 3, 1, 2]))))
         [1, 1, 2, 2, 3]
-
+        
         @return: an iterator on the elements
-        @rtype: C{iterator}"""
+        @rtype: `iterator`
+        """
         for value in dict.__iter__(self) :
             for count in range(self[value]) :
                 yield value
     def items (self) :
-        """
-        Return the list of items with repetitions. The list without
-        repetitions can be retrieved with the C{key} method.
-
+        """Return the list of items with repetitions. The list without
+        repetitions can be retrieved with the `key` method.
+        
         >>> m = MultiSet([1, 2, 2, 3])
         >>> list(sorted(m.items()))
         [1, 2, 2, 3]
         >>> list(sorted(m.keys()))
         [1, 2, 3]
-
+        
         @return: list of items with repetitions
-        @rtype: C{list}"""
+        @rtype: `list`
+        """
         return list(iter(self))
     def __str__ (self) :
         """Return a simple string representation of the multiset
-
+        
         >>> str(MultiSet([1, 2, 2, 3]))
         '{...}'
-
+        
         @return: simple string representation of the multiset
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "{%s}" % ", ".join(repr(x) for x in self)
     def __repr__ (self) :
         """Return a string representation of the multiset that is
-        suitable for C{eval}
-
+        suitable for `eval`
+        
         >>> repr(MultiSet([1, 2, 2, 3]))
         'MultiSet([...])'
-
+        
         @return: precise string representation of the multiset
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "MultiSet([%s])" % ", ".join(repr(x) for x in self)
     def __len__ (self) :
         """Return the number of elements, including repetitions.
-
+        
         >>> len(MultiSet([1, 2] * 3))
         6
-
-        @rtype: C{int}
+        
+        @rtype: `int`
         """
         if self.size() == 0 :
             return 0
@@ -359,22 +365,22 @@ class MultiSet (hdict) :
             return reduce(operator.add, self.values())
     def size (self) :
         """Return the number of elements, excluding repetitions.
-
+        
         >>> MultiSet([1, 2] * 3).size()
         2
-
-        @rtype: C{int}
+        
+        @rtype: `int`
         """
         return dict.__len__(self)
     def __add__ (self, other) :
         """Adds two multisets.
-
+        
         >>> MultiSet([1, 2, 3]) + MultiSet([2, 3, 4])
         MultiSet([...])
-
+        
         @param other: the multiset to add
-        @type other: C{MultiSet}
-        @rtype: C{MultiSet}
+        @type other: `MultiSet`
+        @rtype: `MultiSet`
         """
         result = self.copy()
         for value, times in dict.items(other) :
@@ -382,17 +388,17 @@ class MultiSet (hdict) :
         return result
     def __sub__ (self, other) :
         """Substract two multisets.
-
+        
         >>> MultiSet([1, 2, 3]) - MultiSet([2, 3])
         MultiSet([1])
         >>> MultiSet([1, 2, 3]) - MultiSet([2, 3, 4])
         Traceback (most recent call last):
         ...
         ValueError: not enough occurrences
-
+        
         @param other: the multiset to substract
-        @type other: C{MultiSet}
-        @rtype: C{MultiSet}
+        @type other: `MultiSet`
+        @rtype: `MultiSet`
         """
         result = self.copy()
         for value, times in dict.items(other) :
@@ -400,13 +406,13 @@ class MultiSet (hdict) :
         return result
     def __mul__ (self, other) :
         """Multiplication by a non-negative integer.
-
+        
         >>> MultiSet([1, 2]) * 3
         MultiSet([...])
-
+        
         @param other: the integer to multiply
-        @type other: non-negative C{int}
-        @rtype: C{MultiSet}
+        @type other: non-negative `int`
+        @rtype: `MultiSet`
         """
         if other < 0 :
             raise ValueError("negative values are forbidden")
@@ -420,15 +426,15 @@ class MultiSet (hdict) :
     __hash__ = hdict.__hash__
     def __eq__ (self, other) :
         """Test for equality.
-
+        
         >>> MultiSet([1, 2, 3]*2) == MultiSet([1, 2, 3]*2)
         True
         >>> MultiSet([1, 2, 3]) == MultiSet([1, 2, 3, 3])
         False
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         if len(self) != len(other) :
             return False
@@ -442,20 +448,20 @@ class MultiSet (hdict) :
         return True
     def __ne__ (self, other) :
         """Test for difference.
-
+        
         >>> MultiSet([1, 2, 3]*2) != MultiSet([1, 2, 3]*2)
         False
         >>> MultiSet([1, 2, 3]) != MultiSet([1, 2, 3, 3])
         True
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         return not(self == other)
     def __lt__ (self, other) :
         """Test for strict inclusion.
-
+        
         >>> MultiSet([1, 2, 3]) < MultiSet([1, 2, 3, 4])
         True
         >>> MultiSet([1, 2, 3]) < MultiSet([1, 2, 3, 3])
@@ -466,10 +472,10 @@ class MultiSet (hdict) :
         False
         >>> MultiSet([1, 2, 2]) < MultiSet([1, 2, 3, 4])
         False
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         if not set(self.keys()) <= set(other.keys()) :
             return False
@@ -483,7 +489,7 @@ class MultiSet (hdict) :
         return result or (dict.__len__(self) < dict.__len__(other))
     def __le__ (self, other) :
         """Test for inclusion inclusion.
-
+        
         >>> MultiSet([1, 2, 3]) <= MultiSet([1, 2, 3, 4])
         True
         >>> MultiSet([1, 2, 3]) <= MultiSet([1, 2, 3, 3])
@@ -494,10 +500,10 @@ class MultiSet (hdict) :
         False
         >>> MultiSet([1, 2, 2]) <= MultiSet([1, 2, 3, 4])
         False
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         if not set(self.keys()) <= set(other.keys()) :
             return False
@@ -508,7 +514,7 @@ class MultiSet (hdict) :
         return True
     def __gt__ (self, other) :
         """Test for strict inclusion.
-
+        
         >>> MultiSet([1, 2, 3, 4]) > MultiSet([1, 2, 3])
         True
         >>> MultiSet([1, 2, 3, 3]) > MultiSet([1, 2, 3])
@@ -519,15 +525,15 @@ class MultiSet (hdict) :
         False
         >>> MultiSet([1, 2, 3, 4]) > MultiSet([1, 2, 2])
         False
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         return other.__lt__(self)
     def __ge__ (self, other) :
         """Test for inclusion.
-
+        
         >>> MultiSet([1, 2, 3, 4]) >= MultiSet([1, 2, 3])
         True
         >>> MultiSet([1, 2, 3, 3]) >= MultiSet([1, 2, 3])
@@ -538,40 +544,41 @@ class MultiSet (hdict) :
         False
         >>> MultiSet([1, 2, 3, 4]) >= MultiSet([1, 2, 2])
         False
-
+        
         @param other: the multiset to compare with
-        @type other: C{MultiSet}
-        @rtype: C{bool}
+        @type other: `MultiSet`
+        @rtype: `bool`
         """
         return other.__le__(self)
     def domain (self) :
         """Return the domain of the multiset
-
+        
         >>> list(sorted((MultiSet([1, 2, 3, 4]) + MultiSet([1, 2, 3])).domain()))
         [1, 2, 3, 4]
-
+        
         @return: the set of values in the domain
-        @rtype: C{set}
+        @rtype: `set`
         """
         return set(self.keys())
 
 class Substitution (object) :
-    """Map names to values or names, equals the identity where not defined.
-
-    Substitutions support the C{+} operation (union with consistency
-    check between the two operands) and the C{*} operation which is
-    the composition of functions (C{(f*g)(x)} is C{f(g(x))}).
-
-    Several methods (eg, C{image}) return lists instead of sets, this
+    """Map names to values or names, equals the identity where not
+    defined.
+    
+    Substitutions support the `+` operation (union with consistency
+    check between the two operands) and the `*` operation which is the
+    composition of functions (`(f*g)(x)` is `f(g(x))`).
+    
+    Several methods (eg, `image`) return lists instead of sets, this
     avoids the restriction of having only hashable values in a
     substitution image.
     """
     def __init__ (self, *largs, **dargs) :
         """Initialise using a dictionnary as a mapping.
-
+        
         The expected arguments are any ones acceptables for
         initializing a dictionnary.
-
+        
         >>> Substitution()
         Substitution()
         >>> Substitution(x=1, y=2)
@@ -613,7 +620,7 @@ class Substitution (object) :
     __pnmltag__ = "substitution"
     def __pnmldump__ (self) :
         """Dumps a substitution to a PNML tree
-
+        
         >>> Substitution(x=1, y=2).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -640,9 +647,9 @@ class Substitution (object) :
           </item>
          </substitution>
         </pnml>
-
+        
         @return: PNML representation
-        @rtype: C{snakes.pnml.Tree}
+        @rtype: `snakes.pnml.Tree`
         """
         nodes = []
         for name, value in self._dict.items() :
@@ -654,15 +661,15 @@ class Substitution (object) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load a substitution from its PNML representation
-
+        
         >>> t = Substitution(x=1, y=2).__pnmldump__()
         >>> Substitution.__pnmlload__(t)
         Substitution(...)
-
+        
         @param tree: the PNML tree to load
-        @type tree: C{snakes.pnml.Tree}
+        @type tree: `snakes.pnml.Tree`
         @return: the substitution loaded
-        @rtype: C{Substitution}
+        @rtype: `Substitution`
         """
         result = cls()
         for item in tree :
@@ -672,134 +679,134 @@ class Substitution (object) :
         return result
     def items (self) :
         """Return the list of pairs (name, value).
-
+        
         >>> Substitution(x=1, y=2).items()
         [('...', ...), ('...', ...)]
-
+        
         @return: a list of pairs (name, value) for each mapped name
-        @rtype: C{list}
+        @rtype: `list`
         """
         return list(self._dict.items())
     def domain (self) :
         """Return the set of mapped names.
-
+        
         >>> list(sorted(Substitution(x=1, y=2).domain()))
         ['x', 'y']
-
+        
         @return: the set of mapped names
-        @rtype: C{set}
+        @rtype: `set`
         """
         return set(self._dict.keys())
     def image (self) :
         """Return the set of values associated to the names.
-
+        
         >>> list(sorted(Substitution(x=1, y=2).image()))
         [1, 2]
-
+        
         @return: the set of values associated to names
-        @rtype: C{set}
+        @rtype: `set`
         """
         return set(self._dict.values())
     def __contains__ (self, name) :
         """Test if a name is mapped.
-
+        
         >>> 'x' in Substitution(x=1, y=2)
         True
         >>> 'z' in Substitution(x=1, y=2)
         False
-
+        
         @param name: the name to test
-        @type name: C{str} (usually)
+        @type name: `str` (usually)
         @return: a Boolean indicating whether this name is in the
-          domain or not
-        @rtype: C{bool}
+            domain or not
+        @rtype: `bool`
         """
         return name in self._dict
     def __iter__ (self) :
         """Iterate over the mapped names.
-
+        
         >>> list(sorted(iter(Substitution(x=1, y=2))))
         ['x', 'y']
-
+        
         @return: an iterator over the domain of the substitution
-        @rtype: C{generator}
+        @rtype: `generator`
         """
         return iter(self._dict)
     def __str__ (self) :
         """Return a compact string representation.
-
+        
         >>> str(Substitution(x=1, y=2))
         '{... -> ..., ... -> ...}'
-
+        
         @return: a simple string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "{%s}" % ", ".join(["%s -> %r" % (str(var), val)
                                    for var, val in self.items()])
     def __repr__ (self) :
-        """Return a string representation suitable for C{eval}.
-
+        """Return a string representation suitable for `eval`.
+        
         >>> repr(Substitution(x=1, y=2))
         'Substitution(...)'
-
+        
         @return: a precise string representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         return "%s(%s)" % (self.__class__.__name__,
                            ", ".join(("%s=%s" % (str(var), repr(val))
                                       for var, val in self.items())))
     def dict (self) :
         """Return the mapping as a dictionnary.
-
+        
         >>> Substitution(x=1, y=2).dict()
         {'...': ..., '...': ...}
-
+        
         @return: a dictionnary that does the same mapping as the
-          substitution
-        @rtype: C{dict}
+            substitution
+        @rtype: `dict`
         """
         return self._dict.copy()
     def copy (self) :
         """Copy the mapping.
-
+        
         >>> Substitution(x=1, y=2).copy()
         Substitution(...)
-
+        
         @return: a copy of the substitution
-        @rtype: C{Substitution}
+        @rtype: `Substitution`
         """
         return Substitution(self.dict())
     def __setitem__ (self, var, value) :
         """Assign an entry to the substitution
-
+        
         >>> s = Substitution()
         >>> s['x'] = 42
         >>> s
         Substitution(x=42)
-
+        
         @param var: the name of the variable
-        @type var: C{str}
-        @param value: the value to which C{var} is bound
-        @type value: C{object}
+        @type var: `str`
+        @param value: the value to which `var` is bound
+        @type value: `object`
         """
         self._dict[var] = value
     def __getitem__ (self, var) :
         """Return the mapped value.
-
-        Fails with C{DomainError} if C{var} is not mapped.
-
+        
+        Fails with `DomainError` if `var` is not mapped.
+        
         >>> s = Substitution(x=1, y=2)
         >>> s['x']
         1
         >>> try : s['z']
         ... except DomainError : print(sys.exc_info()[1])
         unbound variable 'z'
-
+        
         @param var: the name of the variable
-        @type var: C{str} (usually)
-        @return: the value that C{var} maps to
-        @rtype: C{object}
-        @raise DomainError: if C{var} does not belong to the domain
+        @type var: `str` (usually)
+        @return: the value that `var` maps to
+        @rtype: `object`
+        @raise DomainError: if `var` does not belong to the domain
         """
         try :
             return self._dict[var]
@@ -807,20 +814,20 @@ class Substitution (object) :
             raise DomainError("unbound variable '%s'" % var)
     def __call__ (self, var) :
         """Return the mapped value.
-
-        Never fails but return C{var} if it is not mapped.
-
+        
+        Never fails but return `var` if it is not mapped.
+        
         >>> s = Substitution(x=1, y=2)
         >>> s('x')
         1
         >>> s('z')
         'z'
-
+        
         @param var: the name of the variable
-        @type var: C{str} (usually)
-        @return: the value that C{var} maps to or C{var} itself if it
-          does not belong to the domain
-        @rtype: C{object}
+        @type var: `str` (usually)
+        @return: the value that `var` maps to or `var` itself if it
+            does not belong to the domain
+        @rtype: `object`
         """
         try :
             return self._dict[var]
@@ -828,21 +835,21 @@ class Substitution (object) :
             return var
     def __add__ (self, other) :
         """Add two substitution.
-
-        Fails with C{DomainError} if the two substitutions map a same
+        
+        Fails with `DomainError` if the two substitutions map a same
         name to different values.
-
+        
         >>> s = Substitution(x=1, y=2) + Substitution(y=2, z=3)
         >>> s('x'), s('y'), s('z')
         (1, 2, 3)
         >>> try : Substitution(x=1, y=2) + Substitution(y=4, z=3)
         ... except DomainError : print(sys.exc_info()[1])
         conflict on 'y'
-
+        
         @param other: another substitution
-        @type other: C{Substitution}
+        @type other: `Substitution`
         @return: the union of the substitutions
-        @rtype: C{Substitution}
+        @rtype: `Substitution`
         @raise DomainError: when one name is mapped to distinct values
         """
         for var in self :
@@ -853,19 +860,19 @@ class Substitution (object) :
         return s
     def __mul__ (self, other) :
         """Compose two substitutions.
-
+        
         The composition of f and g is such that (f*g)(x) = f(g(x)).
-
+        
         >>> f = Substitution(a=1, d=3, y=5)
         >>> g = Substitution(b='d', c=2, e=4, y=6)
         >>> h = f*g
         >>> h('a'), h('b'), h('c'), h('d'), h('e'), h('y'), h('x')
         (1, 3, 2, 3, 4, 6, 'x')
-
+        
         @param other: another substitution
-        @type other: C{Substitution}
+        @type other: `Substitution`
         @return: the composition of the substitutions
-        @rtype: C{Substitution}
+        @rtype: `Substitution`
         """
         res = self.copy()
         for var in other :
@@ -876,17 +883,16 @@ class Symbol (object) :
     """A symbol that may be used as a constant
     """
     def __init__ (self, name, export=True) :
-        """
-        If C{export} is C{True}, the created symbol is exported under
-        its name. If C{export} is C{False}, no export is made.
-        Finally, if C{export} is a string, it specifies the name of
-        the exported symbol.
-
+        """If `export` is `True`, the created symbol is exported under
+        its name. If `export` is `False`, no export is made. Finally,
+        if `export` is a string, it specifies the name of the exported
+        symbol.
+        
         @param name: the name (or value of the symbol)
-        @type name: C{str}
+        @type name: `str`
         @param export: the name under which the symbol is exported
-        @type export: C{str} or C{bool} or C{None}
-
+        @type export: `str` or `bool` or `None`
+        
         >>> Symbol('foo')
         Symbol('foo')
         >>> foo
@@ -901,7 +907,6 @@ class Symbol (object) :
         Traceback (most recent call last):
          ...
         NameError: ...
-
         """
         self.name = name
         if export is True :
