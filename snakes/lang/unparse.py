@@ -17,13 +17,16 @@ def interleave(inter, f, seq):
             f(x)
 
 class Unparser:
-    """Methods in this class recursively traverse an AST and
-    output source code for the abstract syntax; original formatting
-    is disregarged. """
+    """Methods in this class recursively traverse an AST and output
+    source code for the abstract syntax; original formatting is
+    disregarged.
+    """
 
     def __init__(self, tree, file = sys.stdout):
         """Unparser(tree, file=sys.stdout) -> None.
-         Print the source for tree to file."""
+
+        Print the source for tree to file.
+        """
         self.f = file
         self._indent = 0
         self.dispatch(tree)
@@ -31,7 +34,9 @@ class Unparser:
         self.f.flush()
 
     def fill(self, text = ""):
-        "Indent a piece of text, according to the current indentation level"
+        """Indent a piece of text, according to the current indentation
+        level
+        """
         self.f.write("\n" + "    "*self._indent + text)
 
     def write(self, text):
