@@ -8,3 +8,4 @@ dput.sh
 .gone
 ,*
 *.class
+*.bak

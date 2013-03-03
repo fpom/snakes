@@ -12,9 +12,9 @@ compositions defined for the Petri Box Calculus and its successors.
 @author: Franck Pommereau
 @organization: University of Paris 12
 @copyright: (C) 2005 Franck Pommereau
-@license: GNU Lesser General Public Licence (aka. GNU LGPL),
-    see the file C{doc/COPYING} in the distribution or visit U{the GNU
-    web site<http://www.gnu.org/licenses/licenses.html#LGPL>}
+@license: GNU Lesser General Public Licence (aka. GNU LGPL), see the
+    file `doc/COPYING` in the distribution or visit [the GNU web
+    site](http://www.gnu.org/licenses/licenses.html#LGPL)
 @contact: pommereau@univ-paris12.fr
 """
 
