@@ -1,7 +1,7 @@
 """Draw Petri nets using PyGraphViz
 
- - adds a method C{draw} to C{PetriNet} and C{StateGraph} that creates
-   a drawing of the object in a file.
+  * adds a method `draw` to `PetriNet` and `StateGraph` that creates
+    a drawing of the object in a file.
 
 >>> import snakes.plugins
 >>> snakes.plugins.load('gv', 'snakes.nets', 'nets')
@@ -16,14 +16,11 @@
 >>> n.add_output('p11', 't10', Expression('x+1'))
 >>> n.add_input('p11', 't01', Variable('y'))
 >>> n.add_output('p00', 't01', Expression('y-1'))
-
 >>> for engine in ('neato', 'dot', 'circo', 'twopi', 'fdp') :
 ...     n.draw(',test-gv-%s.png' % engine, engine=engine)
-
 >>> s = StateGraph(n)
 >>> s.build()
 >>> s.draw(',test-gv-graph.png')
-
 >>> for node in sorted(n.node(), key=str) :
 ...     node.pos.moveto(-100, -100)
 >>> n.layout()
@@ -151,36 +148,37 @@ class Graph (Cluster) :
                                 "snakes.plugins.pos"])
 def extend (module) :
     class PetriNet (module.PetriNet) :
-        "An extension with a method C{draw}"
+        "An extension with a method `draw`"
         def draw (self, filename=None, engine="dot", debug=False,
                   graph_attr=None, cluster_attr=None,
                   place_attr=None, trans_attr=None, arc_attr=None) :
             """
             @param filename: the name of the image file to create or
-              C{None} if only the computed graph is needed
-            @type filename: C{None} or C{str}
+                `None` if only the computed graph is needed
+            @type filename: `None` or `str`
             @param engine: the layout engine to use: 'dot' (default),
-              'neato', 'circo', 'twopi' or 'fdp'
-            @type engine: C{str}
+                'neato', 'circo', 'twopi' or 'fdp'
+            @type engine: `str`
             @param place_attr: a function to format places, it will be
-              called with the place and its attributes dict as
-              parameters
-            @type place_attr: C{function(Place,dict)->None}
+                called with the place and its attributes dict as
+                parameters
+            @type place_attr: `function(Place,dict)->None`
             @param trans_attr: a function to format transitions, it
-              will be called with the transition and its attributes dict
-              as parameters
-            @type trans_attr: C{function(Transition,dict)->None}
-            @param arc_attr:  a function to format arcs, it will be
-              called with the label and its attributes dict as
-              parameters
-            @type arc_attr: C{function(ArcAnnotation,dict)->None}
+                will be called with the transition and its attributes
+                dict as parameters
+            @type trans_attr: `function(Transition,dict)->None`
+            @param arc_attr: a function to format arcs, it will be
+                called with the label and its attributes dict as
+                parameters
+            @type arc_attr: `function(ArcAnnotation,dict)->None`
             @param cluster_attr: a function to format clusters of
-              nodes, it will be called with the cluster and its
-              attributes dict as parameters
-            @type cluster_attr: C{function(snakes.plugins.clusters.Cluster,dict)->None}
-            @return: C{None} if C{filename} is not C{None}, the
-              computed graph otherwise
-            @rtype: C{None} or C{pygraphviz.AGraph}
+                nodes, it will be called with the cluster and its
+                attributes dict as parameters
+            @type cluster_attr:
+                `function(snakes.plugins.clusters.Cluster,dict)->None`
+            @return: `None` if `filename` is not `None`, the computed
+                graph otherwise
+            @rtype: `None` or `pygraphviz.AGraph`
             """
             nodemap = dict((node.name, "node_%s" % num)
                            for num, node in enumerate(self.node()))
@@ -243,31 +241,31 @@ def extend (module) :
                 self.node(node[n]).pos.moveto(x*xscale, y*yscale)
 
     class StateGraph (module.StateGraph) :
-        "An extension with a method C{draw}"
+        "An extension with a method `draw`"
         def draw (self, filename=None, engine="dot", debug=False,
                   node_attr=None, edge_attr=None, graph_attr=None) :
-            """
-            @param filename: the name of the image file to create or
-              C{None} if only the computed graph is needed
-            @type filename: C{None} or C{str}
+            """@param filename: the name of the image file to create or
+                `None` if only the computed graph is needed
+            @type filename: `None` or `str`
             @param engine: the layout engine to use: 'dot' (default),
-              'neato', 'circo', 'twopi' or 'fdp'
-            @type engine: C{str}
+                'neato', 'circo', 'twopi' or 'fdp'
+            @type engine: `str`
             @param node_attr: a function to format nodes, it will be
-              called with the state number, the C{StateGraph} object
-              and attributes dict as parameters
-            @type node_attr: C{function(int,StateGraph,dict)->None}
-            @param edge_attr: a function to format edges, it
-              will be called with the transition, its mode and
-              attributes dict as parameters
-            @type trans_attr: C{function(Transition,Substitution,dict)->None}
-            @param graph_attr: a function to format grapg, it
-              will be called with the state graphe and attributes dict
-              as parameters
-            @type graph_attr: C{function(StateGraph,dict)->None}
-            @return: C{None} if C{filename} is not C{None}, the
-              computed graph otherwise
-            @rtype: C{None} or C{pygraphviz.AGraph}
+                called with the state number, the `StateGraph` object
+                and attributes dict as parameters
+            @type node_attr: `function(int,StateGraph,dict)->None`
+            @param edge_attr: a function to format edges, it will be
+                called with the transition, its mode and attributes
+                dict as parameters
+            @type trans_attr:
+                `function(Transition,Substitution,dict)->None`
+            @param graph_attr: a function to format grapg, it will be
+                called with the state graphe and attributes dict as
+                parameters
+            @type graph_attr: `function(StateGraph,dict)->None`
+            @return: `None` if `filename` is not `None`, the computed
+                graph otherwise
+            @rtype: `None` or `pygraphviz.AGraph`
             """
             attr = dict(style="invis",
                         splines="true")
