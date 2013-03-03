@@ -1,9 +1,9 @@
 """A plugins system.
 
 The first example shows how to load a plugin: we load
-C{snakes.plugins.hello} and plug it into C{snakes.nets}, which results
-in a new module that actually C{snakes.nets} extended by
-C{snakes.plugins.hello}.
+`snakes.plugins.hello` and plug it into `snakes.nets`, which results
+in a new module that actually `snakes.nets` extended by
+`snakes.plugins.hello`.
 
 >>> import snakes.plugins as plugins
 >>> hello_nets = plugins.load('hello', 'snakes.nets')
@@ -14,14 +14,14 @@ Hello from N
 >>> n.hello()
 Hi, this is N!
 
-The next example shows how to simulate the effect of C{import module}:
-we give to C{load} a thrid argument that is the name of the created
-module, from which it becomes possible to import names or C{*}.
+The next example shows how to simulate the effect of `import module`:
+we give to `load` a thrid argument that is the name of the created
+module, from which it becomes possible to import names or `*`.
 
-B{Warning:} this feature will not work C{load} is not called from the
-module where we then do the C{from ... import ...}. This is exactly
-the same when, from a module C{foo} that you load a module C{bar}: if
-C{bar} loads other modules they will not be imported in C{foo}.
+**Warning:** this feature will not work `load` is not called from the
+module where we then do the `from ... import ...`. This is exactly the
+same when, from a module `foo` that you load a module `bar`: if `bar`
+loads other modules they will not be imported in `foo`.
 
 >>> plugins.load('hello', 'snakes.nets', 'another_version')
 <module ...>
@@ -33,7 +33,7 @@ Hello from another net
 >>> n.hello()
 Hi, this is yet another net!
 
-How to define a plugin is explained in the example C{hello}.
+How to define a plugin is explained in the example `hello`.
 """
 
 import imp, sys, inspect
@@ -56,21 +56,20 @@ def update (module, objects) :
 
 def build (name, module, *objects) :
     """Builds an extended module.
-
-    The parameter C{module} is exactly that taken by the function
-    C{extend} of a plugin. This list argument C{objects} holds all the
-    objects, constructed in C{extend}, that are extensions of objects
-    from C{module}. The resulting value should be returned by
-    C{extend}.
-
+    
+    The parameter `module` is exactly that taken by the function
+    `extend` of a plugin. This list argument `objects` holds all the
+    objects, constructed in `extend`, that are extensions of objects
+    from `module`. The resulting value should be returned by `extend`.
+    
     @param name: the name of the constructed module
-    @type name: C{str}
+    @type name: `str`
     @param module: the extended module
-    @type module: C{module}
+    @type module: `module`
     @param objects: the sub-objects
     @type objects: each is a class object
     @return: the new module
-    @rtype: C{module}
+    @rtype: `module`
     """
     result = imp.new_module(name)
     result.__dict__.update(module.__dict__)
@@ -85,22 +84,22 @@ def build (name, module, *objects) :
 
 def load (plugins, base, name=None) :
     """Load plugins.
-
-    C{plugins} can be a single plugin name or module or a list of such
-    values. If C{name} is not C{None}, the extended module is loaded
-    ad C{name} in C{sys.modules} as well as in the global environment
-    from which C{load} was called.
-
-    @param plugins: the module that implements the plugin, or its name,
-      or a collection of such values
-    @type plugins: C{str} or C{module}, or a C{list}/C{tuple}/... of
-      such values
+    
+    `plugins` can be a single plugin name or module or a list of such
+    values. If `name` is not `None`, the extended module is loaded ad
+    `name` in `sys.modules` as well as in the global environment from
+    which `load` was called.
+    
+    @param plugins: the module that implements the plugin, or its
+        name, or a collection of such values
+    @type plugins: `str` or `module`, or a `list`/`tuple`/... of such
+        values
     @param base: the module being extended or its name
-    @type base: C{str} or C{module}
+    @type base: `str` or `module`
     @param name: the name of the created module
-    @type name: C{str}
+    @type name: `str`
     @return: the extended module
-    @rtype: C{module}
+    @rtype: `module`
     """
     if type(base) is str :
         result = __import__(base, fromlist=["__name__"])
@@ -128,7 +127,7 @@ def load (plugins, base, name=None) :
 
 def plugin (base, depends=[], conflicts=[]) :
     """Decorator for extension functions
-
+    
     @param base: name of base module (usually 'snakes.nets')
     @type base: str
     @param depends: list of plugins on which this one depends
@@ -166,7 +165,7 @@ def plugin (base, depends=[], conflicts=[]) :
     return wrapper
 
 def new_instance (cls, obj) :
-    """Create a copy of C{obj} which is an instance of C{cls}
+    """Create a copy of `obj` which is an instance of `cls`
     """
     result = object.__new__(cls)
     result.__dict__.update(obj.__dict__)
