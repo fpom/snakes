@@ -1,7 +1,7 @@
 """A plugin to add nodes status.
 
-Several status are defined by default: C{entry}, C{internal}, C{exit},
-C{buffer}, C{safebuffer} for places and {tick} for transitions.
+Several status are defined by default: `entry`, `internal`, `exit`,
+`buffer`, `safebuffer` for places and `tick` for transitions.
 
 >>> import snakes.plugins
 >>> snakes.plugins.load('status', 'snakes.nets', 'nets')
@@ -28,7 +28,7 @@ class Status (object) :
         """Initialize with a status name and an optional value
 
         @param name: the name of the status
-        @type name: C{str}
+        @type name: `str`
         @param value: an optional additional value to make a
         difference between status with te same name
         @type value: hashable
@@ -37,10 +37,10 @@ class Status (object) :
         self._value = value
     __pnmltag__ = "status"
     def __pnmldump__ (self) :
-        """Dump a C{Status} as a PNML tree
+        """Dump a `Status` as a PNML tree
 
         @return: PNML tree
-        @rtype: C{pnml.Tree}
+        @rtype: `pnml.Tree`
 
         >>> Status('foo', 42).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
@@ -62,16 +62,16 @@ class Status (object) :
                     Tree("value", None, Tree.from_obj(self._value)))
     @classmethod
     def __pnmlload__ (cls, tree) :
-        """Create a C{Status} from a PNML tree
-
-        @param tree: the tree to convert
-        @type tree: C{pnml.Tree}
-        @return: the status built
-        @rtype: C{Status}
+        """Create a `Status` from a PNML tree
 
         >>> t = Status('foo', 42).__pnmldump__()
         >>> Status.__pnmlload__(t)
         Status('foo',42)
+
+        @param tree: the tree to convert
+        @type tree: `pnml.Tree`
+        @return: the status built
+        @rtype: `Status`
         """
         return cls(tree.child("name").data,
                    tree.child("value").child().to_obj())
@@ -82,7 +82,7 @@ class Status (object) :
         unless the user decides to store additional data in status.
 
         @return: a copy of the status
-        @rtype: C{Status}
+        @rtype: `Status`
         """
         return self.__class__(self._name, self._value)
     def __str__ (self) :
@@ -94,7 +94,7 @@ class Status (object) :
         'buffer(buf)'
 
         @return: a textual representation
-        @rtype: C{str}
+        @rtype: `str`
         """
         if self._value is None :
             return str(self._name)
@@ -108,8 +108,8 @@ class Status (object) :
         >>> repr(buffer('buf'))
         "Buffer('buffer','buf')"
 
-        @return: a textual representation suitable for C{eval}
-        @rtype: C{str}
+        @return: a textual representation suitable for `eval`
+        @rtype: `str`
         """
         if self._value is None :
             return "%s(%s)" % (self.__class__.__name__, repr(self._name))
@@ -120,7 +120,7 @@ class Status (object) :
         """Hash a status
 
         @return: the hash value
-        @rtype: C{int}
+        @rtype: `int`
         """
         return hash((self._name, self._value))
     def __eq__ (self, other) :
@@ -136,9 +136,9 @@ class Status (object) :
         False
 
         @param other: a status
-        @type other: C{Status}
-        @return: C{True} is they are equal, C{False} otherwise
-        @rtype: C{bool}
+        @type other: `Status`
+        @return: `True` is they are equal, `False` otherwise
+        @rtype: `bool`
         """
         try :
             return (self._name, self._value) == (other._name, other._value)
@@ -156,19 +156,19 @@ class Status (object) :
     def value (self) :
         return self._value
     def merge (self, net, nodes, name=None) :
-        """Merge C{nodes} in C{net} into a new node called C{name}
+        """Merge `nodes` in `net` into a new node called `name`
 
         This does nothing by default, other status will refine this
         method. Merged nodes are removed, only the newly created one
         remains.
 
         @param net: the Petri net where nodes should be merged
-        @type net: C{PetriNet}
+        @type net: `PetriNet`
         @param nodes: a collection of node names to be merged
-        @type nodes: iterable of C{str}
-        @param name: the name of the new node or C{Node} if it should
-          be generated
-        @type name: C{str}
+        @type nodes: iterable of `str`
+        @param name: the name of the new node or `Node` if it should
+            be generated
+        @type name: `str`
         """
         pass
 
@@ -179,13 +179,13 @@ internal = Status('internal')
 class Buffer (Status) :
     "A status for buffer places"
     def merge (self, net, nodes, name=None) :
-        """Merge C{nodes} in C{net}
+        """Merge `nodes` in `net`
 
-        Buffer places with the status status C{Buffer('buffer', None)}
+        Buffer places with the status status `Buffer('buffer', None)`
         are not merged. Other buffer places are merged exactly has
-        C{PetriNet.merge_places} does.
+        `PetriNet.merge_places` does.
 
-        If C{name} is C{None} the name generated is a concatenation of
+        If `name` is `None` the name generated is a concatenation of
         the nodes names separated by '+', with parenthesis outside.
 
         >>> import snakes.plugins
@@ -205,12 +205,12 @@ class Buffer (Status) :
         True
 
         @param net: the Petri net where places should be merged
-        @type net: C{PetriNet}
+        @type net: `PetriNet`
         @param nodes: a collection of place names to be merged
-        @type nodes: iterable of C{str}
-        @param name: the name of the new place or C{Node} if it should
-          be generated
-        @type name: C{str}
+        @type nodes: iterable of `str`
+        @param name: the name of the new place or `Node` if it should
+            be generated
+        @type name: `str`
         """
         if self._value is None :
             return
@@ -221,26 +221,26 @@ class Buffer (Status) :
             net.remove_place(src)
 
 def buffer (name) :
-    """Generate a buffer status called C{name}
+    """Generate a buffer status called `name`
 
     @param name: the name of the buffer
-    @type name: C{str}
-    @return: C{Buffer('buffer', name)}
-    @rtype: C{Buffer}
+    @type name: `str`
+    @return: `Buffer('buffer', name)`
+    @rtype: `Buffer`
     """
     return Buffer('buffer', name)
 
 class Safebuffer (Buffer) :
     "A status for safe buffers (ie, variables) places"
     def merge (self, net, nodes, name=None) :
-        """Merge C{nodes} in C{net}
+        """Merge `nodes` in `net`
 
-        Safe buffers places with the status C{Safebuffer('safebuffer',
-        None)} are not merged. Other safe buffers places are merged if
+        Safe buffers places with the status `Safebuffer('safebuffer',
+        None)` are not merged. Other safe buffers places are merged if
         they all have the same marking, which becomes the marking of
-        the resulting place. Otherwise, C{ConstraintError} is raised.
+        the resulting place. Otherwise, `ConstraintError` is raised.
 
-        If C{name} is C{None} the name generated is a concatenation of
+        If `name` is `None` the name generated is a concatenation of
         the nodes names separated by '+', with parenthesis outside.
 
         >>> import snakes.plugins
@@ -262,12 +262,12 @@ class Safebuffer (Buffer) :
         incompatible markings
 
         @param net: the Petri net where places should be merged
-        @type net: C{PetriNet}
+        @type net: `PetriNet`
         @param nodes: a collection of place names to be merged
-        @type nodes: iterable of C{str}
-        @param name: the name of the new place or C{Node} if it should
+        @type nodes: iterable of `str`
+        @param name: the name of the new place or `Node` if it should
           be generated
-        @type name: C{str}
+        @type name: `str`
         """
         if self._value is None :
             return
@@ -284,24 +284,24 @@ class Safebuffer (Buffer) :
         net.place(name).reset(marking)
 
 def safebuffer (name) :
-    """Generate a safebuffer status called C{name}
+    """Generate a safebuffer status called `name`
 
     @param name: the name of the safebuffer
-    @type name: C{str}
-    @return: C{Safebuffer('safebuffer', name)}
-    @rtype: C{Safebuffer}
+    @type name: `str`
+    @return: `Safebuffer('safebuffer', name)`
+    @rtype: `Safebuffer`
     """
     return Safebuffer('safebuffer', name)
 
 class Tick (Status) :
     "A status for tick transition"
     def merge (self, net, nodes, name=None) :
-        """Merge C{nodes} in C{net}
+        """Merge `nodes` in `net`
 
         Tick transitions are merged exactly as
-        C{PetriNet.merge_transitions} does.
+        `PetriNet.merge_transitions` does.
 
-        If C{name} is C{None} the name generated is a concatenation of
+        If `name` is `None` the name generated is a concatenation of
         the nodes names separated by '+', with parenthesis outside.
 
         >>> import snakes.plugins
@@ -319,12 +319,12 @@ class Tick (Status) :
         Transition('t', Expression('((...) and (...)) and (...)'), status=Tick('tick','tick'))
 
         @param net: the Petri net where transitions should be merged
-        @type net: C{PetriNet}
+        @type net: `PetriNet`
         @param nodes: a collection of transition names to be merged
-        @type nodes: iterable of C{str}
-        @param name: the name of the new transition or C{Node} if it
+        @type nodes: iterable of `str`
+        @param name: the name of the new transition or `Node` if it
           should be generated
-        @type name: C{str}
+        @type name: `str`
         """
         if self._value is None :
             return
@@ -335,12 +335,12 @@ class Tick (Status) :
             net.remove_transition(src)
 
 def tick (name) :
-    """Generate a tick status called C{name}
+    """Generate a tick status called `name`
 
     @param name: the name of the tick
-    @type name: C{str}
-    @return: C{Tick('tick', name)}
-    @rtype: C{Tick}
+    @type name: `str`
+    @return: `Tick('tick', name)`
+    @rtype: `Tick`
     """
     return Tick('tick', name)
 
@@ -349,15 +349,15 @@ class StatusDict (object) :
     def __init__ (self, net) :
         """
         @param net: the Petri net for which nodes will be recorded
-        @type net: C{PetriNet}
+        @type net: `PetriNet`
         """
         self._nodes = {}
         self._net = weakref.ref(net)
     def copy (self, net=None) :
         """
         @param net: the Petri net for which nodes will be recorded
-          (C{None} if it is the same as the copied object)
-        @type net: C{PetriNet}
+          (`None` if it is the same as the copied object)
+        @type net: `PetriNet`
         """
         if net is None :
             net = self._net()
@@ -368,38 +368,38 @@ class StatusDict (object) :
     def __iter__ (self) :
         return iter(self._nodes)
     def record (self, node) :
-        """Called when C{node} is added to the net
+        """Called when `node` is added to the net
 
         @param node: the added node
-        @type node: C{Node}
+        @type node: `Node`
         """
         if node.status not in self._nodes :
             self._nodes[node.status] = set([node.name])
         else :
             self._nodes[node.status].add(node.name)
     def remove (self, node) :
-        """Called when C{node} is removed from the net
+        """Called when `node` is removed from the net
 
         @param node: the added node
-        @type node: C{Node}
+        @type node: `Node`
         """
         if node.status in self._nodes :
             self._nodes[node.status].discard(node.name)
             if len(self._nodes[node.status]) == 0 :
                 del self._nodes[node.status]
     def __call__ (self, status) :
-        """Return the nodes having C{status}
+        """Return the nodes having `status`
 
         @param status: the searched status
-        @type status: C{Status}
+        @type status: `Status`
         @return: the node names in the net having this status
-        @rtype: C{tuple} of C{str}
+        @rtype: `tuple` of `str`
         """
         return tuple(self._nodes.get(status, tuple()))
     def merge (self, status, name=None) :
-        """Merge the nodes in the net having C{status}
+        """Merge the nodes in the net having `status`
 
-        This is a shortcut to call C{status.merge} with the right
+        This is a shortcut to call `status.merge` with the right
         parameters.
 
         @param status: the status for which nodes have to be merged

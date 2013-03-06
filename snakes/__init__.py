@@ -1,13 +1,5 @@
 """SNAKES is the Net Algebra Kit for Editors and Simulators
 
-@author: Franck Pommereau
-@organization: University of Paris 12
-@copyright: (C) 2005 Franck Pommereau
-@license: GNU Lesser General Public Licence (aka. GNU LGPL),
-    see the file C{doc/COPYING} in the distribution or visit U{the GNU
-    web site<http://www.gnu.org/licenses/licenses.html#LGPL>}
-@contact: pommereau@univ-paris12.fr
-
 SNAKES is a Python library allowing to model all sorts of Petri nets
 and to execute them. It is very general as most Petri nets annotations
 can be arbitrary Python expressions while most values can be arbitrary
@@ -16,6 +8,14 @@ Python objects.
 SNAKES can be further extended with plugins, several ones being
 already provided, in particular two plugins implement the Petri nets
 compositions defined for the Petri Box Calculus and its successors.
+
+@author: Franck Pommereau
+@organization: University of Evry/Paris-Saclay
+@copyright: (C) 2005-2013 Franck Pommereau
+@license: GNU Lesser General Public Licence (aka. GNU LGPL), see the
+    file `doc/COPYING` in the distribution or visit [the GNU web
+    site](http://www.gnu.org/licenses/licenses.html#LGPL)
+@contact: franck.pommereau@ibisc.univ-evry.fr
 """
 
 version = "0.9.16"

@@ -1623,7 +1623,7 @@ class Translator (object) :
             return self.ST.Set(lineno=st.srow, col_offset=st.scol,
                                elts=[self.do(st[0], ctx)])
         elif st[1].text == ":" :
-            if st[3].text == "," :
+            if len(st) < 4 or st[3].text == "," :
                 return self.ST.Dict(lineno=st.srow, col_offset=st.scol,
                                     keys=[self.do(child, ctx)
                                           for child in st[::4]],

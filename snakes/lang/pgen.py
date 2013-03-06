@@ -41,7 +41,7 @@ class Token (str) :
         non-mutable object and this __init__ could not assign a str
         content. For more information see:
 
-          http://docs.python.org/reference/datamodel.html#object.__new__
+        http://docs.python.org/reference/datamodel.html#object.__new__
         """
         kind = token[0]
         text = token[1]
@@ -196,10 +196,8 @@ class Tokenizer (object) :
          - skip: a collection of tokens that the tokenizer will
            automatically skip (default to [COMMENT, NL])
          - additional keywords arguments allow to define new tokens,
-           for instance, providing
-              DOLLAR='$'
-           defines a new token called 'DOLLAR' (its kind will be
-           automatically computed)
+           for instance, providing DOLLAR='$' defines a new token
+           called 'DOLLAR' (its kind will be automatically computed)
 
         An instance of Tokenizer has the following attributes:
          - self.opmap: a dict mapping operators token literals to the

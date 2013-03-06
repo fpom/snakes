@@ -1,15 +1,13 @@
 """A plugin to add positions to the nodes.
 
- - C{Place} and C{Transition} constructors are added an optional
-   argument C{pos=(x,y)} to set their position
-
- - C{Place} and C{Transition} are added an attribute C{pos} that is
-   pair of numbers with attributes C{x} and C{y} and methods
-   C{shift(dx, dy)} and C{moveto(x, y)}
-
- - Petri nets are added methods C{bbox()} that returns a pair of
-   extrema C{((xmin, ymin), (xmax, ymax))}, a method C{shift(dx, dy)}
-   that shift all the nodes, and a method C{transpose()} that rotates
+  * `Place` and `Transition` constructors are added an optional argument
+    `pos=(x,y)` to set their position
+  * `Place` and `Transition` are added an attribute `pos` that is pair
+    of numbers with attributes `x` and `y` and methods `shift(dx, dy)`
+    and `moveto(x, y)`
+  * Petri nets are added methods `bbox()` that returns a pair of
+    extrema `((xmin, ymin), (xmax, ymax))`, a method `shift(dx, dy)`
+   that shift all the nodes, and a method `transpose()` that rotates
    the net in such a way that the top-down direction becomes
    left-right
 
