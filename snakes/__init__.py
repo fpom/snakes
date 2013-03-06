@@ -10,12 +10,12 @@ already provided, in particular two plugins implement the Petri nets
 compositions defined for the Petri Box Calculus and its successors.
 
 @author: Franck Pommereau
-@organization: University of Paris 12
-@copyright: (C) 2005 Franck Pommereau
+@organization: University of Evry/Paris-Saclay
+@copyright: (C) 2005-2013 Franck Pommereau
 @license: GNU Lesser General Public Licence (aka. GNU LGPL), see the
     file `doc/COPYING` in the distribution or visit [the GNU web
     site](http://www.gnu.org/licenses/licenses.html#LGPL)
-@contact: pommereau@univ-paris12.fr
+@contact: franck.pommereau@ibisc.univ-evry.fr
 """
 
 version = "0.9.16"
