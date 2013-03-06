@@ -12,7 +12,6 @@ class Cluster (object) :
         ...          Cluster(['3', '4', '5'],
         ...                  [Cluster(['C', 'D'])])])
         Cluster(...)
-
         """
         self._nodes = set(nodes)
         self._children = []
@@ -160,7 +159,6 @@ class Cluster (object) :
                          [Cluster(['A'], [])]),
                  Cluster(['...', '...'],
                          [Cluster(['...', '...'], [])])])
-
         """
         if name in self._cluster :
             self._cluster[name].remove_node(name)

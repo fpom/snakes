@@ -40,7 +40,8 @@ class Decl (object) :
             setattr(self, key, val)
 
 class GetInstanceArgs (object) :
-    """Bind arguments for a net instance"""
+    """Bind arguments for a net instance
+    """
     def __init__ (self, node) :
         self.argspec = []
         self.arg = {}

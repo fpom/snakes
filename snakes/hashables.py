@@ -1,11 +1,11 @@
 """Hashable mutable objets.
 
 This module proposes hashable version of the mutable containers
-C{list}, C{dict} and C{set}, called respectively C{hlist}, C{hdict}
-and C{hset}. After one object has been hashed, it becomes not mutable
-and raises a ValueError if a method which changes the object (let call
-a I{mutation} such a method) is invoqued. The object can be then
-un-hashed by calling C{unhash} on it so that it becomes mutable again.
+`list`, `dict` and `set`, called respectively `hlist`, `hdict` and
+`hset`. After one object has been hashed, it becomes not mutable and
+raises a ValueError if a method which changes the object (let call a
+_mutation_ such a method) is invoqued. The object can be then un-
+hashed by calling `unhash` on it so that it becomes mutable again.
 Notice that this may cause troubles if the object is stored in a set
 or dict which uses its hashcode to locate it. Notice also that
 hashable containers cannot be hashed if they contain non hashable
@@ -24,9 +24,9 @@ ValueError: hashed 'hlist' object is not mutable
 >>> l
 hlist([0, 1, 2, 3, 4, 5])
 
-Testing if a C{hlist} is in a C{set}, C{dict}, C{hset} or C{hdict}
-causes its hashing. If this is not desirable, you should either
-compensate with a call to C{unhash}, or test if a copy is in the set:
+Testing if a `hlist` is in a `set`, `dict`, `hset` or `hdict` causes
+its hashing. If this is not desirable, you should either compensate
+with a call to `unhash`, or test if a copy is in the set:
 
 >>> s = set()
 >>> s.add(list(range(4)))
@@ -54,7 +54,7 @@ from snakes.compat import *
 
 def unhash (obj) :
     """Make the object hashable again.
-
+    
     >>> l = hlist(range(3))
     >>> _ = hash(l)
     >>> l.append(3)
@@ -63,9 +63,9 @@ def unhash (obj) :
     ValueError: hashed 'hlist' object is not mutable
     >>> unhash(l)
     >>> l.append(3)
-
+    
     @param obj: any object
-    @type obj: C{object}
+    @type obj: `object`
     """
     try :
         del obj._hash
@@ -95,7 +95,7 @@ def hashable (cls) :
     __hash__.__doc__ = classdict["__hash__"].__doc__
     cls.__hash__ = __hash__
     def __mutable__ (self) :
-        "Raise C{ValueError} if the %s has been hashed."
+        "Raise `ValueError` if the %s has been hashed."
         if self.hashed() :
             raise ValueError("hashed '%s' object is not mutable" % classname)
     try :
@@ -123,7 +123,7 @@ def hashable (cls) :
 
 class hlist (list) :
     """Hashable lists.
-
+    
     >>> l = hlist(range(5))
     >>> l
     hlist([0, 1, 2, 3, 4])
@@ -201,7 +201,7 @@ hlist = hashable(hlist)
 
 class hdict (dict) :
     """Hashable dictionnaries.
-
+    
     >>> l = hlist(range(5))
     >>> d = hdict([(l, 0)])
     >>> d
@@ -272,7 +272,7 @@ hdict = hashable(hdict)
 
 class hset (set) :
     """Hashable sets.
-
+    
     >>> s = hset()
     >>> l = hlist(range(5))
     >>> s.add(l)
