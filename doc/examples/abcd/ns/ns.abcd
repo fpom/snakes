@@ -1,0 +1,40 @@
+# communication network
+buffer nw : object = ()
+# implementation of nonces and Dolev-Yao attacker
+from dolev_yao import *
+
+net Alice (this, who: buffer) :
+    # protocol initiater
+    buffer peer : int = ()
+    buffer peer_nonce : Nonce = ()
+    [who?(B), peer+(B), nw+("crypt", ("pub", B), this, Nonce(this))]
+    ; [nw-("crypt", ("pub", this), Na, Nb), peer_nonce+(Nb) if Na == Nonce(this)]
+    ; [peer?(B), peer_nonce?(Nb), nw+("crypt", ("pub", B), Nb)]
+
+net Bob (this) :
+    # protocol responder
+    buffer peer : int = ()
+    buffer peer_nonce : Nonce = ()
+    [nw-("crypt", ("pub", this), A,  Na), peer+(A), peer_nonce+(Na)]
+    ; [peer?(A), peer_nonce?(Na), nw+("crypt", ("pub", A),  Na, Nonce(this))]
+    ; [nw-("crypt", ("pub", this), Nb) if Nb == Nonce(this)]
+
+net Mallory (this, init) :
+    # attacker
+    buffer knowledge : object = (this, Nonce(this), ("priv", this)) + init
+    # Dolev-Yao attacker, bound by protocol signature
+    buffer spy : object = Spy(("crypt", ("pub", int), int, Nonce),
+                               ("crypt", ("pub", int), Nonce, Nonce),
+                               ("crypt", ("pub", int), Nonce))
+    # capture on message and learn from it
+    ([spy?(s), nw-(m), knowledge>>(k), knowledge<<(s.learn(m, k))]
+     # loose message or inject another one (may be the same)
+     ; ([True] + [spy?(s), knowledge?(x), nw+(x) if s.message(x)]))
+    * [False]
+
+# Alice will contact one of these agents
+buffer agents : int = 2, 3
+# main processes, with friendly names
+alice::Alice(1, agents)
+| bob::Bob(2)
+| spy::Mallory(3, (1, ("pub", 1), 2, ("pub", 2)))

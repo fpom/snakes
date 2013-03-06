@@ -1,0 +1,5 @@
+* add name to transitions, eg, [buff-(x) as name]
+  make it consistent with instance names?
+* zero test/inhibitor arc
+! parameter and global buffer with same names => parameter ignored
+! accept net instances with too much parameters

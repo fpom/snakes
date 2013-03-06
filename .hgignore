@@ -1,0 +1,10 @@
+syntax: glob
+
+doc/api/*
+dist/*
+dput.sh
+*.pyc
+*~
+.gone
+,*
+*.class

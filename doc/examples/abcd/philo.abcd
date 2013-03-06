@@ -1,0 +1,17 @@
+# get BlackToken
+#from snakes.nets import *
+
+buffer fork1 : BlackToken = dot
+buffer fork2 : BlackToken = dot
+buffer fork3 : BlackToken = dot
+
+# buffer parameters have to be declared as such
+net philo (left: buffer, right: buffer):
+    buffer eating : BlackToken = ()
+    ([left-(dot), right-(dot), eating+(dot)]
+     ; [left+(dot), right+(dot), eating-(dot)])
+    * [False]
+
+philo(fork1, fork2)
+| philo(fork2, fork3)
+| philo(fork3, fork1)

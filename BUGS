@@ -1,0 +1,10 @@
+abcd crash on [foo>>(s), foo<<(s+s)]
+[foo(x,y,z)] creates a multi-arc instead of a tuple
+
+abcd substitues for loops variables:
+net Foo (x) :
+    buffer b : int = [x for x in range(4)]
+                      ^     ^
+                      substituted (should not)
+
+errors during expressions evaluation are directly sent to user, should be wrapper to indicate this is a model error. And should be catched in abcd --simul/check

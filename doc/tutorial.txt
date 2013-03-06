@@ -1,0 +1,1392 @@
+SNAKES: a tutorial
+==================
+
+////////////////////////////////////////////////////////////////
+This file is formatted in order to be processed by AsciiDoc
+(http://www.methods.co.nz/asciidoc). It will be more comfortable
+to render it or to read the HTML version available at:
+http://www.univ-paris12.fr/pommereau/soft/snakes/tutorial.html
+////////////////////////////////////////////////////////////////
+
+The first example is a simple coloured Petri net with a single
+transition that increments an integer valued (so 0 is the _value_ of
+the token, not a number of tokens) token held by a single place, the
+incrementation stops when the value is $5$ thanks to a guard on the
+transition.
+
+image:tutorial.png[]
+
+To define this net, we must load SNAKES, define a Petri net (lets call
+it 'First net'), add the place (called 'p'), add the transition
+(called 't') and then connect them with arcs.
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> from snakes.nets import *
+>>> n1 = PetriNet('First net')
+>>> n1.add_place(Place('p', [0]))
+>>> n1.add_transition(Transition('t', Expression('x<5')))
+>>> n1.add_input('p', 't', Variable('x'))
+>>> n1.add_output('p', 't', Expression('x+1'))
+^^^^^^^^^^^^^^^^^^^^^^
+
+On the third line, the net is added a place, which could equivalently
+be written as:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> p = Place('p', [0])
+>>> n1.add_place(p)
+^^^^^^^^^^^^^^^^^^^^^^
+
+However, having a variable for the place is not necessary as it can be
+retrieved from $n1$ using its name with $n1.place('p')$.
+
+The instruction $Place('p', [0])$ is the construction of a new
+instance of the class $Place$ that expects the name of the place as
+its first argument. The second argument is optional and is the initial
+marking of the place, that can be given as a list, set, tuple or
+multiset of tokens (the class for multisets is defined in the module
+$snakes.data$). A third optional argument is a constraint for the
+tokens that the place can hold (also known as its type); the default
+value allows any token to mark the place. The typing of the places
+will be detailed later on.
+
+In order to build the transition, we create an instance of the class
+$Transition$ whose constructor expects first the name of the
+transition and the, optionally, the guard of it that is true by
+default. A guard is otherwise specified as $Expression('...')$ where
+$...$ is an arbitrary Python expression, like $Expression('x<5')$ in
+our example. We will details latter on how this expression is
+evaluated.
+
+Arcs are added using one of the methods $add_input$ or $add_output$ of
+$PetriNet$; both expect a place name, a transition name and the arc
+annotation as arguments (always in this order). An input arc is
+directed from a place toward a transition, an output arc is outgoing a
+transition; so arcs are considered from the point of view of the
+transition to which they are connected. Valid arc annotations are:
+
+values:: They are instances of the class $Value$ whose constructor
+simply expects the value that can be any Python object. For instances,
+$Value(1)$ is the integer $1$.
+
+variables:: These are names that are bound to token values when a
+transition if executed. A variable is created by instantiating the
+class $Variable$ whose constructor expects the name of the variable as
+a Python string (valid names are those matching the Python regexp:
+$'[a-zA-Z]\w*'$). For instance, $Variable('x')$, $Variable('count')
+and $Variable('x_1')$ are valid but $Variable('x-1')$ and
+$Variable('1x') are not.
+
+expressions:: They are used to compute new values. An expression is an
+instance of the class $Expression$ whose constructor expects any
+Python expression as a string. How this expression is evaluated is
+explained in the next section. In our example, $Expression('x+1')$ as
+been used on the output arc.
+
+tests:: The class $Test$ is used to implement a test arc: it
+encapsulates another arc annotation and behaves exactly like it,
+except that no token is transported by the arc when the attached
+transition fires. The constructor expects another arc annotation as
+its sole argument, for instance: $Test(Variable('x'))$ on an input arc
+allows to test for a token in a place, its value being usable as $x$.
+On a output arc, $Test(Expression('x+1'))$ may be used to test that
+the value of $x+1$ is accepted by the connected place, without
+actually producing it.
+
+multi-arcs:: When an arc needs to transport several values, the class
+$MultiArc$ may be used. Its constructor expects a list (or tuple) of
+other annotations that are simultaneously transported on the arc. For
+instance, $MultiArc([Variable('x'), Variable('y')])$ on an input arcs
+allows to consume two tokens, binding them to the variables $x$ and
+$y$.
+
+
+Executing transitions
+---------------------
+
+The first step to execute a transition is to bind the variables
+labelling the arcs to actual token values. This is possible by calling
+the method $modes()$ of a transition. It returns a list of
+$Substitution$ instances (this class is defined in $snakes.data$). A
+$Substitution$ is a $dict$-like object that maps variable names to
+other variables names or to values. The method $modes$ returns the
+list of substitutions that are acceptable in order to fire the
+transition, _i.e._, those that respect the usual following conditions:
+
+ * each input arc, evaluated through the substitution, corresponds to
+   a multiset of tokens that is less or equal to the current marking
+   of the connected place;
+
+ * each output arc, evaluated through the substitution, results in a
+   multiset of tokens that respects the type constraint of the
+   connected place;
+
+ * the guard of the transition, evaluates to $True$ through the
+   substitution.
+
+For instance, with our net:
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n1.transition('t').modes()
+[Substitution(x=0)]
+^^^^^^^^^^^^^^^^^^
+
+The only way to fire the transition is to bind $x$ to $0$. Other may
+have been tried, but do not respect at least one of the above
+conditions. For instance, choosing $x=1$ respects the guard and place
+types but not the marking (the token $1$ is missing):
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> from snakes.data import Substitution
+>>> s = Substitution(x=1)
+>>> n1.transition('t').enabled(s)
+False
+^^^^^^^^^^^^^^^^^^
+
+In order to fire a transition, we have to call its method $fire$ with
+an enabling substitution as argument (_i.e._, one of those returned by
+$modes()$). In our example, we could run:
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n1.transition('t').fire(Substitution(x=0))
+>>> n1.place('p').tokens
+MultiSet([1])
+^^^^^^^^^^^^^^^^^^
+
+It is important to understand how the firing is performed: the
+substitution is used as a Python environment to evaluate the
+annotations on the arcs and the guard of the transition in order to
+check that the conditions above are respected. For instance, the guard
+$Expression('x<5')$ can be evaluated to $true$ because $x$ is bound to
+$0$ through the substitution. Similarly, the output arc
+$Expression('x+1')$ is evaluated to $1$. The environment used to
+evaluate the guard and output arcs is built using the input arcs, this
+means that all the variables used during the firing must have been
+bound through one of these input arcs. For instance, we could use
+$Expression('x<5 and y==x+1')$ for the guard and $Variable('y')$ for the
+output arc, and $Substitution(x=0, y=1)$ for the firing:
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n2 = PetriNet('Second net')
+>>> n2.add_place(Place('p', [0]))
+>>> n2.add_transition(Transition('t', Expression('x<5 and y==x+1')))
+>>> n2.add_input('p', 't', Variable('x'))
+>>> n2.add_output('p', 't', Variable('y'))
+>>> n2.transition('t').fire(Substitution(x=0, y=1))
+>>> n2.place('p').tokens
+MultiSet([1])
+^^^^^^^^^^^^^^^^^^
+
+This example is correct as long as the substitution is provided by the
+user. But the method $modes$ is unable to deduce the value for $y$, it
+would require to solve the equation $x<5 and y==x+1$ in the guard.
+This is easy here but impossible in general, so, the modes are
+computed only with respect to the input arcs. This is why $Expression$
+instances are not allowed on input arcs, neither directly nor when
+encapsulated in $Test$ or $MultiArc$ instances. So, in this second
+example, if we call $modes()$, we get an error since $y$ in cannot be
+evaluated:
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n2.transition('t').modes()
+Traceback (most recent call last):
+  ...
+NameError: name 'y' is not defined
+^^^^^^^^^^^^^^^^^^
+
+
+Declarations
+------------
+
+There is one more aspect about the evaluation of the expression that
+should be known: it is possible to declare names that are global to a
+Petri net, for instance constants or functions. To do so, we shall use
+the method $declare$ of a $PetriNet$ instance, that expects as its
+argument a Python statement in a string. This statement is executed
+and its effect is remembered in order to be used as a global execution
+environment when expressions are evaluated. For instance, lets
+construct a Petri net that generates random tokens using the standard
+Python function $random.randint$:
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n3 = PetriNet('Thirs net')
+>>> n3.add_place(Place('p', [0]))
+>>> n3.add_transition(Transition('t'))
+>>> n3.add_input('p', 't', Variable('x'))
+>>> n3.add_output('p', 't', Expression('random.randint(0, 100)'))
+>>> n3.transition('t').fire(Substitution(x=0))
+Traceback (most recent call last):
+  ...
+NameError: name 'random' is not defined
+^^^^^^^^^^^^^^^^^^
+
+This result is not surprising as the module as not been imported. This
+must be made with the statements (the second line is to initialise the
+random generator):
+
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n3.declare('import random')
+>>> n3.declare('random.seed()')
+^^^^^^^^^^^^^^^^^^
+
+Then, the transition can fire; of course, the resulting marking will
+be different from one execution to another since it is random:
+
+//hide 93
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n3.transition('t').fire(Substitution(x=0))
+>>> n3.place('p').tokens
+MultiSet([93])
+^^^^^^^^^^^^^^^^^^
+
+The effect of the $n3.declare(statement)$ method is to call $exec
+statement in n3.globals$, where $n3.globals$ is a dictionary shared by
+all the expression embedded in the net (in guards or arcs). So,
+another way to influence the evaluation of these expressions is to
+directly assign values to the dictionary $n3.globals$, for instance:
+
+//doc >>> n3.place('p').reset([93])
+//hide 18
+[python]
+^^^^^^^^^^^^^^^^^^
+>>> n3.add_place(Place('x'))
+>>> n3.add_output('x', 't', Expression('y+1'))
+>>> n3.transition('t').fire(Substitution(x=93))
+Traceback (most recent call last):
+  ...
+NameError: name 'y' is not defined
+>>> n3.globals['y'] = 42
+>>> n3.transition('t').fire(Substitution(x=93))
+>>> n3.get_marking()
+Marking({'p': MultiSet([18]), 'x': MultiSet([43])})
+^^^^^^^^^^^^^^^^^^
+
+The first error is expected as $y$ as not been declared and is not
+bound to any token value through an input arc. After assigning it to
+$n3.globals$, it becomes defined so $Expression('y+1')$ can be
+evaluated. The same effect could have been achieved using
+$n3.declare('y=42')$.
+
+The last instruction gets the marking of the net, lets detail now what
+we can do with marking objects.
+
+
+Markings, marking graph
+-----------------------
+
+An instance of $PetriNet$ has methods to get and set its marking,
+which are respectively $get_marking$ and $set_marking$. There are also
+the methods $add_marking$ and $remove_marking$ to increase or decrease
+the current marking.
+
+[NOTE]
+========================
+The marking of an individual place can also be directly manipulated,
+either though its attribute $tokens$ (we used it above) that is a
+multiset, or through the following methods:
+
+$add(toks)$:: adds the tokens in $toks$ to the place ($toks$ can be
+any collection of values: $set$, $list$, $tuple$, $MultiSet$, ...)
+
+$remove(toks)$:: does just the contrary
+
+$reset(toks)$:: replaces the marking with the tokens in $toks$
+
+$empty()$:: removes all the tokens from the place
+
+$is_empty()$:: returns a Boolean indicating whether the place is empty
+or not
+========================
+
+A marking is an instance of the class $snakes.nets.Marking$ and is
+basically a mapping from place names to multisets of values. It has
+been chosen that a marking is independent of any particular Petri net,
+so, empty places are not listed in a marking and when assigning a
+marking to a net, places that are present in the marking but absent
+from the net are simply ignored. Markings can be added with the $+$
+operator, subtracted with $-$ or compared with the usual operators
+$>$, $<=$, $==$, etc. In order to know the marking of a particular
+place, we can use it as a function taking the place name as argument:
+
+[python]
+^^^^^^^^^^^^^^^^
+>>> m = Marking(p1=MultiSet([1, 2, 3]), p2=MultiSet([5]))
+>>> m('p1')
+MultiSet([1, 2, 3])
+>>> m('p')
+MultiSet([])
+^^^^^^^^^^^^^^^^
+
+The last result shows that a place that is not listed in a marking is
+considered empty, which is consistent with the fact that empty places
+are not listed in a marking extracted from a net. If we use the
+marking as a $dict$ instead of a function, we will get errors on non
+existing places:
+
+[python]
+^^^^^^^^^^^^^^^^
+>>> m['p1']
+MultiSet([1, 2, 3])
+>>> m['p']
+Traceback (most recent call last):
+  ...
+KeyError: 'p'
+^^^^^^^^^^^^^^^^
+
+The marking graph of a net can be manipulated using the class
+$StateGraph$. Lets take an example to see how it works:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> n4 = PetriNet('Fourth net')
+>>> n4.add_place(Place('p', [-1]))
+>>> n4.add_transition(Transition('t'))
+>>> n4.add_input('p', 't', Variable('x'))
+>>> n4.add_output('p', 't', Expression('(x+1) % 5'))
+^^^^^^^^^^^^^^^^^^^^^^
+
+This example runs infinitely, incrementing modulo 5 the token in the
+place $'p'$. Its markings can be computed using a simple loop:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> while True:
+...     print n4.get_marking()
+...     modes = n4.transition('t').modes()
+...     if len(modes) == 0 :
+...         break
+...     n4.transition('t').fire(modes[0])
+...
+Marking({'p': MultiSet([-1])})
+Marking({'p': MultiSet([0])})
+Marking({'p': MultiSet([1])})
+Marking({'p': MultiSet([2])})
+Marking({'p': MultiSet([3])})
+Marking({'p': MultiSet([4])})
+Marking({'p': MultiSet([0])})
+Marking({'p': MultiSet([1])})
+^^^^^^^^^^^^^^^^^^^^^^
+
+Unfortunately, this loop runs forever as the net has no deadlock.
+Moreover, if in a state there exist several modes, only the first one
+will be used in the exploration. To avoid building ourselves the
+marking graph, we can use instead:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> s = StateGraph(n4)
+>>> s.build()
+>>> for state in s :
+...     print state, s.net.get_marking()
+...     print " =>", s.successors()
+...     print " <=", s.predecessors()
+... 
+0 Marking({'p': MultiSet([-1])})
+ => {1: (Transition('t', Expression('True')), Substitution(x=-1))}
+ <= {}
+1 Marking({'p': MultiSet([0])})
+ => {2: (Transition('t', Expression('True')), Substitution(x=0))}
+ <= {0: (Transition('t', Expression('True')), Substitution(x=-1)), 5: (Transition('t', Expression('True')), Substitution(x=4))}
+2 Marking({'p': MultiSet([1])})
+ => {3: (Transition('t', Expression('True')), Substitution(x=1))}
+ <= {1: (Transition('t', Expression('True')), Substitution(x=0))}
+3 Marking({'p': MultiSet([2])})
+ => {4: (Transition('t', Expression('True')), Substitution(x=2))}
+ <= {2: (Transition('t', Expression('True')), Substitution(x=1))}
+4 Marking({'p': MultiSet([3])})
+ => {5: (Transition('t', Expression('True')), Substitution(x=3))}
+ <= {3: (Transition('t', Expression('True')), Substitution(x=2))}
+5 Marking({'p': MultiSet([4])})
+ => {1: (Transition('t', Expression('True')), Substitution(x=4))}
+ <= {4: (Transition('t', Expression('True')), Substitution(x=3))}
+^^^^^^^^^^^^^^^^^^^^^^
+
+The second statement computes the graph, then, for each state, we
+print its number, the corresponding marking and successors and
+predecessors states that include the state number as well as the
+transition (and its mode) that changed the marking. For instance, the
+state $1$ can be reached from $0$ or $5$ by firing $'t'$ with $x=-1$
+in and $x=4$ respectively.
+
+A marking graph is computed (an thus iterated) in a breadth first
+search. It may be iterated before it has been built completely; in
+this case, successors states are computed on the fly as each state is
+yield by the iteration. However, this results in having wrong
+predecessors states as a state not yet explored may lead to one
+already visited. This is the case here for the state $5$ that can lead
+to $1$ but this is not yet known when we are visiting $1$. This error
+is noticeable when the state $1$ is displayed while running:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> s2 = StateGraph(n4)
+>>> for state in s2 :
+...     print state, s2.net.get_marking()
+...     print " =>", s2.successors()
+...     print " <=", s2.predecessors()
+... 
+0 Marking({'p': MultiSet([-1])})
+ => {1: (Transition('t', Expression('True')), Substitution(x=-1))}
+ <= {}
+1 Marking({'p': MultiSet([0])})
+ => {2: (Transition('t', Expression('True')), Substitution(x=0))}
+ <= {0: (Transition('t', Expression('True')), Substitution(x=-1))}
+2 Marking({'p': MultiSet([1])})
+ => {3: (Transition('t', Expression('True')), Substitution(x=1))}
+ <= {1: (Transition('t', Expression('True')), Substitution(x=0))}
+3 Marking({'p': MultiSet([2])})
+ => {4: (Transition('t', Expression('True')), Substitution(x=2))}
+ <= {2: (Transition('t', Expression('True')), Substitution(x=1))}
+4 Marking({'p': MultiSet([3])})
+ => {5: (Transition('t', Expression('True')), Substitution(x=3))}
+ <= {3: (Transition('t', Expression('True')), Substitution(x=2))}
+5 Marking({'p': MultiSet([4])})
+ => {1: (Transition('t', Expression('True')), Substitution(x=4))}
+ <= {4: (Transition('t', Expression('True')), Substitution(x=3))}
+^^^^^^^^^^^^^^^^^^^^^^
+
+Finally, it is worth noting that no check is performed in order to
+ensure that a marking graph is finite. The method $build$ may run
+forever until it fills the computer memory and crash the program.
+Moreover, if we use strange constructs like random numbers generators,
+the state graph obtained may be partial as the program cannot known
+when all the possibilities have been explored.
+
+
+Places types
+------------
+
+The places defined until now did accept any token value in their
+marking. It is possible to restrict that by providing a type to place
+when it is constructed. A typing system is defined in the module
+$typing$ to provide the flexibility for defining any place type. In
+this context, a type is understood as a set of values that can be
+infinite. Types can be combined to by the usual set operation
+(examples are given below). Several basic types are already defined:
+
+$tAll$:: allows any value, this is the type assigned to a constructed
+place when no other type is given.
+
+$tNothing$:: is the type with no value.
+
+$tInteger$:: is the type of integer values.
+
+$tNatural$:: is a restriction of $tInteger$ to non-negative values.
+
+$tPositive$:: is a restriction of $tInteger$ to strictly positive
+values.
+
+$tFloat$:: is the type of floating point numbers.
+
+$tNumber$:: is the union of $tFloat$ and $tInteger$.
+
+$tString$:: is the type for Python $str$ instances.
+
+$tBoolean$:: is the set holding the two values $False$ and $True$.
+
+$tNone$:: holds the only value $None$.
+
+$tBlackToken$:: holds the only value $dot$ that stands for the usual
+Petri net black token.
+
+$tList$:: allows for values that are instances of the Python class
+$list$.
+
+$tDict$:: allows for values that are instances of the Python class
+$dict$.
+
+$tTuple$:: allows for values that are instances of the Python class
+$tuple$.
+
+$tPair$:: is a restriction of $tTuple$ to tuples of length 2.
+
+The module typing also provides with type constructors, allowing to
+create new types. Moreover, types can be combined using various
+operators, for instance, the module $typing$ makes the following
+definitions:
+
+[python]
+^^^^^^^^^^^^^^^^^
+tInteger = Instance(int)
+# an instance of int
+tNatural = tInteger & GreaterOrEqual(0)
+# an instance of int and a value greater than or equal to zero
+tPositive = tInteger & Greater(0)
+# an instance of int and a value strictly positive
+tFloat = Instance(float)
+tNumber = tInteger|tFloat
+# an instance of int or of float
+tBoolean = OneOf(False, True)
+# one value of False and True
+tNone = OneOf(None)
+# only the value None
+tBlackToken = OneOf(dot)
+# only the value dot
+tTuple = Tuple(tAll)
+# an instance of tuple holding any value
+tPair = Tuple(tAll, min=2, max=2)
+# an instance of tuple holding exactly two items of any type
+^^^^^^^^^^^^^^^^^
+
+A type can be called as a function in which case it returns $True$ if
+all its argument belong to the type and $False$ otherwise, for
+instance:
+
+[python]
+^^^^^^^^^^^^^^^^^
+>>> from snakes.typing import *
+>>> tNatural(2, 3, 4, 0)
+True
+>>> tNatural(-1)
+False
+^^^^^^^^^^^^^^^^^
+
+When a place is constructed a third argument can be given to define
+its type. If later on a token that does not respect the type is added
+to the place, an exception is raised.
+
+[python]
+^^^^^^^^^^^^^^^^^
+>>> from snakes.typing import *
+>>> tNatural(2)
+True
+>>> tNatural(-1)
+False
+>>> p = Place('p', [0, 1, 2, 3], tNatural)
+>>> p.add(3)
+>>> p.tokens
+MultiSet([0, 1, 2, 3, 3])
+>>> p.add(-1)
+Traceback (most recent call last):
+  ...
+ValueError: forbidden token '-1'
+^^^^^^^^^^^^^^^^^
+
+When no type is given at construction time, $tAll$ is actually used,
+which explains why a place accepts any token by default.
+
+
+Plugins
+-------
+
+A system a plugins allow to extend SNAKES. In order to plug the module
+$foo$ into the module $snakes.nets$, one as to use:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^
+import snakes.plugins
+snakes.plugins.load('snakes.plugins.foo', 'snakes.nets', 'my_nets')
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Intuitively, this (correct) statements have the effect of the
+(incorrect) statement:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^
+import 'snakes.nets extended by snakes.plugins.foo' as my_nets
+^^^^^^^^^^^^^^^^^^^^^^^
+
+So, one could now use:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^
+from my_nets import *
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Several plugins may be loaded at the same time:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^
+snakes.plugins.load(['snakes.plugins.foo, 'snakes.plugins.bar],
+                    'snakes.nets', 'my_nets')
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This has the effect to load the plugin $foo$ on the top of
+$snakes.nets$ resulting in a module on the top of which $bar$ is then
+loaded.
+
+=== Giving positions to the nodes
+
+The plugin $snakes.plugins.pos$ is a very simple one that allows to
+give _x_/_y_ positions to the nodes of a Petri net.
+
+First we load the plugin:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> snakes.plugins.load('snakes.plugins.pos', 'snakes.nets', 'nets')
+<module 'nets' from '...'>
+>>> from nets import PetriNet, Place, Transition
+^^^^^^^^^^^^^^^^^^^^^^
+
+A place can be added without specifying a position for it, in which
+case it will be positioned at $(0,0)$. The position is stored in an
+attribute $pos$ of the place as well as in $pos.x$ and $pos.y$:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> n = PetriNet('N')
+>>> p = Place('p00')
+>>> n.add_place(p)
+>>> p.pos
+Position(0, 0)
+>>> p.pos.x, p.pos.y
+(0, 0)
+^^^^^^^^^^^^^^^^^^^^^^
+
+The position can be defined when the node is created or when it is
+added to a net.
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> t10 = Transition('t10', pos=(1, 0))
+>>> n.add_transition(t10)
+>>> t10.pos
+Position(1, 0)
+>>> t = Transition('t01')
+>>> t.pos
+Position(0, 0)
+>>> n.add_transition(t, pos=(0, 1))
+>>> t.pos
+Position(0, 1)
+^^^^^^^^^^^^^^^^^^^^^^
+
+The last statement above shows that the node is copied when added to a
+net and thus $t$ keeps its position $(0,0)$ but its copy in $n$ as
+been positioned at $(0,1)$.
+
+Nodes can be moved using the $shift$ or $moveto$ method, but not by
+directly assigning their attributes $pos.x$ of $pos.y$:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> t = n.transition('t01')
+>>> t.pos
+Position(0, 1)
+>>> t.pos.moveto(1, 2)
+>>> t.pos
+Position(1, 2)
+>>> t.pos.shift(1, -1)
+>>> t.pos
+Position(2, 1)
+>>> t.pos.x = 0
+Traceback (most recent call last):
+  ...
+AttributeError: readonly attribute
+^^^^^^^^^^^^^^^^^^^^^^
+
+A net extended by $snakes.plugins.pos$ has a method to compute its
+bounding box that is a tuple $((xmin, ymin), (xmax, ymax))$ where
+$xmin$ is the $x$ coordinate of the left-most node, and so on. A
+method $shift$ also allows to shift all the nodes of the net and a
+method $transpose$ rotates a whole net by 90° (_i.e._, the top-down
+direction becomes the left-right).
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> n.bbox()
+((0, 0), (2, 1))
+>>> n.shift(10, 10)
+>>> n.bbox()
+((10, 10), (12, 11))
+>>> t.pos
+Position(12, 11)
+>>> n.transpose()
+>>> t.pos
+Position(-11, 12)
+>>> n.bbox()
+((-11, 10), (-10, 12))
+^^^^^^^^^^^^^^^^^^^^^^
+
+Finally, notice that when nodes are merged, the position of the result
+can be defined by giving an argument $pos$ to the $merge_transitions$
+or $merge_places$ method. If no such argument is given, the position
+of the new node is computed as the barycentre of the positions of the
+merged nodes.
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> n.merge_transitions('t11', ['t01', 't10'], pos=(1,1))
+>>> n.transition('t11').pos
+Position(1, 1)
+>>> n.transition('t01').pos
+Position(-11, 12)
+>>> n.transition('t10').pos
+Position(-10, 11)
+>>> n.merge_transitions('t', ['t01', 't10'])
+>>> n.transition('t').pos
+Position(-10.5, 11.5)
+^^^^^^^^^^^^^^^^^^^^^^
+
+=== Drawing nets and marking graphs
+
+The plugin $graphviz$ can be used in order to produce a graphical
+rendering of $PetriNet$ and $StateGraph$ objects. It add to them a
+method $draw$ that saves a picture in various formats (those supported
+by http://www.graphviz.org[GraphViz]), in particular: PNG, JPEG, EPS,
+DOT. For a Petri net, the positions of the nodes is fixed using the
+plugin $pos$ (that is automatically loaded). For a stage graph, the
+nodes are automatically positioned by GraphViz.
+
+[WARNING]
+===========================
+In order to produce a graphical rendering in a format other than DOT,
+the plugin $graphviz$ calls the program $dot$ or $neato$. It is
+possible that a specially crafted file name will result in executing
+arbitrary commands on the system. So, take care when you run a SNAKES
+script that you did not program yourself. (In general, take care when
+your run any script from an unsafe source.)
+===========================
+
+Let's consider a simple example:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> snakes.plugins.load('snakes.plugins.graphviz', 'snakes.nets', 'nets')
+<module 'nets' from '...'>
+>>> from nets import *
+>>> n = PetriNet('N')
+>>> n.add_place(Place('p00', [0]))
+>>> n.add_transition(Transition('t10', pos=(1, 0)))
+>>> n.add_place(Place('p11', pos=(1, 1)))
+>>> n.add_transition(Transition('t01', pos=(0, 1)))
+>>> n.add_input('p00', 't10', Variable('x'))
+>>> n.add_output('p11', 't10', Expression('(x+1) % 3'))
+>>> n.add_input('p11', 't01', Variable('y'))
+>>> n.add_output('p00', 't01', Expression('(y+2) % 4'))
+>>> n.draw('graphviz-net.png')
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This produces the following picture:
+
+image:graphviz-net.png[GraphViz net]
+
+The rendering is not very beautiful but should be useful in many
+cases. Transitions are labelled with their name and guard, places with
+their marking (inside), name and type (top-right), arcs are labelled
+with their inscription. The picture format is chosen using the
+extension of the created file: $.png$, $.jpg$, $.eps$, $.dot$...
+
+The marking graph can then be built and drawn also:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> s = StateGraph(n)
+>>> s.draw('graphviz-graph.png', landscape=False)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Which produces the picture:
+
+image:graphviz-graph.png[GraphViz stage graph]
+
+Each state is labelled with its number and the corresponding marking,
+arcs are labelled by the transition and binding that produce one
+marking from another.
+
+Notice that the option $landscape$ has been used in order to ask
+GraphViz to produce a vertical layout (it is horizontal by default).
+Other options exist, given here with their default value:
+
+$scale=72.0$:: a scale factor for the whole picture. The greater it is,
+the larger will be the space between the nodes. This option applies to
+both $PetriNet.draw$ and $StateGraoh.draw$.
+
+$nodesize=0.5$:: the size of the nodes (places, transitions or
+states). The greater it is, the wider the nodes are. This option
+applies to both $PetriNet.draw$ and $StateGraoh.draw$.
+
+$engine$:: the rendering program to use (one of $"neato"$, $dot$,
+$"circo"$, $"twopi"$, $"fdp"$). The default for $PetriNet$ objects is
+$"neato"$, the default for $StateGraph$ objects is $dot$.
+
+$layout=False$:: for $PetriNet.draw$ only, controls whether the
+rendering program is allowed to move nodes or not. This only works for
+$"neato"$, other programs are always allowed to move nodes.
+
+$print_state=None$:: for $StateGraph.draw$ only, defines the text
+printed inside each state. If $None$, the number of the state is
+printed with the corresponding marking. Otherwise, a function should
+be provided, taking the state number as its first argument and the
+state graph as its second argument, and returning the string to print.
+
+$print_arc=None$:: for $StateGraph.draw$, similarly to $print_state$,
+defines the text printed on the arcs. The function to provide must
+take five arguments: the source state, the target state, the name of
+the transition fired, its mode (_i.e._ the substitution used), and the
+state graph. For $PetriNet.draw$, the function must take five
+arguments: the label of the arc, the place connected to it, the
+transition connected to it, a Boolean indicating whether this is an
+input (if $True$) or output arc (if $False$) and the Petri net.
+
+$print_trans=None$:: for $PetriNet.draw$ only, the function should
+take as arguments the transition and the net.
+
+$print_place=None$:: for $PetriNet.draw$ only, the function should
+take as arguments the place and the net. This corresponds to the label
+that is drawn outside of the place.
+
+$print_tokens=None$:: for $PetriNet.draw$ only, the function should
+take as arguments the multiset of tokens, the place and the net. This
+corresponds to the label that is drawn inside the place.
+
+=== Merging nodes using name-based rules
+
+The plugin $status$ extends Petri nets nodes with an attribute called
+$status$ that is composed of a _name_ and _value_. The former
+corresponds to a class of similar statuses (_e.g._, $entry$,
+$internal$, $exit$, $buffer$ or $tick$) and the latter to a particular
+subset of this class. The idea is to be able to merge nodes that have
+the same status (name and value). Each status uses its own merge rule.
+
+[NOTE]
+====================
+The principle of places status is well known in PBC and M-nets, see
+for instance the paper
+http://www.univ-paris12.fr/lacl/pommereau/publis/2003-fi.html[Asynchronous
+Box Calculus] where they are used in order to perform compositions
+of Petri net. The plugin extends this notion to transitions.
+====================
+
+For instance, the plugin defines a function $buffer(id)$ that creates
+a status $('buffer', id)$. If several places with the status $buffer$
+and the same $id$ are present in the net, they can be automatically
+merged. Concretely, let's define a net wit three buffer places:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> snakes.plugins.load('snakes.plugins.status', 'snakes.nets', 'nets')
+<module 'nets' from ...>
+>>> from nets import *
+>>> import snakes.plugins.status as status
+>>> n = PetriNet('N')
+>>> n.add_place(Place('p1', [1], status=status.buffer('foo')))
+>>> n.add_place(Place('p2', [2]), status=status.buffer('foo'))
+>>> n.add_place(Place('p3', [3]), status=status.buffer('bar'))
+>>> n.add_place(Place('p4', [4]))
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Notice that the status can be assigned when the place is created (as
+for $p1$) or when it is added to the net (as for $p2$ and $p3$). A
+status has not been specified for $p4$ that thus receives the empty
+status $(None, None)$.
+
+It is now possible to list all the places that have the same status:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.status(status.buffer('foo'))
+('p2', 'p1')
+>>> n.status(status.buffer('bar'))
+('p3',)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Moreover, it is possible to merge the places that have the same
+status:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.status.merge(status.buffer('foo'))
+>>> n.place()
+[Place('p3', MultiSet([3]), tAll, status=Buffer('buffer','bar')),
+ Place('(p1+p2)', MultiSet([1, 2]), tAll, status=Buffer('buffer','foo')),
+ Place('p4', MultiSet([4]), tAll)]
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The places $p1$ and $p2$ has been merged (and then removed), yielding
+a place $p1+p2$ whose marking is the sum of the marking of $p1$ and
+$p2$. This treatment of the marking is specific to buffer status,
+other status may use other methods.
+
+A Petri net is also enriched with a method in order to change the
+status of a node:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.set_status('(p1+p2)', status.buffer(None))
+>>> n.place()
+[Place('p3', MultiSet([3]), tAll, status=Buffer('buffer','bar')),
+ Place('(p1+p2)', MultiSet([1, 2]), tAll, status=Buffer('buffer')),
+ Place('p4', MultiSet([4]), tAll)]
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A buffer status with a value $None$ is particular in that it will be
+ignored by $PetriNet.status.merge$ ans thus not merged (it is a
+private buffer).
+
+One may have noticed that buffer status are actually instances of the
+class $Buffer$ that is itself a subclass of $Status$. In order to
+create a status, one just has to extend the class $Status$ and
+redefine the method $merge$ (with its arguments as below), for example
+the $Buffer$ class is defined as:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^
+class Buffer (Status) :
+    def merge (self, net, nodes, name=None) :
+        # net: the net in which the merge occurs
+        # nodes: the nodes to merge
+        # name: the name of the resulting node
+        if self._value is None :
+            return # private buffers are ignored
+        if name is None : # create a name if none has been given
+            name = "(%s)" % "+".join(sorted(nodes))
+        net.merge_places(name, nodes, status=self) # merge the places
+        for src in nodes : # remove the merged places
+            net.remove_place(src)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+[NOTE]
+==========================
+Using this class $Buffer$, a helper function $buffer$ is defined as:
+
+//skip
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+def buffer (name) :
+    return Buffer('buffer', name)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+==========================
+
+The plugin defines other statuses:
+
+$variable(id)$:: is similar to $buffer$ except that when places are
+merged, they must all have the same marking. So, $variable$ places are
+like variables in a program that store a single value (possibly
+structured).
+
+$tick(id)$:: is a transition status. When $tick$ transitions are
+merged, their guards are and-ed.
+
+$entry$, $internal$ and $exit$:: are the traditional place status
+allowing to define control flow operations between Petri nets in PBC
+and its successors.
+
+=== PBC/M-nets control flow operations
+
+The plugin $ops$ defines the control flow operations usually defined
+for PBC and M-nets. To do so, it relies on places status (the plugin
+$status$ is automatically loaded) and in particular on the $entry$,
+$internal$ and $exit$ statuses. Indeed, it is expected that a Petri
+net starts its execution with one token in each entry place (entry
+marking) and evolves until it reaches a marking with one token in each
+exit place (exit marking). In order to produce the expected control
+flow, the operations use combinations of the entry and exit places of
+the composed nets. All the details about these operations can be found
+in the paper
+http://www.univ-paris12.fr/lacl/pommereau/publis/2003-fi.html[Asynchronous
+Box Calculus].
+
+[NOTE]
+======================
+There are basically two approaches for such combinations. The PBC
+approach relies on cross-products of sets of places with simple types
+(low-level places). This has the advantage to be simple but may
+produce a large number of places. On the other hand, the M-nets
+approach relies on building fewer high-level places whose type are
+cross-products of the types of the combined places (this is a
+simplification). This has the advantage to produce less places than
+in PBC but their types are very complicated and the resulting transition
+rule is hard to implement (it is necessary to match tree-structured
+tokens against tree-structures annotations). Because of this
+complexity, we have chosen to implement to PBC approach which is also
+what is used in the most recent models of the family.
+======================
+
+The plugin defines four control flow operations. Let $n1$ and $n2$ be
+two nets:
+
+ * the _sequence_ $n1 & n2$ is obtained by combining the exit places
+   of $n1$ with the entry places of $n2$ so that when $n1$ reaches its
+   exit marking, it corresponds to the entry marking of $n2$. As a
+   result, $n1$ is executed first and is followed by the execution of
+   $n2$;
+
+ * the _choice_ $n1 + n2$ combines the entry places of $n1$ and $n2$
+   on the one hand, and their exit places on the other hand. As a
+   result, either $n1$ or $n2$ is executed and they have the same exit
+   marking;
+
+ * the _iteration_ $n1 * n2$ combines the entry and exit places of
+   $n1$ with the $entry$ places of $n2$. As a result, $n1$ can be
+   executed an arbitrary number of time (including zero) and is
+   followed by one execution of $n2$;
+
+ * the _parallel_ composition $n1 | n2$ does not combine any place so
+   that $n1$ and $n2$ can evolve concurrently.
+
+When two nets are combined using one of these operators, their nodes
+are automatically merged according to their status, in particular:
+buffer or variables places, and tick transitions are merged using the
+method that is defined by each status.
+
+Two operations that are not related to control flow are also defined:
+
+ * the node hiding $n1.hide(old)$ gives the empty status to all the
+   nodes in $n1$ that used to have the status $old$ before. It may be
+   called with a second argument in order to choose the new status.
+   For instance $n1.hide(buffer('foo'), buffer(None))$ makes private
+   all the buffer places with the status $('buffer', 'foo')$;
+
+ * a variant of the node hiding is $n1 / val$. Its right argument must
+   be a status value, the result is a copy of $n1$ in which all the
+   nodes with a status $(x,val)$ are given the status $(x,None)$.
+
+This has the effect to disable further merges of, _e.g._, buffer
+places if the net is later combined with another one.
+
+The plugin $posops$ is a combination of $pos$ and $ops$ that tries to
+take into account the positions of the nodes when nets are composed.
+It avoids overlapping the composed nets and tries to distribute evenly
+the combined places in order to have a acceptable result (as far as
+possible). Let's see it in action:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> snakes.plugins.load(['snakes.plugins.posops', 'snakes.plugins.graphviz'], 'snakes.nets', 'nets')
+<module 'nets' from ...>
+>>> from nets import *
+>>> from snakes.plugins.status import entry, internal, exit, safebuffer
+>>> n = PetriNet('basic')
+>>> n.add_place(Place('e', status=entry, pos=(0, 2)))
+>>> n.add_place(Place('x', status=exit, pos=(0, 0)))
+>>> n.add_transition(Transition('t', pos=(0, 1)))
+>>> n.add_input('e', 't', Value(dot))
+>>> n.add_output('x', 't', Value(dot))
+>>> n.add_place(Place('v', [0], status=safebuffer('var'), pos=(1,1)))
+>>> n.add_input('v', 't', Variable('x'))
+>>> n.add_output('v', 't', Expression('x+1'))
+>>> n.draw('basic.png')
+^^^^^^^^^^^^^^^^^^^^^^
+
+This basic net is as follows:
+
+image:basic.png[Basic net]
+
+It can be composed with itself in order to produce a more complex net,
+for instance:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> complex = n & (n * (n + n))
+>>> var = complex.status(safebuffer('var'))[0]
+>>> complex.place(var).pos.moveto(-1,-1)
+>>> complex.draw('complex.png', scale=60)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the second line, the new name of the variable place is retrieved
+from its status. Then the place is moved in order to have a prettier
+result:
+
+image:complex.png[Complex net]
+
+=== PBC/M-nets synchronisation
+
+Another important operation featured by the models in the PBC and
+M-nets family is the synchronization. This operation is similar to the
+CCS synchronization but operates on multi-actions (_i.e_, several
+synchronizations may take place at the same transition). In PBC,
+actions have no parameters while the have in M-nets (which implies the
+unification of these parameters). With respect to CCS, the
+synchronization is here a static operation that builds all the
+possible transitions corresponding to synchronized actions. The plugin
+$synchro$ implements a generalisation of the M-nets synchronisation.
+It is generalised in that it does not impose a fixed arity associated
+to each action name. For more information about M-nets
+synchronisation, see for instance the section 4 of the paper
+http://www.univ-paris12.fr/lacl/pommereau/publis/2002-mtcs.html[Petri
+nets with causal time for system verification].
+
+Let's consider a simple example: three transitions have to
+synchronize, doing so, one transition can receive a value from each
+other transition. To do this with SNAKES, one may run the following
+code:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> snakes.plugins.load(['snakes.plugins.synchro', 'snakes.plugins.graphviz'], 'snakes.nets', 'nets')
+<module 'nets' from ...>
+>>> from nets import *
+>>> from snakes.plugins.synchro import Action
+>>> n = PetriNet('N')
+>>> n.add_place(Place('e1', [dot], pos=(0,2)))
+>>> n.add_place(Place('e2', [dot], pos=(1,2)))
+>>> n.add_place(Place('e3', [dot], pos=(2,2)))
+>>> n.add_place(Place('x1', [], pos=(0,0)))
+>>> n.add_place(Place('x2', [], pos=(1,0)))
+>>> n.add_place(Place('x3', [], pos=(2,0)))
+>>> n.add_transition(Transition('t1', pos=(0,1),
+...                  actions=[Action('a', True, [Value(2)])]))
+>>> n.add_transition(Transition('t2', pos=(1,1),
+...                  actions=[Action('a', False, [Variable('x')]),
+...                           Action('a', False, [Variable('y')])]))
+>>> n.add_transition(Transition('t3', pos=(2,1),
+...                  actions=[Action('a', True, [Value(3)])]))
+>>> n.add_input("e1", "t1", Value(dot))
+>>> n.add_input("e2", "t2", Value(dot))
+>>> n.add_input("e3", "t3", Value(dot))
+>>> n.add_output("x1", "t1", Value(dot))
+>>> n.add_output("x2", "t2", Value(dot))
+>>> n.add_output("x3", "t3", Value(dot))
+>>> def pt (trans, net) :
+...     return "%s\\n%s" % (trans.name, str(trans.actions))
+>>> n.draw('synchro-1.png', print_trans=pt)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The resulting picture is the following:
+
+image:synchro-1.png[Before synchronisation]
+
+Applying the synchronisation is possible by calling the method
+$synchronise$ that expects an action name as parameter. The code below
+performs the synchronisation then draws the net with a new layout in
+order to make it more readable (by default, a synchronised transition
+is place in the middle of the transition that participated to the
+synchronisation).
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.synchronise('a')
+>>> n.draw('synchro-2.png', print_trans=pt, layout=True, engine='circo')
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+image:synchro-2.png[After synchronisation]
+
+The result is not really readable, but let's see what happened:
+
+ - $t1$ has two ways to synchronise with $t2$, which results in
+   building two transitions, that still hold one receive action $a$;
+
+ - this is the same for $t3$ and $t2$, we have so far created 4 new
+   transitions;
+
+ - then, both $t1$ and $t3$ can synchronise with the 4 new
+   transitions, which results in 8 new transitions.
+
+So their are now 15 transitions in the net. The names of the new
+transitions correspond to how they were obtained. For instance, the
+one on the left of $x1$ (on the top) has the name
+$(t1{x->2}+t2{x->2}[a(2)]$, which means that is was obtained from the
+synchronisation of $t1$ and $t2$ for which the variable $x$ was bound
+to $2$ (the two substitutions are the way to unify the synchronised
+actions) that communicated the value $2$ on the action $a$.
+
+It may be observed that only the last 8 transitions correspond to the
+full synchronisation of $t2$ with both $t1$ and $t3$ (and each of
+these 8 transition corresponds to one way of achieving the
+synchronisation, some being equivalent). But if the net is executed,
+it is possible to fire $t1$, $t2$, $t3$ or any of the partially
+synchronised transitions. In order to force the execution of the full
+synchronisation, one can call the method $restrict$ that remove all
+the transitions that still hold an action $a$. Most of time, a
+restriction always follows a synchronisation; so, there is also a
+method $scope$ that perform both in turn.
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.restrict('a')
+>>> n.draw('synchro-3.png', print_trans=pt, layout=True, engine='circo')
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This results in the following picture where only 8 transitions are
+remaining:
+
+image:synchro-3.png[After restriction]
+
+On this last picture, one may notice that some transitions consume or
+produce two tokens. This is the case for instance for the top-left
+transition that results from the synchronisation of $t1$ with $t2$
+which was then synchronised again with $t1$. In a model of safe or
+colour-safe Petri nets like PBC or M-nets, this is a dead transition
+that could be removed. This can be made easily with the following
+code, resulting in the picture below:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^
+>>> for trans in n.transition() :
+...     for place, label in trans.pre.items() :
+...         if label == MultiArc([Value(dot), Value(dot)]) :
+...             n.remove_transition(trans.name)
+...             break
+>>> n.draw('synchro-4.png', print_trans=pt, layout=True, engine='circo')
+^^^^^^^^^^^^^^^^^^^^^^^
+
+image:synchro-4.png[After removing the dead transitions]
+
+It may be interesting also to remove the duplicated transitions, but
+this is beyond the scope of this tutorial.
+
+
+=== Representing infinite data domains
+
+[NOTE]
+=======================
+This section describes the implementation that corresponds to the
+paper
+http://www.univ-paris12.fr/lacl/pommereau/publis/2007-infinity.html[Efficient
+reachability graph representation of Petri nets with unbounded
+counters]. The only difference with respect to the paper is that
+SNAKES is not limited to P/T nets but happily handles high-level nets
+together with Lash data. The rest of the section uses the example
+developed in the paper, taking $omega=8$.
+=======================
+
+The first thing to do is to load the plugin $lashdata$ do that we are
+able to store data in Lash, we also import load $graphviz$ in order to
+draw the resulting graphs:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> import snakes.plugins
+>>> nets = snakes.plugins.load(["snakes.plugins.graphviz",
+...                             "snakes.plugins.lashdata"],
+...                             "snakes.nets", "nets")
+>>> from nets import *
+>>> from snakes.typing import *
+>>> from snakes.data import *
+>>> from snakes.plugins.lashdata import Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+$Data$ is a class that allows to store integer variables into Lash.
+This library actually store data under the form of sets of vectors of
+integers but the class $Data$ hides this under the usual concept of
+variables. When we build a Petri net, we must give a $lash$ argument
+that is one instance of $Data$. Its constructor simply takes a list of
+variables with their initial values:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n = PetriNet("N", lash=Data(x=0))
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Then we add the places:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.add_place(Place("s_1", [dot], tBlackToken, pos=(0, 0)))
+>>> n.add_place(Place("s_2", [], tBlackToken, pos=(2, 0)))
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+And last the transitions. Each transition is given a $condition$ under
+the form of a linear Python expression ($or$, $not$ nor $=!$ allowed).
+An $update$ is also provided in order to modify the variables, this a
+single assignment of one variable with a linear expression (several
+assignment may be combined using $;$).
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> n.add_transition(Transition("t_3", pos=(1, -1)),
+...                  condition="x<8",
+...                  update="x=x+1")
+>>> n.add_input("s_2", "t_3", Value(dot))
+>>> n.add_output("s_1", "t_3", Value(dot))
+>>> n.add_transition(Transition("t_2", pos=(1, 1)),
+...                  condition="x>0", update="x=x-1")
+>>> n.add_input("s_1", "t_2", Value(dot))
+>>> n.add_output("s_2", "t_2", Value(dot))
+>>> n.add_transition(Transition("t_5", pos=(3, 1)),
+...                  condition="x>0", update="x=x-1")
+>>> n.add_input("s_2", "t_5", Value(dot))
+>>> n.add_output("s_2", "t_5", Value(dot))
+>>> n.add_transition(Transition("t_4", pos=(3, -1)),
+...                  condition="x<8",
+...                  update="x=x+1")
+>>> n.add_input("s_2", "t_4", Value(dot))
+>>> n.add_output("s_2", "t_4", Value(dot))
+>>> n.add_transition(Transition("t_1", pos=(-1, 0)),
+...                  condition="x<4",
+...                  update="x=x+1")
+>>> n.add_input("s_1", "t_1", Value(dot))
+>>> n.add_output("s_1", "t_1", Value(dot))
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Then, we can build four different marking graph. The first one is the
+full, usual, marking graph:
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> m = StateGraph(n)
+>>> m.build()
+>>> def ps (state, graph) :
+...     return str(state)
+>>> def pa (source, target, trans, mode, graph) :
+...     return trans
+>>> m.draw("lash-full.png", landscape=True, print_state=ps, print_arc=pa)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+That results in the following picture:
+
+image:lash-full.png[Full marking graph]
+
+Then come the compact graphs. First we can ask SNAKES to add a meta
+transition for each detected side-loop (a transition that does not
+change the marking).
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> m = StateGraph(n, loops=True)
+>>> m.build()
+>>> m.draw("lash-loops.png", landscape=True, print_state=ps, print_arc=pa)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+That results in:
+
+image:lash-loops.png[First compact marking graph]
+
+We can then ask to add a meta transition when cycles are detected (a
+new state that covers an existing one). We can further ask to remove
+states that are covered when cycles are detected.
+
+[python]
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> m = StateGraph(n, cycles=True)
+>>> m.build()
+>>> m.draw("lash-cycles.png", landscape=True, print_state=ps, print_arc=pa)
+>>> m = StateGraph(n, remove=True)
+>>> m.build()
+>>> m.draw("lash-remove.png", landscape=True, print_state=ps, print_arc=pa)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this particular example, exploiting cycles results in
+link:lash-cycles.png[the same graph as above], but with the $remove$
+option, we get a more compact graph:
+
+image:lash-remove.png[The most compact graph]
+
+Finally, note that using the $cycles$ option automatically turns on
+the $loops$ option, and using the $remove$ option turns on the
+$cycles$ option (and thus also the $loops$ one).
+
+
+Exporting to PNML and other formats
+-----------------------------------
+
+To do...
+
+
+Writing a plugin
+----------------
+
+To do...
