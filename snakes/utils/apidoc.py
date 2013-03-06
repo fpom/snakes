@@ -140,12 +140,10 @@ class DocExtract (object) :
             err("line %s source %r" % (node.lineno, src))
             raise
     def visit_module (self, node) :
-        doc = ast.get_docstring(node)
         self.write_module()
         for child in ast.iter_child_nodes(node) :
             self.visit(child)
     def visit_plugin (self, node) :
-        doc = ast.get_docstring(node)
         self.write_module()
         extend = None
         for child in ast.iter_child_nodes(node) :
@@ -154,12 +152,10 @@ class DocExtract (object) :
                 extend = child
             else :
                 self.visit(child)
-        doc = ast.get_docstring(extend)
         self.write_plugin()
         for child in ast.iter_child_nodes(extend) :
             self.visit(child)
     def visit_ClassDef (self, node) :
-        doc = ast.get_docstring(node)
         self.write_class(node)
         self.classname = node.name
         for child in ast.iter_child_nodes(node) :
