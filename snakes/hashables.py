@@ -1,11 +1,11 @@
-"""Hashable mutable objets.
-
-This module proposes hashable version of the mutable containers
+"""This module proposes hashable version of the mutable containers
 `list`, `dict` and `set`, called respectively `hlist`, `hdict` and
-`hset`. After one object has been hashed, it becomes not mutable and
-raises a ValueError if a method which changes the object (let call a
-_mutation_ such a method) is invoqued. The object can be then un-
-hashed by calling `unhash` on it so that it becomes mutable again.
+`hset`.
+
+After one object has been hashed, it becomes not mutable and raises a
+`ValueError` if a method which changes the object (let call a
+_mutation_ such a method) is invoqued. The object can be then
+un-hashed by calling `unhash` on it so that it becomes mutable again.
 Notice that this may cause troubles if the object is stored in a set
 or dict which uses its hashcode to locate it. Notice also that
 hashable containers cannot be hashed if they contain non hashable
@@ -53,8 +53,9 @@ from operator import xor
 from snakes.compat import *
 
 def unhash (obj) :
-    """Make the object hashable again.
-    
+    """Make the object mutable again. This should be used with
+    caution, especially if the object is stored in a dict or a set.
+
     >>> l = hlist(range(3))
     >>> _ = hash(l)
     >>> l.append(3)
@@ -63,7 +64,7 @@ def unhash (obj) :
     ValueError: hashed 'hlist' object is not mutable
     >>> unhash(l)
     >>> l.append(3)
-    
+
     @param obj: any object
     @type obj: `object`
     """
@@ -72,6 +73,7 @@ def unhash (obj) :
     except :
         pass
 
+# apidoc skip
 def hashable (cls) :
     """Wrap methods in a class in order to make it hashable.
     """
@@ -122,8 +124,8 @@ def hashable (cls) :
     return cls
 
 class hlist (list) :
-    """Hashable lists.
-    
+    """Hashable lists. They support all standard methods from `list`.
+
     >>> l = hlist(range(5))
     >>> l
     hlist([0, 1, 2, 3, 4])
@@ -138,6 +140,7 @@ class hlist (list) :
     >>> unhash(l)
     >>> l.append(6)
     """
+    # apidoc stop
     def __add__ (self, other) :
         return self.__class__(list.__add__(self, other))
     def __delitem__ (self, item) :
@@ -200,8 +203,9 @@ class hlist (list) :
 hlist = hashable(hlist)
 
 class hdict (dict) :
-    """Hashable dictionnaries.
-    
+    """Hashable dictionnaries. They support all standard methods from
+    `dict`.
+
     >>> l = hlist(range(5))
     >>> d = hdict([(l, 0)])
     >>> d
@@ -229,6 +233,7 @@ class hdict (dict) :
     >>> d.pop(l)
     0
     """
+    # apidoc stop
     def __delitem__ (self, key) :
         self.__mutable__()
         dict.__delitem__(self, key)
@@ -271,8 +276,8 @@ class hdict (dict) :
 hdict = hashable(hdict)
 
 class hset (set) :
-    """Hashable sets.
-    
+    """Hashable sets. They support all standard methods from `set`.
+
     >>> s = hset()
     >>> l = hlist(range(5))
     >>> s.add(l)
@@ -298,6 +303,7 @@ class hset (set) :
     >>> unhash(s)
     >>> s.discard(l)
     """
+    # apidoc stop
     def __and__ (self, other) :
         return self.__class__(set.__and__(self, other))
     def __hash__ (self) :

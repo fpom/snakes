@@ -1,3 +1,11 @@
+"""This package is dedicated to parse and work with various languages,
+in particular Python itself and ABCD. These are mainly utilities for
+internal use in SNAKES, however, they may be of general interest
+independently of SNAKES.
+
+@todo: add documentation about how to use parsing and similar services
+"""
+
 import sys
 if sys.version_info[:2] in ((2, 6), (2, 7)) :
     import ast
@@ -14,9 +22,34 @@ else :
 
 sys.modules["snkast"] = ast
 
+"""### Module `ast` ###
+
+The module `ast` exported by `snakes.lang` is similar to Python's
+standard `ast` module (starting from version 2.6) but is available and
+uniform on every implementation of Python supported by SNAKES: CPython
+from 2.5, Jython and PyPy. (In general, these modules are available in
+these implementation - except CPython 2.5 - but with slight
+differences, so using `snakes.lang.ast` can be seen as a portable
+implementation.)
+
+Notice that this module is _not_ available for direct import but is
+exposed as a member of `snakes.lang`. Moreover, when `snakes.lang` is
+loaded, this module `ast` is also loaded as `snkast` in `sys.modules`,
+this allows to have both versions from Python and SNAKES
+simultaneously.
+
+>>> import snakes.lang.ast as ast
+ImportError ...
+ ...
+ImportError: No module named ast
+>>> from snakes.lang import ast
+>>> import snkast
+"""
+
 from . import unparse as _unparse
 from snakes.compat import *
 
+# apidoc skip
 class Names (ast.NodeVisitor) :
     def __init__ (self) :
         ast.NodeVisitor.__init__(self)
@@ -25,16 +58,24 @@ class Names (ast.NodeVisitor) :
         self.names.add(node.id)
 
 def getvars (expr) :
-    """
+    """Return the set of variables (or names in general) involved in a
+    Python expression.
+
     >>> list(sorted(getvars('x+y<z')))
     ['x', 'y', 'z']
     >>> list(sorted(getvars('x+y<z+f(3,t)')))
     ['f', 't', 'x', 'y', 'z']
+
+    @param expr: a Python expression
+    @type expr: `str`
+    @return: the set of variable names as strings
+    @rtype: `set`
     """
     names = Names()
     names.visit(ast.parse(expr))
     return names.names - set(['None', 'True', 'False'])
 
+# apidoc skip
 class Unparser(_unparse.Unparser) :
     boolops = {"And": 'and', "Or": 'or'}
     def _Interactive (self, tree) :
@@ -58,11 +99,13 @@ class Unparser(_unparse.Unparser) :
         self.dispatch(tree.body)
         self.leave()
 
+# apidoc skip
 def unparse (st) :
     output = io.StringIO()
     Unparser(st, output)
     return output.getvalue().strip()
 
+# apidoc skip
 class Renamer (ast.NodeTransformer) :
     def __init__ (self, map_names) :
         ast.NodeTransformer.__init__(self)
@@ -96,7 +139,8 @@ class Renamer (ast.NodeTransformer) :
                                           ctx=ast.Load()), node)
 
 def rename (expr, map={}, **ren) :
-    """
+    """Rename variables (ie, names) in a Python expression
+
     >>> rename('x+y<z', x='t')
     '((t + y) < z)'
     >>> rename('x+y<z+f(3,t)', f='g', t='z', z='t')
@@ -105,12 +149,22 @@ def rename (expr, map={}, **ren) :
     '[(x + y) for x in range(3)]'
     >>> rename('[x+y for x in range(3)]', y='z')
     '[(x + z) for x in range(3)]'
+
+    @param expr: a Python expression
+    @type expr: `str`
+    @param map: a mapping from old to new names (`str` to `str`)
+    @type map: `dict`
+    @param ren: additional mapping of old to new names
+    @type ren: `str`
+    @return: the new expression
+    @rtype: `str`
     """
     map_names = dict(map)
     map_names.update(ren)
     transf = Renamer(map_names)
     return unparse(transf.visit(ast.parse(expr)))
 
+# apidoc skip
 class Binder (Renamer) :
     def visit_Name (self, node) :
         if node.id in self.map[-1] :
@@ -119,7 +173,10 @@ class Binder (Renamer) :
             return node
 
 def bind (expr, map={}, **ren) :
-    """
+    """Replace variables (ie, names) in an expression with other
+    expressions. The replacements should be provided as `ast` nodes,
+    and so could be arbitrary expression.
+
     >>> bind('x+y<z', x=ast.Num(n=2))
     '((2 + y) < z)'
     >>> bind('x+y<z', y=ast.Num(n=2))
@@ -128,6 +185,15 @@ def bind (expr, map={}, **ren) :
     '[(x + y) for x in range(3)]'
     >>> bind('[x+y for x in range(3)]', y=ast.Num(n=2))
     '[(x + 2) for x in range(3)]'
+
+    @param expr: a Python expression
+    @type expr: `str`
+    @param map: a mapping from old to new names (`str` to `ast.AST`)
+    @type map: `dict`
+    @param ren: additional mapping of old to new names
+    @type ren: `ast.AST`
+    @return: the new expression
+    @rtype: `str`
     """
     map_names = dict(map)
     map_names.update(ren)

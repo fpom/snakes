@@ -1,3 +1,7 @@
+"""
+@todo: revise (actually make) documentation
+"""
+
 from snakes.plugins import plugin
 from snakes.pnml import Tree, loads, dumps
 import imp, sys, socket, traceback, operator

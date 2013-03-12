@@ -1,19 +1,20 @@
-"""SNAKES is the Net Algebra Kit for Editors and Simulators
+"""SNAKES library is organised into three parts:
 
-SNAKES is a Python library allowing to model all sorts of Petri nets
-and to execute them. It is very general as most Petri nets annotations
-can be arbitrary Python expressions while most values can be arbitrary
-Python objects.
-
-SNAKES can be further extended with plugins, several ones being
-already provided, in particular two plugins implement the Petri nets
-compositions defined for the Petri Box Calculus and its successors.
+  * the core library is package `snakes` and its modules, among which
+    `snakes.nets` is the one to work with Petri nets while the others
+    can be seen as auxiliary modules
+  * the plugin system and the plugins themselves reside into package
+    `snakes.plugins`
+  * auxiliary tools are kept into other sub-packages: `snakes.lang`
+    for all the material related to parsing Python and other
+    languages, `snakes.utils` for various utilities like the ABCD
+    compiler
 
 @author: Franck Pommereau
 @organization: University of Evry/Paris-Saclay
 @copyright: (C) 2005-2013 Franck Pommereau
 @license: GNU Lesser General Public Licence (aka. GNU LGPL), see the
-    file `doc/COPYING` in the distribution or visit [the GNU web
+    file `doc/COPYING` in the distribution or visit the [GNU web
     site](http://www.gnu.org/licenses/licenses.html#LGPL)
 @contact: franck.pommereau@ibisc.univ-evry.fr
 """
@@ -21,8 +22,13 @@ compositions defined for the Petri Box Calculus and its successors.
 version = "0.9.16"
 defaultencoding = "utf-8"
 
+"""## Module `snakes`
+
+This module only provides the exceptions used throughout SNAKES.
+"""
+
 class SnakesError (Exception) :
-    "An error in SNAKES"
+    "Generic error in SNAKES"
     pass
 
 class ConstraintError (SnakesError) :

@@ -12,6 +12,8 @@ Several status are defined by default: `entry`, `internal`, `exit`,
 >>> n.add_place(Place('p1'), status=status.entry)
 >>> n.place('p1')
 Place('p1', MultiSet([]), tAll, status=Status('entry'))
+
+@todo: revise documentation
 """
 
 import operator, weakref

@@ -65,6 +65,8 @@ Buffer('buffer')
 (1, 2)
 >>> n._declare
 ['global x; x=1']
+
+@todo: revise documentation
 """
 
 import snakes.plugins

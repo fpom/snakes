@@ -1,3 +1,7 @@
+"""
+@todo: revise (actually make) documentation
+"""
+
 import snakes.plugins
 from snakes.plugins import new_instance
 from snakes.pnml import Tree
