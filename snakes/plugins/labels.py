@@ -1,4 +1,6 @@
 """A plugin to add labels to nodes and nets.
+
+@todo: revise (actually make) documentation
 """
 
 from snakes.plugins import plugin, new_instance

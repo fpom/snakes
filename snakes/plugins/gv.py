@@ -26,6 +26,8 @@
 >>> n.layout()
 >>> any(node.pos == (-100, -100) for node in sorted(n.node(), key=str))
 False
+
+@todo: revise documentation
 """
 
 import os, os.path, subprocess, collections

@@ -1,3 +1,7 @@
+"""
+@todo: revise (actually make) documentation
+"""
+
 from snakes import SnakesError
 
 class CompilationError (SnakesError) :

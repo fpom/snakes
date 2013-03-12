@@ -2,6 +2,8 @@
 
 This module holds the various Petri net elements: arcs, places,
 transitions, markings, nets themselves and marking graphs.
+
+@todo: revise documentation
 """
 
 import re, operator, inspect
@@ -35,7 +37,7 @@ class Evaluator (object) :
         exec(stmt, self._env, locals)
     def attach (self, other) :
         """Make this instance use the namespaces of another
-        
+
         All the instances attached to this will also share the same
         namespace.
         """
@@ -88,20 +90,20 @@ class Evaluator (object) :
 
 class NetElement (object) :
     """The base class for Petri net elements.
-    
+
     Attributes can be locked, forbidding their assignment or deletion.
     For instance, a PetriNet object may lock the 'name' field of its
     nodes in order to force the renaming through the method
     'PetriNet.rename'.
-    
+
     FIXME: attribute locking is an unnecessarry complication, this
     will be progressively removed.
-    
+
     This class is abstract and should not be instanciated.
     """
     def __init__ (self) :
         """Abstract method
-        
+
         >>> try : NetElement()
         ... except NotImplementedError : print(sys.exc_info()[1])
         abstract class
@@ -110,7 +112,7 @@ class NetElement (object) :
     def lock (self, name, owner, value=None) :
         """Lock the attribute `name` that becomes writeable only by
         `owner`, set its value if `value` is not `None`.
-        
+
         @param name: the name of the attribute
         @type name: `str`
         @param owner: any value, usually the object instance that
@@ -131,7 +133,7 @@ class NetElement (object) :
     def unlock (self, name, owner, remove=False, value=None) :
         """Release a locked attribute, making it assignable or deletable
         from everywhere.
-        
+
         @param name: the name of the attribute
         @type name: `str`
         @param owner: the value that was used to lock the attribute
@@ -158,11 +160,11 @@ class NetElement (object) :
 #             raise ConstraintError, "'%s' not locked" % name
     def __setattr__ (self, name, value) :
         """Assign attribute, taking care of locks
-        
+
         Check whether the assignment is allowed or not, the owner may
         re-assign the attribute by using `lock` with its parameter
         `value` instead of a direct assignment.
-        
+
         @param name: name of the attribute
         @type name: `str`
         @param value: value of the attribute
@@ -174,11 +176,11 @@ class NetElement (object) :
             self.__dict__[name] = value
     def __delattr__ (self, name) :
         """Delete attribute, taking care of locks
-        
+
         Check whether the deletion is allowed or not, the owner may
         delete the attribute by using `unlock` with its parameter
         `remove` set to `True` instead of a direct deletion.
-        
+
         @param name: name of the attribute
         @type name: `str`
         """
@@ -193,49 +195,49 @@ class NetElement (object) :
 
 class Token (NetElement) :
     """A container for one token value
-    
+
     This class is intended for internal use only in order to avoid
     some confusion when inserting arbitrary values in a place. End
     users will probably never need to use it.
     """
     def __init__ (self, value) :
         """Initialise the token
-        
+
         >>> Token(42)
         Token(42)
-        
+
         @param value: value of the token
         @type value: `object`
         """
         self.value = value
     def __str__ (self) :
         """Simple string representation (that of the value)
-        
+
         >>> str(Token(42))
         '42'
-        
+
         @return: simple string representation
         @rtype: `str`
         """
         return str(self.value)
     def __repr__ (self) :
         """String representation suitable for `eval`
-        
+
         >>> repr(Token(42))
         'Token(42)'
-        
+
         @return: precise string representation
         @rtype: `str`
         """
         return "%s(%s)" % (self.__class__.__name__, repr(self.value))
     def __eq__ (self, other) :
         """Test token equality
-        
+
         >>> Token(42) == Token(10)
         False
         >>> Token(42) == Token(42)
         True
-        
+
         @param other: second argument of equality
         @type other: `Token`
         @return: `True` if token values are equal, `False` otherwise
@@ -247,12 +249,12 @@ class Token (NetElement) :
             return False
     def __ne__ (self, other) :
         """Test token inequality
-        
+
         >>> Token(42) != Token(10)
         True
         >>> Token(42) != Token(42)
         False
-        
+
         @param other: second argument of inequality
         @type other: `Token`
         @return: `True` if token values differ, `False` otherwise
@@ -261,12 +263,12 @@ class Token (NetElement) :
         return not self.__eq__(other)
     def __hash__ (self) :
         """Hash a token
-        
+
         This is done by hashing the value stored in the token
-        
+
         >>> hash(Token(42)) == hash(42)
         True
-        
+
         @return: hash value for the token
         @rtype: `int`
         """
@@ -274,39 +276,39 @@ class Token (NetElement) :
 
 class BlackToken (Token) :
     """The usual black token
-    
+
     >>> BlackToken()
     dot
     """
     def __init__ (self) :
         """Initialise the token
-        
+
         >>> BlackToken()
         dot
         """
         self.value = None
     def __repr__ (self) :
         """String representation suitable for `eval`
-        
+
         Since `snakes.nets` sets `dot = BlackToken()`, the string
         representation is `'dot'`.
-        
+
         >>> repr(BlackToken())
         'dot'
-        
+
         @return: precise string representation
         @rtype: `str`
         """
         return "dot"
     def __str__ (self) :
         """Simple string representation (that of the value)
-        
+
         Since `snakes.nets` sets `dot = BlackToken()`, the string
         representation is `'dot'`.
-        
+
         >>> str(BlackToken())
         'dot'
-        
+
         @return: simple string representation
         @rtype: `str`
         """
@@ -314,7 +316,7 @@ class BlackToken (Token) :
     __pnmltag__ = "token"
     def __pnmldump__ (self) :
         """Dumps value to PNML tree
-        
+
         >>> BlackToken().__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -325,7 +327,7 @@ class BlackToken (Token) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load from a PNML tree
-        
+
         >>> t = BlackToken().__pnmldump__()
         >>> BlackToken.__pnmlload__(t)
         dot
@@ -341,12 +343,12 @@ tBlackToken = Instance(BlackToken)
 
 class ArcAnnotation (NetElement) :
     """An annotation on an arc.
-    
+
     On input arcs (from a place to a transition) annotations may be
     values or variables, potentially nested in tuples. On output arcs
     (from a transition to a place), expressions are allowed, which
     corresponds to a computation.
-    
+
     A class attribute `input_allowed` is set to `True` or `False`
     according to whether an annotation is allowed on input arcs.
     """
@@ -356,7 +358,7 @@ class ArcAnnotation (NetElement) :
         raise NotImplementedError("abstract method")
     def substitute (self, binding) :
         """Substitutes the variables in the annotation.
-        
+
         @param binding: the substitution to apply
         @type binding: `snakes.data.Substitution`
         """
@@ -364,11 +366,11 @@ class ArcAnnotation (NetElement) :
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the `old` annotation
         has been replaced by the `new` one.
-        
+
         With non composite annotation, this will return a copy of the
         annotation if it is not the same as `old` otherwise it returns
         `new`. Composite annotations will replace there components.
-        
+
         >>> Value(2).replace(Variable('x'), Value(5))
         Value(2)
         >>> Variable('x').replace(Variable('x'), Value(5))
@@ -379,7 +381,7 @@ class ArcAnnotation (NetElement) :
         Test(Value(2))
         >>> Test(Variable('x')).replace(Variable('x'), Value(5))
         Test(Value(5))
-        
+
         @param old: the annotation to be replaced
         @type old: `ArcAnnotation`
         @param new: the annotation to use instead of `old`
@@ -394,21 +396,21 @@ class ArcAnnotation (NetElement) :
         raise NotImplementedError("abstract method")
     def __eq__ (self, other) :
         """Check for equality.
-        
+
         @param other: the other object to compare with
         @type other: `ArcAnnotation`
         """
         raise NotImplementedError("abstract method")
     def __hash__ (self) :
         """Computes a hash of the annotation
-        
+
         Warning: must be consistent with equality, ie, two equal
         values must have the same hash.
         """
         raise NotImplementedError("abstract method")
     def __ne__ (self, other) :
         """Check for difference.
-        
+
         @param other: the other object to compare with
         @type other: `ArcAnnotation`
         """
@@ -416,10 +418,10 @@ class ArcAnnotation (NetElement) :
     def bind (self, binding) :
         """Return the value of the annotation evaluated through
         `binding`.
-        
+
         >>> Expression('x+1').bind(Substitution(x=2))
         Token(3)
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -428,10 +430,10 @@ class ArcAnnotation (NetElement) :
     def flow (self, binding) :
         """Return the flow of tokens implied by the annotation evaluated
         through `binding`.
-        
+
         >>> Value(1).flow(Substitution(x=2))
         MultiSet([1])
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a multiset of values
@@ -441,10 +443,10 @@ class ArcAnnotation (NetElement) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
         substitution indicating how to bind the annotation.
-        
+
         >>> Variable('x').modes([1, 2, 3])
         [Substitution(x=1), Substitution(x=2), Substitution(x=3)]
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -457,17 +459,17 @@ class Value (ArcAnnotation) :
     input_allowed = True
     def __init__ (self, value) :
         """Initialise with the encapsulated value.
-        
+
         @param value: the value of the token.
         @type value: any object
         """
         self.value = value
     def copy (self) :
         """Return a copy of the value.
-        
+
         >>> Value(5).copy()
         Value(5)
-        
+
         @return: a copy of the value
         @rtype: `Value`
         """
@@ -475,7 +477,7 @@ class Value (ArcAnnotation) :
     __pnmltag__ = "value"
     def __pnmldump__ (self) :
         """Dump a `Value` as a PNML tree
-        
+
         >>> Value(3).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -485,7 +487,7 @@ class Value (ArcAnnotation) :
             </object>
           </value>
         </pnml>
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
         """
@@ -493,11 +495,11 @@ class Value (ArcAnnotation) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `Value` from a PNML tree
-        
+
         >>> t = Value(3).__pnmldump__()
         >>> Value.__pnmlload__(t)
         Value(3)
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the value built
@@ -506,14 +508,14 @@ class Value (ArcAnnotation) :
         return cls(tree.child().to_obj())
     def __str__ (self) :
         """Concise string representation
-        
+
         This is the string representation of the encapsulated value.
-        
+
         >>> print(str(Value(42)))
         42
         >>> print(str(Value('hello')))
         'hello'
-        
+
         @return: concise string representation
         @rtype: `str`
         """
@@ -523,36 +525,36 @@ class Value (ArcAnnotation) :
             return str(self.value)
     def __repr__ (self) :
         """String representation suitable for `eval`
-        
+
         >>> print(repr(Value(42)))
         Value(42)
         >>> print(repr(Value('hello')))
         Value('hello')
-        
+
         @return: precise string representation
         @rtype: `str`
         """
         return "%s(%s)" % (self.__class__.__name__, repr(self.value))
     def vars (self) :
         """Return the list of variables involved in the value (empty).
-        
+
         >>> Value(42).vars()
         []
-        
+
         @return: empty list
         @rtype: `list`
         """
         return []
     def __eq__ (self, other) :
         """Test for equality
-        
+
         This tests the equality of encapsulated values
-        
+
         >>> Value(42) == Value(42)
         True
         >>> Value(42) == Value(4)
         False
-        
+
         @param other: second operand of the equality
         @type other: `Value`
         @return: `True` if encapsulated values are equal, `False`
@@ -568,10 +570,10 @@ class Value (ArcAnnotation) :
     def bind (self, binding) :
         """Return the value evaluated through `binding` (which is the
         value itself).
-        
+
         >>> Value(1).bind(Substitution(x=2))
         Token(1)
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -580,13 +582,13 @@ class Value (ArcAnnotation) :
     def modes (self, values) :
         """Return an empty binding (no binding needed for values) iff the
         value is in `values`, raise ModeError otherwise.
-        
+
         >>> Value(1).modes([1, 2, 3])
         [Substitution()]
         >>> try : Value(1).modes([2, 3, 4])
         ... except ModeError : print(sys.exc_info()[1])
         no match for value
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -597,12 +599,12 @@ class Value (ArcAnnotation) :
             raise ModeError("no match for value")
     def substitute (self, binding) :
         """Bind the value (nothing to do).
-        
+
         >>> v = Value(5)
         >>> v.substitute(Substitution(x=5))
         >>> v
         Value(5)
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         """
@@ -615,13 +617,13 @@ class Variable (ArcAnnotation) :
     def __init__ (self, name) :
         """Variable names must start with a letter and may continue with
         any alphanumeric character.
-        
+
         >>> Variable('x')
         Variable('x')
         >>> try : Variable('_test')
         ... except ValueError: print(sys.exc_info()[1])
         not a variable name '_test'
-        
+
         @param name: the name of the variable
         @type name: `str`
         """
@@ -630,10 +632,10 @@ class Variable (ArcAnnotation) :
         self.name = name
     def copy (self) :
         """Return a copy of the variable.
-        
+
         >>> Variable('x').copy()
         Variable('x')
-        
+
         @return: a copy of the variable
         @rtype: `Variable`
         """
@@ -641,7 +643,7 @@ class Variable (ArcAnnotation) :
     __pnmltag__ = "variable"
     def __pnmldump__ (self) :
         """Dump a `Variable` as a PNML tree
-        
+
         >>> Variable('x').__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -649,7 +651,7 @@ class Variable (ArcAnnotation) :
             x
           </variable>
         </pnml>
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
         """
@@ -657,11 +659,11 @@ class Variable (ArcAnnotation) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `Variable` from a PNML tree
-        
+
         >>> t = Variable('x').__pnmldump__()
         >>> Variable.__pnmlload__(t)
         Variable('x')
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the variable built
@@ -670,34 +672,34 @@ class Variable (ArcAnnotation) :
         return cls(tree.data)
     def rename (self, name) :
         """Change the name of the variable.
-        
+
         >>> v = Variable('x')
         >>> v.rename('y')
         >>> v
         Variable('y')
-        
+
         @param name: the new name of the variable
         @type name: `str`
         """
         self.__init__(name)
     def __str__ (self) :
         """Concise string representation
-        
+
         This is the name of the variable
-        
+
         >>> str(Variable('x'))
         'x'
-        
+
         @return: concise string representation
         @rtype: `str`
         """
         return self.name
     def __repr__ (self) :
         """String representation suitable for `eval`
-        
+
         >>> Variable('x')
         Variable('x')
-        
+
         @return: precise string representation
         @rtype: `str`
         """
@@ -705,10 +707,10 @@ class Variable (ArcAnnotation) :
     def modes (self, values) :
         """Return the the list of substitutions mapping the name of the
         variable to each value in `values`.
-        
+
         >>> Variable('x').modes(range(3))
         [Substitution(x=0), Substitution(x=1), Substitution(x=2)]
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -719,13 +721,13 @@ class Variable (ArcAnnotation) :
         return result
     def bind (self, binding) :
         """Return the value of the variable evaluated through `binding`.
-        
+
         >>> Variable('x').bind(Substitution(x=3))
         Token(3)
         >>> try : Variable('x').bind(Substitution(z=3))
         ... except DomainError : print(sys.exc_info()[1])
         unbound variable 'x'
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -733,7 +735,7 @@ class Variable (ArcAnnotation) :
         return Token(binding[self.name])
     def substitute (self, binding) :
         """Change the name according to `binding`.
-        
+
         >>> v = Variable('x')
         >>> v.substitute(Substitution(x='y'))
         >>> v
@@ -744,29 +746,29 @@ class Variable (ArcAnnotation) :
         >>> v.rename('z')
         >>> v
         Variable('z')
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         """
         self.rename(binding(self.name))
     def vars (self) :
         """Return variable name in a list.
-        
+
         >>> Variable('x').vars()
         ['x']
-        
+
         @return: a list holding the name of the variable
         @rtype: `list` holding a single `str`
         """
         return [self.name]
     def __eq__ (self, other) :
         """Test for equality
-        
+
         >>> Variable('x') == Variable('x')
         True
         >>> Variable('x') == Variable('y')
         False
-        
+
         @param other: right operand of equality
         @type other: `Variable`
         @return: `True` if variables have the same name, `False`
@@ -782,14 +784,14 @@ class Variable (ArcAnnotation) :
 
 class Expression (ArcAnnotation) :
     """An arbitrary Python expression which may be evaluated.
-    
+
     Each expression has its private namespace which can be extended or
     changed.
     """
     input_allowed = False
     def __init__ (self, expr) :
         """The expression is compiled so its syntax is checked.
-        
+
         @param expr: a Python expression suitable for `eval`
         @type expr: `str`
         """
@@ -803,10 +805,10 @@ class Expression (ArcAnnotation) :
     __pnmltag__ = "expression"
     def __pnmldump__ (self) :
         """Dump an `Expression` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> Expression('x+1').__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -819,12 +821,12 @@ class Expression (ArcAnnotation) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create an `Expression` from a PNML tree
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the expression built
         @rtype: `Expression`
-        
+
         >>> t = Expression('x+1').__pnmldump__()
         >>> Expression.__pnmlload__(t)
         Expression('x+1')
@@ -836,7 +838,7 @@ class Expression (ArcAnnotation) :
         return "%s(%s)" % (self.__class__.__name__, repr(self._str))
     def bind (self, binding) :
         """Evaluate the expression through `binding`.
-        
+
         >>> e = Expression('x*(y-1)')
         >>> e.bind(Substitution(x=2, y=3))
         Token(4)
@@ -845,7 +847,7 @@ class Expression (ArcAnnotation) :
         ...     raise Exception()
         ... except NameError:
         ...     pass
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -861,15 +863,15 @@ class Expression (ArcAnnotation) :
         return self.bind(binding).value
     def substitute (self, binding) :
         """Substitute the variables according to 'binding'.
-        
+
         >>> e = Expression('x+1*xy')
         >>> e.substitute(Substitution(x='y'))
         >>> e
         Expression('(y + (1 * xy))')
-        
+
         As one can see, the substitution adds a lot of parentheses and
         spaces to the expression.
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         """
@@ -879,30 +881,30 @@ class Expression (ArcAnnotation) :
             self._str = expr.strip()
     def vars (self) :
         """Return the list of variable names involved in the expression.
-        
+
         >>> list(sorted(Expression('x+y').vars()))
         ['x', 'y']
-        
+
         @return: a list holding the names of the variables
         @rtype: `list` of `str`
         """
         return list(n for n in getvars(self._str) if n not in self.globals)
     def __and__ (self, other) :
         """Implement `&` to perform `and` between two expressions.
-        
+
         It is not checked whether we combine boolean expressions or
         not.
-        
+
         >>> Expression('x==1') & Expression('y==2')
         Expression('(x==1) and (y==2)')
-        
+
         Minor optimisation are implemented:
-        
+
         >>> Expression('True') & Expression('x==y')
         Expression('x==y')
         >>> Expression('x==y') & Expression('True')
         Expression('x==y')
-        
+
         @param other: an expression
         @type other: `snakes.nets.Expression`
         @return: an expression
@@ -919,20 +921,20 @@ class Expression (ArcAnnotation) :
             return result
     def __or__ (self, other) :
         """Implement `|` to perform `or` between two expressions.
-        
+
         It is not checked whether we combine boolean expressions or
         not.
-        
+
         >>> Expression('x==1') | Expression('y==2')
         Expression('(x==1) or (y==2)')
-        
+
         Minor optimisation are implemented:
-        
+
         >>> Expression('True') | Expression('x==y')
         Expression('True')
         >>> Expression('x==y') | Expression('True')
         Expression('True')
-        
+
         @param other: an expression
         @type other: `snakes.nets.Expression`
         @return: an expression
@@ -947,20 +949,20 @@ class Expression (ArcAnnotation) :
             return result
     def __invert__ (self) :
         """Implement `~` to perform `not`.
-        
+
         It is not checked whether we negate a boolean expression or
         not.
-        
+
         >>> ~Expression('x==1')
         Expression('not (x==1)')
-        
+
         Minor optimisation are implemented:
-        
+
         >>> ~Expression('True')
         Expression('False')
         >>> ~Expression('False')
         Expression('True')
-        
+
         @return: an expression
         @rtype: `snakes.nets.Expression`
         """
@@ -980,14 +982,14 @@ class Expression (ArcAnnotation) :
 
 def let (**args) :
     """A dirty trick to allow side effects in expressions
-    
+
     Assignement takes place when method `bind` of the expression is
     called. Assigned variables are then stored in the `Substitution`
     passed to `bind`.
-    
+
     Use with care: sides effects are nasty tricks, you may get
     unexpected results while playing with `let`.
-    
+
     >>> n = PetriNet('n')
     >>> n.globals['let'] = let
     >>> t = Transition('t', Expression('x is not None and let(foo=42)'))
@@ -996,7 +998,7 @@ def let (**args) :
     >>> n.add_input('p', 't', Variable('x'))
     >>> t.modes() == [Substitution(x=dot, foo=42)]
     True
-    
+
     @param args: a list of `name=value` to assign
     @return: `True` if assignment could be made, `False` otherwise
     @rtype: `bool`
@@ -1012,21 +1014,21 @@ def let (**args) :
 class MultiArc (ArcAnnotation) :
     """A collection of other annotations, allowing to consume or produce
     several tokens at once.
-    
+
     Such a collection is allowed on input arcs only if so are all its
     components.
     """
     input_allowed = False
     def __init__ (self, components) :
         """Initialise with the components of the tuple.
-        
+
         >>> MultiArc((Value(1), Expression('x+1')))
         MultiArc((Value(1), Expression('x+1')))
         >>> MultiArc((Value(1), Expression('x+1'))).input_allowed
         False
         >>> MultiArc((Value(1), Variable('x'))).input_allowed
         True
-        
+
         @param components: a list of components
         @type components: an iterable collection of `ArcAnnotation`
         """
@@ -1046,10 +1048,10 @@ class MultiArc (ArcAnnotation) :
     __pnmltag__ = "multiarc"
     def __pnmldump__ (self) :
         """Dump a `MultiArc` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> MultiArc([Value(3), Expression('x+1')]).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1070,12 +1072,12 @@ class MultiArc (ArcAnnotation) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `MultiArc` from a PNML tree
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the multiarc built
         @rtype: `MultiArc`
-        
+
         >>> t = MultiArc((Value(3), Expression('x+1'))).__pnmldump__()
         >>> MultiArc.__pnmlload__(t)
         MultiArc((Value(3), Expression('x+1')))
@@ -1133,11 +1135,11 @@ class MultiArc (ArcAnnotation) :
     def bind (self, binding) :
         """Return the value of the annotation evaluated through
         `binding`.
-        
+
         >>> t = MultiArc((Value(1), Variable('x'), Variable('y')))
         >>> t.bind(Substitution(x=2, y=3))
         (Token(1), Token(2), Token(3))
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a tuple of value
@@ -1147,7 +1149,7 @@ class MultiArc (ArcAnnotation) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
         substitution indicating how to bind the annotation.
-        
+
         >>> t = MultiArc((Value(1), Variable('x'), Variable('y')))
         >>> m = t.modes([1, 2, 3])
         >>> len(m)
@@ -1156,7 +1158,7 @@ class MultiArc (ArcAnnotation) :
         True
         >>> Substitution(y=2, x=3) in m
         True
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -1179,12 +1181,12 @@ class MultiArc (ArcAnnotation) :
         return result
     def substitute (self, binding) :
         """Substitute each component according to 'binding'.
-        
+
         >>> t = MultiArc((Value(1), Variable('x'), Variable('y')))
         >>> t.substitute(Substitution(x='z'))
         >>> t
         MultiArc((Value(1), Variable('z'), Variable('y')))
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         """
@@ -1192,11 +1194,11 @@ class MultiArc (ArcAnnotation) :
             x.substitute(binding)
     def vars (self) :
         """Return the list of variables involved in the components.
-        
+
         >>> t = MultiArc((Value(1), Variable('x'), Variable('y')))
         >>> list(sorted(t.vars()))
         ['x', 'y']
-        
+
         @return: the set of variables
         @rtype: `set`
         """
@@ -1207,9 +1209,9 @@ class MultiArc (ArcAnnotation) :
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the `old` annotation
         has been replaced by the `new` one.
-        
+
         With `MultiArc`, replaces each occurrence of `old` by `new`
-        
+
         @param old: the annotation to be replaced
         @type old: `ArcAnnotation`
         @param new: the annotation to use instead of `old`
@@ -1276,11 +1278,11 @@ class Tuple (MultiArc) :
     def bind (self, binding) :
         """Return the value of the annotation evaluated through
         `binding`.
-        
+
         >>> t = Tuple((Value(1), Variable('x'), Variable('y')))
         >>> t.bind(Substitution(x=2, y=3))
         Token((1, 2, 3))
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a tuple of value
@@ -1312,10 +1314,10 @@ class Test (ArcAnnotation) :
     __pnmltag__ = "test"
     def __pnmldump__ (self) :
         """Dump a `Test` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> Test(Value(3)).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1332,12 +1334,12 @@ class Test (ArcAnnotation) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `Test` from a PNML tree
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the test arc built
         @rtype: `Test`
-        
+
         >>> t = Test(Value(3)).__pnmldump__()
         >>> Test.__pnmlload__(t)
         Test(Value(3))
@@ -1369,7 +1371,7 @@ class Test (ArcAnnotation) :
         return "%s(%s)" % (self.__class__.__name__, repr(self._annotation))
     def substitute (self, binding) :
         """Substitutes the variables in the annotation.
-        
+
         @param binding: the substitution to apply
         @type binding: `snakes.data.Substitution`
         """
@@ -1388,10 +1390,10 @@ class Test (ArcAnnotation) :
     def bind (self, binding) :
         """Return the value of the annotation evaluated through
         `binding`.
-        
+
         >>> Test(Expression('x+1')).bind(Substitution(x=2))
         Token(3)
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -1400,10 +1402,10 @@ class Test (ArcAnnotation) :
     def flow (self, binding) :
         """Return the flow of tokens implied by the annotation evaluated
         through `binding`.
-        
+
         >>> Test(Value(1)).flow(Substitution())
         MultiSet([])
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: an empty multiset
@@ -1413,10 +1415,10 @@ class Test (ArcAnnotation) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
         substitution indicating how to bind the annotation.
-        
+
         >>> Test(Variable('x')).modes([1, 2, 3])
         [Substitution(x=1), Substitution(x=2), Substitution(x=3)]
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -1425,9 +1427,9 @@ class Test (ArcAnnotation) :
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the `old` annotation
         has been replaced by the `new` one.
-        
+
         With `Test`, always returns `Test(new)`
-        
+
         @param old: the annotation to be replaced
         @type old: `ArcAnnotation`
         @param new: the annotation to use instead of `old`
@@ -1451,10 +1453,10 @@ class Inhibitor (Test) :
     __pnmltag__ = "inhibitor"
     def __pnmldump__ (self) :
         """Dump a `Inhibitor` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> Inhibitor(Value(3)).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1480,12 +1482,12 @@ class Inhibitor (Test) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `Inhibitor` from a PNML tree
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the inhibitor arc built
         @rtype: `Inhibitor`
-        
+
         >>> t = Inhibitor(Value(3)).__pnmldump__()
         >>> Inhibitor.__pnmlload__(t)
         Inhibitor(Value(3))
@@ -1520,7 +1522,7 @@ class Inhibitor (Test) :
                                    self._annotation, self._condition)
     def substitute (self, binding) :
         """Substitutes the variables in the annotation.
-        
+
         @param binding: the substitution to apply
         @type binding: `snakes.data.Substitution`
         """
@@ -1542,13 +1544,13 @@ class Inhibitor (Test) :
         """Return the value of the annotation evaluated through
         `binding`, or raise `ValueError` of this binding does not
         validate the condition.
-        
+
         >>> Inhibitor(Expression('x+1'), Expression('x>0')).bind(Substitution(x=2))
         Token(3)
         >>> try : Inhibitor(Expression('x+1'), Expression('x<0')).bind(Substitution(x=2))
         ... except ValueError : print(sys.exc_info()[1])
         condition not True for {x -> 2}
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -1561,7 +1563,7 @@ class Inhibitor (Test) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
         substitution indicating how to bind the annotation.
-        
+
         >>> try : Inhibitor(Value(1)).modes([1, 2, 3])
         ... except ModeError : print(sys.exc_info()[1])
         inhibited by {}
@@ -1579,7 +1581,7 @@ class Inhibitor (Test) :
         >>> Inhibitor(MultiArc([Variable('x'), Variable('y')]),
         ...           Expression('x==y')).modes([1, 2, 3])
         [Substitution()]
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -1595,7 +1597,7 @@ class Inhibitor (Test) :
     def replace (self, old, new) :
         """Returns a copy of the annotation in which the `old` annotation
         has been replaced by the `new` one.
-        
+
         @param old: the annotation to be replaced
         @type old: `ArcAnnotation`
         @param new: the annotation to use instead of `old`
@@ -1666,13 +1668,13 @@ class Flush (ArcAnnotation) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
         substitution indicating how to bind the annotation.
-        
+
         >>> m = Flush('x').modes([1, 2, 3])
         >>> m
         [Substitution(x=MultiSet([...]))]
         >>> m[0]['x'] == MultiSet([1, 2, 3])
         True
-        
+
         @param values: a collection of values
         @type values: any collection like `set`, `list`, `tuple`, ...
         @return: a list of substitutions
@@ -1681,10 +1683,10 @@ class Flush (ArcAnnotation) :
     def flow (self, binding) :
         """Return the flow of tokens implied by the annotation evaluated
         through `binding`.
-        
+
         >>> Flush('x').flow(Substitution(x=MultiSet([1, 2, 3]))) == MultiSet([1, 2, 3])
         True
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a multiset
@@ -1693,10 +1695,10 @@ class Flush (ArcAnnotation) :
     def bind (self, binding) :
         """Return the value of the annotation evaluated through
         `binding`.
-        
+
         >>> set(Flush('x').bind(Substitution(x=MultiSet([1, 2, 3])))) == set([Token(1), Token(2), Token(3)])
         True
-        
+
         @param binding: a substitution
         @type binding: `snakes.data.Substitution`
         @return: a value
@@ -1704,10 +1706,10 @@ class Flush (ArcAnnotation) :
         return tuple(Token(v) for v in self._annotation.bind(binding).value)
     def vars (self) :
         """Return the list of variable names involved in the arc.
-        
+
         >>> Flush('x').vars()
         ['x']
-        
+
         @return: list of variable names
         @rtype: `list` of `str`
         """
@@ -1719,13 +1721,13 @@ class Flush (ArcAnnotation) :
 
 class Node (NetElement) :
     """A node in a Petri net.
-    
+
     This class is abstract and should not be instanciated, use `Place`
     or `Transition` as concrete nodes.
     """
     def rename (self, name) :
         """Change the name of the node.
-        
+
         >>> p = Place('p', range(3))
         >>> p.rename('egg')
         >>> p
@@ -1734,7 +1736,7 @@ class Node (NetElement) :
         >>> t.rename('spam')
         >>> t
         Transition('spam', Expression('x==1'))
-        
+
         @param name: the new name of the node
         @type name: `str`
         """
@@ -1744,14 +1746,14 @@ class Place (Node) :
     "A place of a Petri net."
     def __init__ (self, name, tokens=[], check=None) :
         """Initialise with name, tokens and typecheck.
-        
+
         `tokens` may be a single value or an iterable object. `check`
         may be `None` (any token allowed) or a type from the module
         typing.
-        
+
         >>> Place('p', range(3), tInteger)
         Place('p', MultiSet([...]), Instance(int))
-        
+
         @param name: the name of the place
         @type name: `str`
         @param tokens: a collection of tokens that mark the place
@@ -1770,7 +1772,7 @@ class Place (Node) :
         self.add(tokens)
     def copy (self, name=None) :
         """Return a copy of the place, with no arc attached.
-        
+
         >>> p = Place('p', range(3), tInteger)
         >>> n = p.copy()
         >>> n.name == 'p'
@@ -1786,7 +1788,7 @@ class Place (Node) :
         True
         >>> n.checker()
         Instance(int)
-        
+
         @param name: if not `None`, the name of the copy
         @type name: `str`
         @return: a copy of the place.
@@ -1798,10 +1800,10 @@ class Place (Node) :
     __pnmltag__ = "place"
     def __pnmldump__ (self) :
         """Dump a `Place` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> Place('p', [dot, dot], tBlackToken).__pnmldump__()
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -1873,14 +1875,14 @@ class Place (Node) :
         return cls(tree["id"], [dot] * toks, tBlackToken)
     def checker (self, check=None) :
         """Change or return the type of the place.
-        
+
         >>> p = Place('p', range(3), tInteger)
         >>> p.checker()
         Instance(int)
         >>> p.checker(tAll)
         >>> p.checker()
         tAll
-        
+
         @param check: the new constraint for the place or `None` to
             retreive the current constraint
         @type check: `None` or a type from the module `typing`
@@ -1894,13 +1896,13 @@ class Place (Node) :
             self._check = check
     def __contains__ (self, token) :
         """Check if a token is in the place.
-        
+
         >>> p = Place('p', range(3))
         >>> 1 in p
         True
         >>> 5 in p
         False
-        
+
         @param token: a token value
         @type token: any type
         @return: `True` if `token` is held by the place, `False`
@@ -1910,17 +1912,17 @@ class Place (Node) :
         return token in self.tokens
     def __iter__ (self) :
         """Iterate over the tokens in the place.
-        
+
         >>> p = Place('p', range(3))
         >>> list(sorted([tok for tok in p]))
         [0, 1, 2]
-        
+
         @return: an iterator object
         """
         return iter(self.tokens)
     def is_empty (self) :
         """Check is the place is empty.
-        
+
         >>> p = Place('p', range(3))
         >>> p.tokens == MultiSet([0, 1, 2])
         True
@@ -1929,7 +1931,7 @@ class Place (Node) :
         >>> p.tokens = MultiSet()
         >>> p.is_empty()
         True
-        
+
         @return: `True` if the place is empty, `False` otherwise
         @rtype: `bool`
         """
@@ -1938,13 +1940,13 @@ class Place (Node) :
         """Check if the 'tokens' are allowed in the place. An exception
         `ValueError` is raised whenever a forbidden token is
         encountered.
-        
+
         >>> p = Place('p', [], tInteger)
         >>> p.check([1, 2, 3])
         >>> try : p.check(['forbidden!'])
         ... except ValueError : print(sys.exc_info()[1])
         forbidden token 'forbidden!'
-        
+
         @param tokens: an iterable collection of tokens or a single
             value
         @type tokens: any type, iterable types (except `str`) will be
@@ -1955,21 +1957,21 @@ class Place (Node) :
                 raise ValueError("forbidden token '%s'" % (t,))
     def __str__ (self) :
         """Return the name of the place.
-        
+
         >>> p = Place('Great place!')
         >>> str(p)
         'Great place!'
-        
+
         @return: the name of the place
         @rtype: `str`
         """
         return self.name
     def __repr__ (self) :
         """Return a textual representation of the place.
-        
+
         >>> repr(Place('p', range(3), tInteger))
         "Place('p', MultiSet([...]), Instance(int))"
-        
+
         @return: a string suitable to `eval` representing the place
         @rtype: `str`
         """
@@ -1979,14 +1981,14 @@ class Place (Node) :
                                    repr(self._check))
     def add (self, tokens) :
         """Add tokens to the place.
-        
+
         >>> p = Place('p')
         >>> p.tokens == MultiSet([])
         True
         >>> p.add(range(3))
         >>> p.tokens == MultiSet([0, 1, 2])
         True
-        
+
         @param tokens: a collection of tokens to be added to the place
         @type tokens: any type, iterable types (except `str`) will be
             considered as collections of values
@@ -1995,14 +1997,14 @@ class Place (Node) :
         self.tokens.add(iterate(tokens))
     def remove (self, tokens) :
         """Remove tokens from the place.
-        
+
         >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
         >>> p.remove(range(3))
         >>> p.tokens == MultiSet([0, 1, 2])
         True
-        
+
         @param tokens: a collection of tokens to be removed from the
             place
         @type tokens: any type, iterable types (except `str`) will be
@@ -2011,7 +2013,7 @@ class Place (Node) :
         self.tokens.remove(tokens)
     def empty (self) :
         """Remove all the tokens.
-        
+
         >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
@@ -2022,7 +2024,7 @@ class Place (Node) :
         self.tokens = MultiSet()
     def reset (self, tokens) :
         """Replace the marking with 'tokens'.
-        
+
         >>> p = Place('p', list(range(3)) * 2)
         >>> p.tokens == MultiSet([0, 0, 1, 1, 2, 2])
         True
@@ -2037,12 +2039,12 @@ class Transition (Node) :
     "A transition in a Petri net."
     def __init__ (self, name, guard=None) :
         """Initialise with the name and the guard.
-        
+
         If `guard` is `None`, `True` is assumed instead.
-        
+
         >>> Transition('t')
         Transition('t', Expression('True'))
-        
+
         @param name: the name of the transition
         @type name: `str`
         @param guard: the guard of the transition
@@ -2057,13 +2059,13 @@ class Transition (Node) :
         self.name = name
     def copy (self, name=None) :
         """Return a copy of the transition, with no arc attached.
-        
+
         >>> t = Transition('t', Expression('x==1'))
         >>> t.copy()
         Transition('t', Expression('x==1'))
         >>> t.copy('x')
         Transition('x', Expression('x==1'))
-        
+
         @param name: if not `None`, the name if of the copy
         @type name: `str`
         @return: a copy of the transition.
@@ -2114,21 +2116,21 @@ class Transition (Node) :
             return cls(tree["id"])
     def __str__ (self) :
         """Return the name of the transition.
-        
+
         >>> t = Transition('What a transition!')
         >>> str(t)
         'What a transition!'
-        
+
         @return: the name of the transition
         @rtype: `str`
         """
         return self.name
     def __repr__ (self) :
         """Return a textual representation of the transition.
-        
+
         >>> repr(Transition('t', Expression('x==1')))
         "Transition('t', Expression('x==1'))"
-        
+
         @return: a string suitable to `eval` representing the
             transition
         @rtype: `str`
@@ -2138,7 +2140,7 @@ class Transition (Node) :
                                repr(self.guard))
     def add_input (self, place, label) :
         """Add an input arc from `place` labelled by `label`.
-        
+
         >>> t = Transition('t')
         >>> t.add_input(Place('p'), Variable('x'))
         >>> t.input()
@@ -2146,7 +2148,7 @@ class Transition (Node) :
         >>> try : t.add_input(Place('x'), Expression('x+y'))
         ... except ConstraintError : print(sys.exc_info()[1])
         'Expression' objects not allowed on input arcs
-        
+
         @param place: the input place
         @type place: `Place`
         @param label: the arc label
@@ -2161,7 +2163,7 @@ class Transition (Node) :
             self._input[place] = label
     def remove_input (self, place) :
         """Remove the input arc from `place`.
-        
+
         >>> t = Transition('t')
         >>> p = Place('p')
         >>> t.add_input(p, Variable('x'))
@@ -2170,7 +2172,7 @@ class Transition (Node) :
         >>> t.remove_input(p)
         >>> t.input()
         []
-        
+
         @param place: the input place
         @type place: `Place`
         """
@@ -2180,24 +2182,24 @@ class Transition (Node) :
             raise ConstraintError("not connected to '%s'" % place.name)
     def input (self) :
         """Return the list of input arcs.
-        
+
         >>> t = Transition('t')
         >>> t.add_input(Place('p'), Variable('x'))
         >>> t.input()
         [(Place('p', MultiSet([]), tAll), Variable('x'))]
-        
+
         @return: a list of pairs (place, label).
         @rtype: `[(Place, ArcAnnotation)]`
         """
         return list(self._input.items())
     def add_output (self, place, label) :
         """Add an output arc from `place` labelled by `label`.
-        
+
         >>> t = Transition('t')
         >>> t.add_output(Place('p'), Expression('x+1'))
         >>> t.output()
         [(Place('p', MultiSet([]), tAll), Expression('x+1'))]
-        
+
         @param place: the output place
         @type place: `Place`
         @param label: the arc label
@@ -2209,7 +2211,7 @@ class Transition (Node) :
             self._output[place] = label
     def remove_output (self, place) :
         """Remove the output arc to `place`.
-        
+
         >>> t = Transition('t')
         >>> p = Place('p')
         >>> t.add_output(p, Variable('x'))
@@ -2218,7 +2220,7 @@ class Transition (Node) :
         >>> t.remove_output(p)
         >>> t.output()
         []
-        
+
         @param place: the output place
         @type place: `Place`
         """
@@ -2228,25 +2230,25 @@ class Transition (Node) :
             raise ConstraintError("not connected to '%s'" % place.name)
     def output (self) :
         """Return the list of output arcs.
-        
+
         >>> t = Transition('t')
         >>> t.add_output(Place('p'), Expression('x+1'))
         >>> t.output()
         [(Place('p', MultiSet([]), tAll), Expression('x+1'))]
-        
+
         @return: a list of pairs (place, label).
         @rtype: `[(Place, ArcAnnotation)]`
         """
         return list(self._output.items())
     def _check (self, binding, tokens, input) :
         """Check `binding` against the guard and tokens flow.
-        
+
         If `tokens` is `True`, check whether the flow of tokens can be
         provided by the input places. If `input` is `True`, check if
         the evaluation of the inputs arcs respect the types of the
         input places. In any case, this is checked for the output
         places.
-        
+
         >>> t = Transition('t', Expression('x>0'))
         >>> p = Place('p', [], tInteger)
         >>> t.add_input(p, Variable('x'))
@@ -2268,7 +2270,7 @@ class Transition (Node) :
         False
         >>> t._check(s, True, True)
         False
-        
+
         @param binding: a valuation of the variables on the transition
         @type binding: `data.Substitution`
         @param tokens: whether it should be checked that input places
@@ -2299,11 +2301,11 @@ class Transition (Node) :
         return True
     def activated (self, binding) :
         """Check if `binding` activates the transition.
-        
+
         This is the case if the guard evaluates to `True` and if the
         types of the places are respected. Note that the presence of
         enough tokens is not required.
-        
+
         >>> t = Transition('t', Expression('x>0'))
         >>> p = Place('p', [], tInteger)
         >>> t.add_input(p, Variable('x'))
@@ -2313,17 +2315,17 @@ class Transition (Node) :
         False
         >>> t.activated(Substitution(x=3.14))
         False
-        
+
         @param binding: a valuation of the variables on the transition
         @type binding: `Substitution`
         """
         return self._check(binding, False, True)
     def enabled (self, binding) :
         """Check if `binding` enables the transition.
-        
+
         This is the case if the transition is activated and if the
         input places hold enough tokens to allow the firing.
-        
+
         >>> t = Transition('t', Expression('x>0'))
         >>> p = Place('p', [0], tInteger)
         >>> t.add_input(p, Variable('x'))
@@ -2332,7 +2334,7 @@ class Transition (Node) :
         >>> p.add(1)
         >>> t.enabled(Substitution(x=1))
         True
-        
+
         @param binding: a valuation of the variables on the transition
         @type binding: `Substitution`
         """
@@ -2340,7 +2342,7 @@ class Transition (Node) :
     def vars (self) :
         """Return the set of variables involved in the guard, input and
         output arcs of the transition.
-        
+
         >>> t = Transition('t', Expression('z is not None'))
         >>> px = Place('px')
         >>> t.add_input(px, Variable('x'))
@@ -2348,7 +2350,7 @@ class Transition (Node) :
         >>> t.add_output(py, Variable('y'))
         >>> list(sorted(t.vars()))
         ['x', 'y', 'z']
-        
+
         @return: the set of variables names
         @rtype: a `set` of `str`
         """
@@ -2360,10 +2362,10 @@ class Transition (Node) :
         return v
     def substitute (self, binding) :
         """Substite all the annotations arround the transition.
-        
+
         `binding` is used to substitute the guard and all the labels
         on the arcs attached to the transition.
-        
+
         >>> t = Transition('t', Expression('z is not None'))
         >>> px = Place('px')
         >>> t.add_input(px, Variable('x'))
@@ -2376,7 +2378,7 @@ class Transition (Node) :
         [(Place('px', MultiSet([]), tAll), Variable('a'))]
         >>> t.output()
         [(Place('py', MultiSet([]), tAll), Variable('b'))]
-        
+
         @param binding: a substitution from variables to variables
             (not values)
         @type binding: `Substitution`
@@ -2388,12 +2390,12 @@ class Transition (Node) :
             label.substitute(binding)
     def modes (self) :
         """Return the list of bindings which enable the transition.
-        
+
         Note that the modes are usually considered to be the list of
         bindings that _activate_ a transitions. However, this list is
         generally infinite so we retricted ourselves to _actual
         modes_, taking into account the present tokens.
-        
+
         >>> t = Transition('t', Expression('x!=y'))
         >>> px = Place('px', range(2))
         >>> t.add_input(px, Variable('x'))
@@ -2406,12 +2408,12 @@ class Transition (Node) :
         True
         >>> Substitution(y=1, x=0) in m
         True
-        
+
         Note also that modes cannot be computed with respect to output
         arcs: indeed, only input arcs allow for concretely associate
         values to variables; on the other hand, binding an output arc
         would require to solve the equation provided by the guard.
-        
+
         >>> t = Transition('t', Expression('x!=y'))
         >>> px = Place('px', range(2))
         >>> t.add_input(px, Variable('x'))
@@ -2422,7 +2424,7 @@ class Transition (Node) :
         ...     raise Exception()
         ... except NameError :
         ...     pass
-        
+
         @return: a list of substitutions usable to fire the transition
         @rtype: a `list` of `Substitution`
         """
@@ -2447,10 +2449,10 @@ class Transition (Node) :
         return result
     def flow (self, binding) :
         """Return the token flow for a firing with `binding`.
-        
+
         The flow is represented by a pair `(in, out)`, both being
         instances of the class `Marking`.
-        
+
         >>> t = Transition('t', Expression('x!=1'))
         >>> px = Place('px', range(3))
         >>> t.add_input(px, Variable('x'))
@@ -2463,7 +2465,7 @@ class Transition (Node) :
         transition not enabled for {x -> 1}
         >>> t.flow(Substitution(x=2))
         (Marking({'px': MultiSet([2])}), Marking({'py': MultiSet([3])}))
-        
+
         @param binding: a substitution from variables to values (not
             variables)
         @type binding: `Substitution`
@@ -2480,7 +2482,7 @@ class Transition (Node) :
             raise ValueError("transition not enabled for %s" % binding)
     def fire (self, binding) :
         """Fire the transition with `binding`.
-        
+
         >>> t = Transition('t', Expression('x!=1'))
         >>> px = Place('px', range(3))
         >>> t.add_input(px, Variable('x'))
@@ -2499,7 +2501,7 @@ class Transition (Node) :
         True
         >>> py.tokens == MultiSet([1, 3])
         True
-        
+
         @param binding: a substitution from variables to values (not
             variables)
         @type binding: `Substitution`
@@ -2518,10 +2520,10 @@ class Transition (Node) :
 
 class Marking (hdict) :
     """A marking of a Petri net.
-    
+
     This is basically a `snakes.hashables.hdict` mapping place names
     to multisets of tokens.
-    
+
     The parameters for the constructor must be given in a form
     suitable for initialising a `hdict` with place names as keys and
     multisets as values. Places not given in the marking are assumed
@@ -2587,16 +2589,16 @@ class Marking (hdict) :
                     for child in tree.get_children("place")))
     def __call__ (self, place) :
         """Return the marking of `place`.
-        
+
         The empty multiset is returned if `place` is not explicitely
         given in the marking.
-        
+
         >>> m = Marking(p1=MultiSet([1]), p2=MultiSet([2]))
         >>> m('p1')
         MultiSet([1])
         >>> m('p')
         MultiSet([])
-        
+
         @param place: a place name
         @type place: `str`
         @return: the marking of `place`
@@ -2608,7 +2610,7 @@ class Marking (hdict) :
             return MultiSet()
     def copy (self) :
         """Copy a marking
-        
+
         >>> m = Marking(p1=MultiSet([1]), p2=MultiSet([2]))
         >>> m.copy() == Marking({'p2': MultiSet([2]), 'p1': MultiSet([1])})
         True
@@ -2619,10 +2621,10 @@ class Marking (hdict) :
         return result
     def __add__ (self, other) :
         """Addition of markings.
-        
+
         >>> Marking(p1=MultiSet([1]), p2=MultiSet([2])) + Marking(p2=MultiSet([2]), p3=MultiSet([3])) == Marking({'p2': MultiSet([2, 2]), 'p3': MultiSet([3]), 'p1': MultiSet([1])})
         True
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: the addition of the two markings
@@ -2637,7 +2639,7 @@ class Marking (hdict) :
         return result
     def __sub__ (self, other) :
         """Substraction of markings.
-        
+
         >>> Marking(p1=MultiSet([1]), p2=MultiSet([2, 2])) - Marking(p2=MultiSet([2]))
         Marking({'p2': MultiSet([2]), 'p1': MultiSet([1])})
         >>> try : Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p2=MultiSet([2, 2]))
@@ -2646,7 +2648,7 @@ class Marking (hdict) :
         >>> try : Marking(p1=MultiSet([1]), p2=MultiSet([2])) - Marking(p3=MultiSet([3]))
         ... except DomainError : print(sys.exc_info()[1])
         'p3' absent from the marking
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: the difference of the two markings
@@ -2664,14 +2666,14 @@ class Marking (hdict) :
     __hash__ = hdict.__hash__
     def __eq__ (self, other) :
         """Test for equality (same places with the same tokens).
-        
+
         >>> Marking(p=MultiSet([1])) == Marking(p=MultiSet([1]))
         True
         >>> Marking(p=MultiSet([1])) == Marking(p=MultiSet([1, 1]))
         False
         >>> Marking(p1=MultiSet([1])) == Marking(p2=MultiSet([1]))
         False
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if the markings are equal, `False` otherwise
@@ -2688,14 +2690,14 @@ class Marking (hdict) :
         return True
     def __ne__ (self, other) :
         """Test if two markings differ.
-        
+
         >>> Marking(p=MultiSet([1])) != Marking(p=MultiSet([1]))
         False
         >>> Marking(p=MultiSet([1])) != Marking(p=MultiSet([1, 1]))
         True
         >>> Marking(p1=MultiSet([1])) != Marking(p2=MultiSet([1]))
         True
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if the markings differ, `False` otherwise
@@ -2705,10 +2707,10 @@ class Marking (hdict) :
     def __ge__ (self, other) :
         """Test if the marking `self` is greater than or equal to
         `other`.
-        
+
         This is the case when any place in `other` is also in `self`
         and is marked with a smaller or equal multiset of tokens.
-        
+
         >>> Marking(p=MultiSet([1])) >= Marking(p=MultiSet([1]))
         True
         >>> Marking(p=MultiSet([1, 1])) >= Marking(p=MultiSet([1]))
@@ -2719,7 +2721,7 @@ class Marking (hdict) :
         False
         >>> Marking(p=MultiSet([1]), r=MultiSet([2])) >= Marking(p=MultiSet([1, 1]))
         False
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if `self >= other`, `False` otherwise
@@ -2733,11 +2735,11 @@ class Marking (hdict) :
         return True
     def __gt__ (self, other) :
         """Test if the marking `self` is strictly greater than `other`.
-        
+
         This is the case when any place in `other` is also in `self`
         and either one place in `other` is marked with a smaller
         multiset of tokens or `slef` has more places than `other`.
-        
+
         >>> Marking(p=MultiSet([1])) > Marking(p=MultiSet([1]))
         False
         >>> Marking(p=MultiSet([1, 1])) > Marking(p=MultiSet([1]))
@@ -2748,7 +2750,7 @@ class Marking (hdict) :
         False
         >>> Marking(p=MultiSet([1]), r=MultiSet([2])) > Marking(p=MultiSet([1, 1]))
         False
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if `self > other`, `False` otherwise
@@ -2766,10 +2768,10 @@ class Marking (hdict) :
     def __le__ (self, other) :
         """Test if the marking `self` is smaller than or equal to
         `other`.
-        
+
         This is the case when any place in `self` is also in `other`
         and is marked with a smaller or equal multiset of tokens.
-        
+
         >>> Marking(p=MultiSet([1])) <= Marking(p=MultiSet([1]))
         True
         >>> Marking(p=MultiSet([1])) <= Marking(p=MultiSet([1, 1]))
@@ -2780,7 +2782,7 @@ class Marking (hdict) :
         False
         >>> Marking(p=MultiSet([1, 1])) <= Marking(p=MultiSet([1]), r=MultiSet([2]))
         False
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if `self <= other`, `False` otherwise
@@ -2794,12 +2796,12 @@ class Marking (hdict) :
         return True
     def __lt__ (self, other) :
         """Test if the marking `self` is strictly smaller than `other`.
-        
+
         This is the case when any place in `self` is also in `other`
         and either one place in `self` marked in self with a strictly
         smaller multiset of tokens or `other` has more places than
         `self`.
-        
+
         >>> Marking(p=MultiSet([1])) < Marking(p=MultiSet([1]))
         False
         >>> Marking(p=MultiSet([1])) < Marking(p=MultiSet([1, 1]))
@@ -2810,7 +2812,7 @@ class Marking (hdict) :
         False
         >>> Marking(p=MultiSet([1, 1])) < Marking(p=MultiSet([1]), r=MultiSet([2]))
         False
-        
+
         @param other: another marking
         @type other: `Marking`
         @return: `True` if `self < other`, `False` otherwise
@@ -2832,20 +2834,20 @@ class Marking (hdict) :
 
 class PetriNet (object) :
     """A Petri net.
-    
+
     As soon as nodes are added to a `PetriNet`, they are handled by
     name instead of by the `Place` or `Transition` instance. For
     instance:
-    
+
     >>> n = PetriNet('N')
     >>> t = Transition('t')
     >>> n.add_transition(t)
     >>> n.has_transition('t') # use 't' and not t
     True
-    
+
     Because nodes can be retreived through their name, this allows to
     rewrite the above code as:
-    
+
     >>> n = PetriNet('N')
     >>> n.add_transition(Transition('t'))
     >>> n.has_transition('t') # use 't' and not t
@@ -2855,10 +2857,10 @@ class PetriNet (object) :
     """
     def __init__ (self, name) :
         """Initialise with the name.
-        
+
         >>> PetriNet('N')
         PetriNet('N')
-        
+
         @param name: the name of the net
         @type name: `str`
         """
@@ -2876,12 +2878,12 @@ class PetriNet (object) :
     def copy (self, name=None) :
         """Return a complete copy of the net, including places,
         transitions, arcs and declarations.
-        
+
         >>> PetriNet('N').copy()
         PetriNet('N')
         >>> PetriNet('N').copy('x')
         PetriNet('x')
-        
+
         @param name: if not `None`, the name of the copy
         @type name: `str`
         @return: a copy of the net
@@ -2905,12 +2907,12 @@ class PetriNet (object) :
     @classmethod
     def _pnml_dump_arc (cls, label) :
         """Dump an arc to PNML
-        
+
         @param label: the arc label to dump
         @type label: `ArcAnnotation`
         @return: a tuple of PNML trees
         @rtype: `tuple` of `pnml.Tree`
-        
+
         >>> PetriNet._pnml_dump_arc(Value(dot))
         (<?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -2969,10 +2971,10 @@ class PetriNet (object) :
         return (Tree("inscription", None, Tree.from_obj(label)),)
     def __pnmldump__ (self) :
         """Dump a `PetriNet` as a PNML tree
-        
+
         @return: PNML tree
         @rtype: `pnml.Tree`
-        
+
         >>> n = PetriNet('N')
         >>> n.declare('x = "foo" + "bar"')
         >>> n.globals['y'] = 'egg'
@@ -3057,12 +3059,12 @@ class PetriNet (object) :
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `PetriNet` from a PNML tree
-        
+
         @param tree: the tree to convert
         @type tree: `pnml.Tree`
         @return: the net built
         @rtype: `PetriNet`
-        
+
         >>> old = PetriNet('N')
         >>> old.declare('x = "foo" + "bar"')
         >>> old.globals['y'] = 'egg'
@@ -3124,46 +3126,46 @@ class PetriNet (object) :
         return result
     def __repr__ (self) :
         """Return a string suitable for `eval` to represent the net.
-        
+
         >>> repr(PetriNet('N'))
         "PetriNet('N')"
-        
+
         @return: the textual representation of the net
         @rtype: `str`
         """
         return "%s(%s)" % (self.__class__.__name__, repr(self.name))
     def __str__ (self) :
         """Return the name of the net.
-        
+
         >>> str(PetriNet('N'))
         'N'
-        
+
         @return: the name if the net
         @rtype: `str`
         """
         return self.name
     def rename (self, name) :
         """Change the name of the net.
-        
+
         >>> n = PetriNet('N')
         >>> n.rename('Long name!')
         >>> n
         PetriNet('Long name!')
-        
+
         @param name: the new name
         @type name: `str`
         """
         self.name = name
     def has_place (self, name) :
         """Check if there is a place called `name` in the net.
-        
+
         >>> n = PetriNet('N')
         >>> n.has_place('p')
         False
         >>> n.add_place(Place('p'))
         >>> n.has_place('p')
         True
-        
+
         @param name: the name of the searched place
         @type name: `str`
         @return: `True` if a place called `name` is present in the
@@ -3173,14 +3175,14 @@ class PetriNet (object) :
         return name in self._place
     def has_transition (self, name) :
         """Check if there is a transition called `name` in the net.
-        
+
         >>> n = PetriNet('N')
         >>> n.has_transition('t')
         False
         >>> n.add_transition(Transition('t'))
         >>> n.has_transition('t')
         True
-        
+
         @param name: the name of the searched transition
         @type name: `str`
         @return: `True` if a transition called `name` is present in
@@ -3190,7 +3192,7 @@ class PetriNet (object) :
         return name in self._trans
     def has_node (self, name) :
         """Check if there is a transition called `name` in the net.
-        
+
         >>> n = PetriNet('N')
         >>> n.has_node('t')
         False
@@ -3202,7 +3204,7 @@ class PetriNet (object) :
         True
         >>> n.has_node('p')
         True
-        
+
         @param name: the name of the searched node
         @type name: `str`
         @return: `True` if a node called `name` is present in the net,
@@ -3212,7 +3214,7 @@ class PetriNet (object) :
         return name in self._node
     def __contains__ (self, name) :
         """`name in net` is a shortcut for `net.has_node(name)`
-        
+
         >>> n = PetriNet('N')
         >>> 't' in n
         False
@@ -3224,7 +3226,7 @@ class PetriNet (object) :
         True
         >>> 'p' in n
         True
-        
+
         @param name: the name of the searched node
         @type name: `str`
         @return: `True` if a node called `name` is present in the net,
@@ -3234,7 +3236,7 @@ class PetriNet (object) :
         return name in self._node
     def declare (self, statements, locals=None) :
         """Execute `statements` in the global dictionnary of the net.
-        
+
         This has also on the dictionnarie of the instances of
         `Expression` in the net (guards of the transitions and labels
         on the arcs) so the declarations have an influence over the
@@ -3242,7 +3244,7 @@ class PetriNet (object) :
         the declared objects will be placed in it instead of the
         global dictionnary, see the documentation of Python for more
         details about local and global environments.
-        
+
         >>> n = PetriNet('N')
         >>> t = Transition('t', Expression('x==0'))
         >>> n.add_transition(t)
@@ -3265,7 +3267,7 @@ class PetriNet (object) :
         >>> t.fire(Substitution())
         >>> n.place('p')
         Place('p', MultiSet([0...]), tAll)
-        
+
         @param statements: a Python instruction suitable to `exec`
         @type statements: `str` or `code`
         @param locals: a `dict` used as locals when `statements` is
@@ -3276,10 +3278,10 @@ class PetriNet (object) :
         self._declare.append(statements)
     def add_place (self, place) :
         """Add a place to the net.
-        
+
         Each node in a net must have a name unique to this net, which
         is checked when it is added.
-        
+
         >>> n = PetriNet('N')
         >>> try : n.place('p')
         ... except ConstraintError : print(sys.exc_info()[1])
@@ -3292,7 +3294,7 @@ class PetriNet (object) :
         >>> try : n.add_place(Place('p'))
         ... except ConstraintError : print(sys.exc_info()[1])
         place 'p' exists
-        
+
         @param place: the place to add
         @type place: `Place`
         """
@@ -3308,7 +3310,7 @@ class PetriNet (object) :
         place.lock("post", self, {})
     def remove_place (self, name) :
         """Remove a place (given by its name) from the net.
-        
+
         >>> n = PetriNet('N')
         >>> try : n.remove_place('p')
         ... except ConstraintError : print(sys.exc_info()[1])
@@ -3320,7 +3322,7 @@ class PetriNet (object) :
         >>> try : n.place('p')
         ... except ConstraintError : print(sys.exc_info()[1])
         place 'p' not found
-        
+
         @param name: the name of the place to remove
         @type name: `str`
         """
@@ -3340,10 +3342,10 @@ class PetriNet (object) :
         place.unlock("net", self, remove=True)
     def add_transition (self, trans) :
         """Add a transition to the net.
-        
+
         Each node in a net must have a name unique to this net, which
         is checked when it is added.
-        
+
         >>> n = PetriNet('N')
         >>> try : n.transition('t')
         ... except ConstraintError : print(sys.exc_info()[1])
@@ -3354,7 +3356,7 @@ class PetriNet (object) :
         >>> try : n.add_transition(Transition('t'))
         ... except ConstraintError : print(sys.exc_info()[1])
         transition 't' exists
-        
+
         @param trans: the transition to add
         @type trans: `Transition`
         """
@@ -3371,7 +3373,7 @@ class PetriNet (object) :
         trans.guard.globals.attach(self.globals)
     def remove_transition (self, name) :
         """Remove a transition (given by its name) from the net.
-        
+
         >>> n = PetriNet('N')
         >>> try : n.remove_transition('t')
         ... except ConstraintError : print(sys.exc_info()[1])
@@ -3383,7 +3385,7 @@ class PetriNet (object) :
         >>> try : n.transition('t')
         ... except ConstraintError : print(sys.exc_info()[1])
         transition 't' not found
-        
+
         @param name: the name of the transition to remove
         @type name: `str`
         """
@@ -3404,7 +3406,7 @@ class PetriNet (object) :
         trans.guard.globals.detach(self.globals)
     def place (self, name=None) :
         """Return one (if `name` is not `None`) or all the places.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2'))
@@ -3415,7 +3417,7 @@ class PetriNet (object) :
         place 'p' not found
         >>> n.place()
         [Place('p2', MultiSet([]), tAll), Place('p1', MultiSet([]), tAll)]
-        
+
         @param name: the name of the place to retrieve or `None` to
             get the list of all the places in the net
         @type name: `str` or `None`
@@ -3431,7 +3433,7 @@ class PetriNet (object) :
                 raise ConstraintError("place '%s' not found" % name)
     def transition (self, name=None) :
         """Return one (if `name` is not `None`) or all the transitions.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_transition(Transition('t1'))
         >>> n.add_transition(Transition('t2'))
@@ -3442,7 +3444,7 @@ class PetriNet (object) :
         transition 't' not found
         >>> n.transition()
         [Transition('t2', Expression('True')), Transition('t1', Expression('True'))]
-        
+
         @param name: the name of the transition to retrieve or `None`
             to get the list of all the transitions in the net
         @type name: `str` or `None`
@@ -3459,7 +3461,7 @@ class PetriNet (object) :
                 raise ConstraintError("transition '%s' not found" % name)
     def node (self, name=None) :
         """Return one (if `name` is not `None`) or all the nodes.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_transition(Transition('t'))
         >>> n.add_place(Place('p'))
@@ -3470,7 +3472,7 @@ class PetriNet (object) :
         node 'x' not found
         >>> list(sorted(n.node(), key=str))
         [Place('p', MultiSet([]), tAll), Transition('t', Expression('True'))]
-        
+
         @param name: the name of the node to retrieve or `None` to get
             the list of all the nodes in the net
         @type name: `str` or `None`
@@ -3487,9 +3489,9 @@ class PetriNet (object) :
                 raise ConstraintError("node '%s' not found" % name)
     def add_input (self, place, trans, label) :
         """Add an input arc between `place` and `trans` (nodes names).
-        
+
         An input arc is directed from a place toward a transition.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', range(3)))
         >>> n.add_transition(Transition('t', Expression('x!=1')))
@@ -3509,7 +3511,7 @@ class PetriNet (object) :
         >>> try : n.add_input('p', 't', Value(42))
         ... except ConstraintError: print(sys.exc_info()[1])
         already connected to 'p'
-        
+
         @param place: the name of the place to connect
         @type place: `str`
         @param trans: the name of the transition to connect
@@ -3534,7 +3536,7 @@ class PetriNet (object) :
             label.globals.attach(self.globals)
     def remove_input (self, place, trans) :
         """Remove an input arc between `place` and `trans` (nodes names).
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', range(3)))
         >>> n.add_transition(Transition('t', Expression('x!=1')))
@@ -3547,7 +3549,7 @@ class PetriNet (object) :
         >>> try : n.remove_input('p', 't')
         ... except ConstraintError : print(sys.exc_info()[1])
         not connected to 'p'
-        
+
         @param place: the name of the place to disconnect
         @type place: `str`
         @param trans: the name of the transition to disconnect
@@ -3569,9 +3571,9 @@ class PetriNet (object) :
             l.globals.detach(self.globals)
     def add_output (self, place, trans, label) :
         """Add an output arc between `place` and `trans` (nodes names).
-        
+
         An output arc is directed from a transition toward a place.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p'))
         >>> n.add_transition(Transition('t'))
@@ -3586,7 +3588,7 @@ class PetriNet (object) :
         >>> try : n.add_output('p', 't', Value(42))
         ... except ConstraintError : print(sys.exc_info()[1])
         already connected to 'p'
-        
+
         @param place: the name of the place to connect
         @type place: `str`
         @param trans: the name of the transition to connect
@@ -3610,7 +3612,7 @@ class PetriNet (object) :
     def remove_output (self, place, trans) :
         """Remove an output arc between `place` and `trans` (nodes
         names).
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p'))
         >>> n.add_transition(Transition('t'))
@@ -3623,7 +3625,7 @@ class PetriNet (object) :
         >>> try : n.remove_output('p', 't')
         ... except ConstraintError : print(sys.exc_info()[1])
         not connected to 'p'
-        
+
         @param place: the name of the place to disconnect
         @type place: `str`
         @param trans: the name of the transition to disconnect
@@ -3645,9 +3647,9 @@ class PetriNet (object) :
             l.globals.detach(self.globals)
     def pre (self, nodes) :
         """Return the set of nodes names preceeding `nodes`.
-        
+
         `nodes` can be a single node name ot a list of nodes names.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2'))
@@ -3659,7 +3661,7 @@ class PetriNet (object) :
         True
         >>> n.pre(['p1', 'p2']) == set(['t2', 't1'])
         True
-        
+
         @param nodes: a single node name or a list of node names
         @type nodes: `str` or a `list` of `str`
         @return: a set of node names
@@ -3674,9 +3676,9 @@ class PetriNet (object) :
         return result
     def post (self, nodes) :
         """Return the set of nodes names succeeding `nodes`.
-        
+
         `nodes` can be a single node name ot a list of nodes names.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2'))
@@ -3688,7 +3690,7 @@ class PetriNet (object) :
         True
         >>> n.post(['t1', 't2']) == set(['p2', 'p1'])
         True
-        
+
         @param nodes: a single node name or a list of node names
         @type nodes: `str` or a `list` of `str`
         @return: a set of node names
@@ -3703,7 +3705,7 @@ class PetriNet (object) :
         return result
     def get_marking (self) :
         """Return the current marking of the net, omitting empty places.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p0', range(0)))
         >>> n.add_place(Place('p1', range(1)))
@@ -3711,7 +3713,7 @@ class PetriNet (object) :
         >>> n.add_place(Place('p3', range(3)))
         >>> n.get_marking() == Marking({'p2': MultiSet([0, 1]), 'p3': MultiSet([0, 1, 2]), 'p1': MultiSet([0])})
         True
-        
+
         @return: the current marking
         @rtype: `Marking`
         """
@@ -3720,14 +3722,14 @@ class PetriNet (object) :
                        if not place.is_empty())
     def _set_marking (self, marking) :
         """Assign a marking to the net.
-        
+
         Places not listed in the marking are considered empty, the
         corresponding place in the net is thus emptied. If the marking
         has places that do not belong to the net, these are ignored
         (as in the last instruction below). If an error occurs during
         the assignment, the marking is left inconsistent. You should
         thus use `set_marking` unless you will have no error.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p0', range(5)))
         >>> n.add_place(Place('p1'))
@@ -3746,7 +3748,7 @@ class PetriNet (object) :
         forbidden token '3.14'
         >>> n.get_marking() # inconsistent
         Marking({'p2': MultiSet([1])})
-        
+
         @param marking: the new marking
         @type marking: `Marking`
         """
@@ -3757,13 +3759,13 @@ class PetriNet (object) :
                 place.empty()
     def set_marking (self, marking) :
         """Assign a marking to the net.
-        
+
         Places not listed in the marking are considered empty, the
         corresponding place in the net is thus emptied. If the marking
         has places that do not belong to the net, these are ignored
         (as in the last instruction below). If an error occurs during
         the assignment, the marking is left unchanged.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p0', range(5), tInteger))
         >>> n.add_place(Place('p1'))
@@ -3782,7 +3784,7 @@ class PetriNet (object) :
         forbidden token '3.14'
         >>> n.get_marking() # unchanged
         Marking({})
-        
+
         @param marking: the new marking
         @type marking: `Marking`
         """
@@ -3794,11 +3796,11 @@ class PetriNet (object) :
             raise
     def add_marking (self, marking) :
         """Add a marking to the current one.
-        
+
         If an error occurs during the process, the marking is left
         unchanged. Places in the marking that do not belong to the net
         are ignored.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2', range(3)))
@@ -3807,7 +3809,7 @@ class PetriNet (object) :
         >>> n.add_marking(Marking(p1=MultiSet(range(2)), p2=MultiSet([1])))
         >>> n.get_marking() == Marking({'p2': MultiSet([0, 1, 1, 2]), 'p1': MultiSet([0, 1])})
         True
-        
+
         @param marking: the new marking
         @type marking: `Marking`
         """
@@ -3821,11 +3823,11 @@ class PetriNet (object) :
             raise
     def remove_marking (self, marking) :
         """Substract a marking from the current one.
-        
+
         If an error occurs during the process, the marking is left
         unchanged. Places in the marking that do not belong to the net
         are ignored.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2', range(3)))
@@ -3839,7 +3841,7 @@ class PetriNet (object) :
         >>> n.remove_marking(Marking(p2=MultiSet([1])))
         >>> n.get_marking() == Marking({'p2': MultiSet([0, 2])})
         True
-        
+
         @param marking: the new marking
         @type marking: `Marking`
         """
@@ -3853,7 +3855,7 @@ class PetriNet (object) :
             raise
     def rename_node (self, old, new) :
         """Change the name of a node.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p'))
         >>> n.add_transition(Transition('t'))
@@ -3873,7 +3875,7 @@ class PetriNet (object) :
         >>> try : n.rename_node('old_t', 'new_t')
         ... except ConstraintError : print(sys.exc_info()[1])
         node 'old_t' not found
-        
+
         @param old: the current name of the node
         @type old: `str`
         @param new: the new name for the node
@@ -3903,7 +3905,7 @@ class PetriNet (object) :
             del other.pre[old]
     def copy_place (self, source, targets) :
         """Make copies of the `source` place (use place names).
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', range(3)))
         >>> n.add_transition(Transition('t'))
@@ -3917,7 +3919,7 @@ class PetriNet (object) :
          Place('ter', MultiSet([...]), tAll)]
         >>> list(sorted(n.pre('t'), key=str))
         ['bis', 'more', 'p', 'ter']
-        
+
         @param source: the name of the place to copy
         @type source: `str`
         @param targets: a name or a list of names for the copie(s)
@@ -3932,7 +3934,7 @@ class PetriNet (object) :
                 self.add_output(target, trans, label.copy())
     def copy_transition (self, source, targets) :
         """Make copies of the `source` transition (use transition names).
-        
+
         >>> n = PetriNet('N')
         >>> n.add_transition(Transition('t', Expression('x==1')))
         >>> n.add_place(Place('p'))
@@ -3946,7 +3948,7 @@ class PetriNet (object) :
          Transition('ter', Expression('x==1'))]
         >>> list(sorted(n.post('p')))
         ['bis', 'more', 't', 'ter']
-        
+
         @param source: the name of the transition to copy
         @type source: `str`
         @param targets: a name or a list of names for the copie(s)
@@ -3961,11 +3963,11 @@ class PetriNet (object) :
                 self.add_output(place, target, label.copy())
     def merge_places (self, target, sources) :
         """Create a new place by merging those in `sources`.
-        
+
         Markings are added, place types are 'or'ed and arcs labels are
         joinded into multi-arcs, the sources places are not removed.
         Use places names.
-        
+
         >>> n = PetriNet('n')
         >>> n.add_place(Place('p1', [1], tInteger))
         >>> n.add_place(Place('p2', [2.0], tFloat))
@@ -3984,7 +3986,7 @@ class PetriNet (object) :
         True
         >>> n.node('p').checker()
         (Instance(int) | Instance(float))
-        
+
         @param target: the name of the created place
         @type target: `str`
         @param sources: the list of places names to be merged (or a
@@ -4027,11 +4029,11 @@ class PetriNet (object) :
                 self.add_output(target, trans, MultiArc(labels))
     def merge_transitions (self, target, sources) :
         """Create a new transition by merging those in `sources`.
-        
+
         Guards are 'and'ed and arcs labels are joinded into multi-
         arcs, the sources transitions are not removed. Use transitions
         names.
-        
+
         >>> n = PetriNet('n')
         >>> n.add_place(Place('p1'))
         >>> n.add_place(Place('p2'))
@@ -4049,7 +4051,7 @@ class PetriNet (object) :
         Transition('t', Expression('(x==1) and (y==2)'))
         >>> n.node('t').post
         {'p2': MultiArc((Value(2.0), Value(2.0))), 'p1': Value(1)}
-        
+
         @param target: the name of the created transition
         @type target: `str`
         @param sources: the list of transitions names to be merged (or
@@ -4100,10 +4102,10 @@ class StateGraph (object) :
     "The graph of reachable markings of a net."
     def __init__ (self, net) :
         """Initialise with the net.
-        
+
         >>> StateGraph(PetriNet('N')).net
         PetriNet('N')
-        
+
         @param net: the Petri net whose graph has to be computed
         @type net: `PetriNet`
         """
@@ -4128,10 +4130,10 @@ class StateGraph (object) :
         return self._last
     def goto (self, state) :
         """Change the current state to another (given by its number).
-        
+
         This also changes the marking of the net consistently. Notice
         that the state may not exist yet.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4145,7 +4147,7 @@ class StateGraph (object) :
         >>> g.goto(2)
         >>> g.net.get_marking()
         Marking({'p': MultiSet([2])})
-        
+
         @param state: the number of the state to go to
         @type state: non-negative `int`
         """
@@ -4159,7 +4161,7 @@ class StateGraph (object) :
             raise ValueError("unknown state")
     def current (self) :
         """Return the number of the current state.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4168,7 +4170,7 @@ class StateGraph (object) :
         >>> g = StateGraph(n)
         >>> g.current()
         0
-        
+
         @return: the number of the current state
         @rtype: non-negative `int`
         """
@@ -4224,12 +4226,12 @@ class StateGraph (object) :
         return marking in self._state
     def successors (self, state=None) :
         """Return the successors of the current state.
-        
+
         The value returned is a dictionnary mapping the numbers of
         successor states to pairs (trans, mode) representing the name
         of the transition and the binding needed to reach the new
         state.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4240,7 +4242,7 @@ class StateGraph (object) :
         >>> g.goto(2)
         >>> g.successors()
         {3: (Transition('t', Expression('x<5')), Substitution(x=2))}
-        
+
         @return: the dictionnary of successors and transitions to them
         @rtype: `dict` mapping non-negative `int` to `tuple` holding a
             `str` and a `Substitution`
@@ -4252,12 +4254,12 @@ class StateGraph (object) :
                      for label in self._succ[state][succ])
     def predecessors (self, state=None) :
         """Return the predecessors states.
-        
+
         The returned value is as in `successors`. Notice that if the
         graph is not complete, this value may be wrong: states
         computed in the future may lead to the current one thus
         becoming one of its predecessors.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4268,7 +4270,7 @@ class StateGraph (object) :
         >>> g.goto(2)
         >>> g.predecessors()
         {1: (Transition('t', Expression('x<5')), Substitution(x=1))}
-        
+
         @return: the dictionnary of predecessors and transitions to
             them
         @rtype: `dict` mapping non-negative `int` to `tuple` holding a
@@ -4306,7 +4308,7 @@ class StateGraph (object) :
                     return
     def __len__ (self) :
         """Return the number of states currently reached.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4323,21 +4325,21 @@ class StateGraph (object) :
         5 states known
         6 states known
         6 states known
-        
+
         @return: the number of states generated at call time
         @rtype: non-negative `int`
         """
         return len(self._done) + len(self._todo)
     def __iter__ (self) :
         """Iterate over the reachable states (numbers).
-        
+
         If needed, the successors of each state are computed just
         before it is yield. So, if the graph is not complete, getting
         the predecessors may be wrong during the iteration.
-        
+
         **Warning:** the net may have an infinite state graph, which
         is not checked. So you may enter an infinite iteration.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4376,13 +4378,13 @@ class StateGraph (object) :
         self.goto(current)
     def _build (self, stop=None) :
         """Build the complete reachability graph.
-        
+
         The graph is build using a breadth first exploration as the
         newly computed states are put in a queue.
-        
+
         **Warning:** this may be infinite! No check of this is
         performed.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4404,7 +4406,7 @@ class StateGraph (object) :
             pass
     def completed (self) :
         """Check if all the reachable markings have been explored.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4419,7 +4421,7 @@ class StateGraph (object) :
         3 False
         4 False
         5 True
-        
+
         @return: `True` if the graph has been completely computed,
             `False` otherwise
         @rtype: `bool`
@@ -4428,7 +4430,7 @@ class StateGraph (object) :
     def todo (self) :
         """Return the number of states whose successors are not yet
         computed.
-        
+
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
         >>> n.add_transition(Transition('t', Expression('x<5')))
@@ -4443,7 +4445,7 @@ class StateGraph (object) :
         3 1
         4 1
         5 0
-        
+
         @return: the number of pending states
         @rtype: non-negative `int`
         """

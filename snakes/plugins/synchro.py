@@ -6,8 +6,6 @@ The plugin proposes a generalisation of the M-nets synchronisation in
 that it does not impose a fixed correspondence between action names
 and action arities.
 
-
-
   * class `Action` corresponds to a synchronisable action, it has a
     name, a send/receive flag and a list of parameters. Actions have
     no predetermined arities, only conjugated actions with the same
@@ -66,6 +64,8 @@ t2 z>0
 >>> [t.name for t in sorted(n.transition(), key=str)]
 ["((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)]",
  "((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)]"]
+
+@todo: revise documentation
 """
 
 from snakes import ConstraintError
@@ -91,6 +91,7 @@ class Action (object) :
         self.send = send
         self.params = list(params)
     __pnmltag__ = "action"
+    # apidoc skip
     def __pnmldump__ (self) :
         """
         >>> Action('a', True, [Value(1), Variable('x')]).__pnmldump__()
@@ -114,6 +115,7 @@ class Action (object) :
         for param in self.params :
             result.add_child(Tree.from_obj(param))
         return result
+    # apidoc skip
     @classmethod
     def __pnmlload__ (cls, tree) :
         """
@@ -136,6 +138,7 @@ class Action (object) :
             return "%s!(%s)" % (self.name, ",".join([str(p) for p in self]))
         else :
             return "%s?(%s)" % (self.name, ",".join([str(p) for p in self]))
+    # apidoc stop
     def __repr__ (self) :
         """
         >>> a = Action('a', True, [Value(1), Variable('x')])
@@ -150,17 +153,17 @@ class Action (object) :
                                      ", ".join([repr(p) for p in self]))
     def __len__ (self) :
         """Return the number of parameters, aka the arity of the action.
-        
+
         >>> len(Action('a', True, [Value(1), Variable('x')]))
         2
-        
+
         @return: the arity of the action
         @rtype: non negative `int`
         """
         return len(self.params)
     def __iter__ (self) :
         """Iterate on the parameters
-        
+
         >>> list(Action('a', True, [Value(1), Variable('x')]))
         [Value(1), Variable('x')]
         """
@@ -169,7 +172,7 @@ class Action (object) :
     def __eq__ (self, other) :
         """Two actions are equal if they have the same name, same send
         flags and same parameters.
-        
+
         >>> Action('a', True, [Value(1), Variable('x')]) == Action('a', True, [Value(1), Variable('x')])
         True
         >>> Action('a', True, [Value(1), Variable('x')]) == Action('b', True, [Value(1), Variable('x')])
@@ -180,7 +183,7 @@ class Action (object) :
         False
         >>> Action('a', True, [Value(1), Variable('x')]) == Action('a', True, [Value(1)])
         False
-        
+
         @param other: the action to compare
         @type other: `Action`
         @return: `True` if the two actions are equal, `False`
@@ -201,14 +204,14 @@ class Action (object) :
         return not (self == other)
     def copy (self, subst=None) :
         """Copy the action, optionally substituting its parameters.
-        
+
         >>> a = Action('a', True, [Variable('x'), Value(2)])
         >>> a.copy()
         Action('a', True, [Variable('x'), Value(2)])
         >>> a = Action('a', True, [Variable('x'), Value(2)])
         >>> a.copy(Substitution(x=Value(3)))
         Action('a', True, [Value(3), Value(2)])
-        
+
         @param subst: if not `None`, a substitution to apply to the
             parameters of the copy
         @type subst: `None` or `Substitution` mapping variables names
@@ -224,12 +227,12 @@ class Action (object) :
         return result
     def substitute (self, subst) :
         """Substitute the parameters according to `subst`
-        
+
         >>> a = Action('a', True, [Variable('x'), Value(2)])
         >>> a.substitute(Substitution(x=Value(3)))
         >>> a
         Action('a', True, [Value(3), Value(2)])
-        
+
         @param subst: a substitution to apply to the parameters
         @type subst: `Substitution` mapping variables names to `Value`
             or `Variable`
@@ -241,7 +244,7 @@ class Action (object) :
         """
         >>> Action('a', True, [Value(3), Variable('x'), Variable('y'), Variable('x')]).vars() == set(['x', 'y'])
         True
-        
+
         @return: the set of variable names appearing in the parameters
             of the action
         @rtype: `set` of `str`
@@ -249,13 +252,13 @@ class Action (object) :
         return set(p.name for p in self.params if isinstance(p, Variable))
     def __and__ (self, other) :
         """Compute an unification of two conjugated actions.
-        
+
         An unification is a `Substitution` that maps variable names to
         `Variable` or `Values`. If both actions are substituted by
         this unification, their parameters lists become equal. If no
         unification can be found, `ConstraintError` is raised (or,
         rarely, `DomainError` depending on the cause of the failure).
-        
+
         >>> s = Action('a', True, [Value(3), Variable('x'), Variable('y'), Variable('x')])
         >>> r = Action('a', False, [Value(3), Value(2), Variable('t'), Variable('z')])
         >>> u = s & r
@@ -284,7 +287,7 @@ class Action (object) :
         >>> try : s & r
         ... except ConstraintError : print(sys.exc_info()[1])
         actions not conjugated
-        
+
         @param other: the other action to unify with
         @type other: `Action`
         @return: a substitution that unify both actions
@@ -323,7 +326,7 @@ class MultiAction (object) :
         ...                    Action('a', False, [Value(2)])])
         ... except ConstraintError : print(sys.exc_info()[1])
         conjugated actions in the same multiaction
-        
+
         @param actions: a collection of actions with no conjugated
             actions in it
         @type actions: `list` of `Action`
@@ -392,10 +395,10 @@ class MultiAction (object) :
     def send (self, name) :
         """Returns the send flag of the action `name` in this
         multiaction.
-        
+
         This value is unique as conjugated actions are forbidden in
         the same multiaction.
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x')]),
         ...                  Action('b', False, [Variable('y'), Value(2)])])
         >>> m.send('a'), m.send('b')
@@ -404,10 +407,10 @@ class MultiAction (object) :
         return self._sndrcv[name]
     def add (self, action) :
         """Add an action to the multiaction.
-        
+
         This may raise `ConstraintError` if the added action is
         conjugated to one that already belongs to the multiaction.
-        
+
         @param action: the action to add
         @type action: `Action`
         """
@@ -418,10 +421,10 @@ class MultiAction (object) :
         self._actions.append(action)
     def remove (self, action) :
         """Remove an action from the multiaction.
-        
+
         This may raise `ValueError` if the removed action does belongs
         to the multiaction.
-        
+
         @param action: the action to remove
         @type action: `Action`
         """
@@ -432,7 +435,7 @@ class MultiAction (object) :
             del self._sndrcv[action.name]
     def __iter__ (self) :
         """Iterate over the actions in the multiaction.
-        
+
         >>> list(MultiAction([Action('a', True, [Variable('x')]),
         ...                   Action('b', False, [Variable('y'), Value(2)])]))
         [Action('a', True, [Variable('x')]),
@@ -442,18 +445,18 @@ class MultiAction (object) :
             yield action
     def __len__ (self) :
         """Return the number of actions in a multiaction.
-        
+
         >>> len(MultiAction([Action('a', True, [Variable('x')]),
         ...                  Action('b', False, [Variable('y'), Value(2)])]))
         2
-        
+
         @return: the number of contained actions
         @rtype: non negative `int`
         """
         return len(self._actions)
     def substitute (self, subst) :
         """Substitute bu `subt` all the actions in the multiaction.
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x')]),
         ...                  Action('b', False, [Variable('y'), Variable('x')])])
         >>> m.substitute(Substitution(x=Value(4)))
@@ -466,7 +469,7 @@ class MultiAction (object) :
     def copy (self, subst=None) :
         """Copy the multiaction (and the actions is contains) optionally
         substituting it.
-        
+
         @param subst: if not `None`, the substitution to apply to the
             copy.
         @type subst: `None` or `Substitution`
@@ -479,10 +482,10 @@ class MultiAction (object) :
         return result
     def __contains__ (self, action) :
         """Search an action in the multiaction.
-        
+
         The searched action may be a complete `Action`, just an action
         name, or a pair `(name, send_flag)`.
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x'), Value(2)]),
         ...                  Action('a', True, [Value(3), Variable('y')]),
         ...                  Action('b', False, [Variable('x'), Variable('y')])])
@@ -498,7 +501,7 @@ class MultiAction (object) :
         False
         >>> Action('c', True, [Variable('x'), Value(2)]) in m
         False
-        
+
         @param action: an complete action, or its name or its name and
             send flag
         @type action: `Action` or `str` or `tuple(str, bool)`
@@ -517,7 +520,7 @@ class MultiAction (object) :
             raise ValueError("invalid action specification")
     def __add__ (self, other) :
         """Create a multiaction by adding the actions of two others.
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x'), Value(2)]),
         ...                  Action('a', True, [Value(3), Variable('y')]),
         ...                  Action('b', False, [Variable('x'), Variable('y')])])
@@ -533,7 +536,7 @@ class MultiAction (object) :
                      Action('a', True, [Value(3), Variable('y')]),
                      Action('b', False, [Variable('x'), Variable('y')]),
                      Action('c', True, [])])
-        
+
         @param other: the other multiaction to combine or a single
             action
         @type other: `MultiAction` or `Action`
@@ -549,7 +552,7 @@ class MultiAction (object) :
     def __sub__ (self, other) :
         """Create a multiaction by substracting the actions of two
         others.
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x'), Value(2)]),
         ...                  Action('a', True, [Value(3), Variable('y')]),
         ...                  Action('b', False, [Variable('x'), Variable('y')])])
@@ -558,7 +561,7 @@ class MultiAction (object) :
         >>> m - Action('b', False, [Variable('x'), Variable('y')])
         MultiAction([Action('a', True, [Variable('x'), Value(2)]),
                      Action('a', True, [Value(3), Variable('y')])])
-        
+
         @param other: the other multiaction to combine or a single
             action
         @type other: `MultiAction` or `Action`
@@ -574,12 +577,12 @@ class MultiAction (object) :
     def vars (self) :
         """Return the set of variable names used in all the actions of
         the multiaction.
-        
+
         >>> MultiAction([Action('a', True, [Variable('x'), Value(2)]),
         ...              Action('a', True, [Value(3), Variable('y')]),
         ...              Action('b', False, [Variable('x'), Variable('z')])]).vars() == set(['x', 'y', 'z'])
         True
-        
+
         @return: the set of variable names
         @rtype: `set` of `str`
         """
@@ -590,12 +593,12 @@ class MultiAction (object) :
     def synchronise (self, other, name) :
         """Search all the possible synchronisation on an action name with
         another multiaction.
-        
+
         This method returns an iterator that yields for each possible
         synchronisation a 4-tuple whose components are:
-        
-        
-        
+
+
+
           * the sending action that did synchronise, it is already
             unified, so the corresponding receiving action is just
             the same with the reversed send flag
@@ -605,7 +608,7 @@ class MultiAction (object) :
             that provided the sending action
           * the substitution that must be applied to the transition
             that provided the receiving action
-        
+
         >>> m = MultiAction([Action('a', True, [Variable('x'), Value(2)]),
         ...                  Action('a', True, [Value(3), Variable('y')]),
         ...                  Action('b', False, [Variable('x'), Variable('y')])])
@@ -615,7 +618,7 @@ class MultiAction (object) :
         ...    print('%s %s %s %s' % (str(a), str(x), list(sorted(u.items())), list(sorted(v.items()))))
         a!(w,2) [a!(3,y), b?(w,y), c?(a)] [('a', Value(2)), ('x', Variable('w'))] [('a', Value(2)), ('x', Variable('w')), ('y', Variable('a'))]
         a!(3,a) [a!(x,2), b?(x,a), c?(a)] [('w', Value(3)), ('y', Variable('a'))] [('w', Value(3)), ('y', Variable('a'))]
-        
+
         @param other: the other multiaction to synchronise with
         @type other: `MultiAction`
         @param name: the name of the action to synchronise on

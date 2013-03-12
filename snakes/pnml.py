@@ -3,6 +3,8 @@
 Petri nets objects are saved in PNML, other Python objects are saved
 in a readable format when possible and pickled as a last solution.
 This should result in a complete PNML serialization of any object.
+
+@todo: revise documentation
 """
 
 import xml.dom.minidom
@@ -160,7 +162,7 @@ class _set (object) :
 
 class Tree (object) :
     """Abstraction of a PNML tree
-    
+
     >>> Tree('tag', 'data', Tree('child', None), attr='attribute value')
     <?xml version="1.0" encoding="utf-8"?>
     <pnml>
@@ -172,7 +174,7 @@ class Tree (object) :
     """
     def __init__ (self, _name, _data, *_children, **_attributes) :
         """Initialize a PNML tree
-        
+
         >>> Tree('tag', 'data',
         ...      Tree('first_child', None),
         ...      Tree('second_child', None),
@@ -186,10 +188,10 @@ class Tree (object) :
           data
          </tag>
         </pnml>
-        
+
         Note: parameters names start with a '_' in order to allow for
         using them as attributes.
-        
+
         @param _name: the name of the tag
         @type _name: `str`
         @param _data: the text held by the tag or `None`
@@ -225,7 +227,7 @@ class Tree (object) :
         return result
     def to_pnml (self) :
         """Dumps a PNML tree to an XML string
-        
+
         >>> print(Tree('tag', 'data', Tree('child', None), attr='value').to_pnml())
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -234,7 +236,7 @@ class Tree (object) :
           data
          </tag>
         </pnml>
-        
+
         @return: the XML string that represents the PNML tree
         @rtype: `str`
         """
@@ -269,7 +271,7 @@ class Tree (object) :
     @classmethod
     def from_dom (cls, node) :
         """Load a PNML tree from an XML DOM representation
-        
+
         >>> src = Tree('object', '42', type='int').to_pnml()
         >>> dom = xml.dom.minidom.parseString(src)
         >>> Tree.from_dom(dom.documentElement)
@@ -279,7 +281,7 @@ class Tree (object) :
           42
          </object>
         </pnml>
-        
+
         @param node: the DOM node to load
         @type node: `xml.dom.minidom.Element`
         @return: the loaded PNML tree
@@ -299,7 +301,7 @@ class Tree (object) :
     @classmethod
     def from_pnml (cls, source, plugins=[]) :
         """Load a PNML tree from an XML string representation
-        
+
         >>> src = Tree('object', '42', type='int').to_pnml()
         >>> Tree.from_pnml(src)
         <?xml version="1.0" encoding="utf-8"?>
@@ -308,7 +310,7 @@ class Tree (object) :
           42
          </object>
         </pnml>
-        
+
         @param source: the XML string to load or an opened file that
             contains it
         @type source: `str` or `file`
@@ -360,7 +362,7 @@ class Tree (object) :
         return result
     def nodes (self) :
         """Iterate over all the nodes (top-down) in a tree
-        
+
         >>> t = Tree('foo', None,
         ...          Tree('bar', None),
         ...          Tree('egg', None,
@@ -371,7 +373,7 @@ class Tree (object) :
         <PNML tree 'bar'>
         <PNML tree 'egg'>
         <PNML tree 'spam'>
-        
+
         @return: an iterator on all the nodes in the tree, including
             this one
         @rtype: `generator`
@@ -383,7 +385,7 @@ class Tree (object) :
     def update (self, other) :
         """Incorporates children, attributes and data from another PNML
         tree
-        
+
         >>> t = Tree('foo', 'hello',
         ...          Tree('bar', None),
         ...          Tree('egg', None,
@@ -411,7 +413,7 @@ class Tree (object) :
         >>> try : t.update(o)
         ... except SnakesError : print(sys.exc_info()[1])
         tag mismatch 'foo', 'oops'
-        
+
         @param other: the other tree to get data from
         @type other: `Tree`
         @raise SnakesError: when `other` has not the same tag as
@@ -424,7 +426,7 @@ class Tree (object) :
         self.add_data(other.data)
     def add_child (self, child) :
         """Add a child to a PNML tree
-        
+
         >>> t = Tree('foo', None)
         >>> t.add_child(Tree('bar', None))
         >>> t
@@ -434,14 +436,14 @@ class Tree (object) :
           <bar/>
          </foo>
         </pnml>
-        
+
         @param child: the PNML tree to append
         @type child: `Tree`
         """
         self.children.append(child)
     def add_data (self, data, sep='\n') :
         """Appends data to the current node
-        
+
         >>> t = Tree('foo', None)
         >>> t.add_data('hello')
         >>> t
@@ -469,7 +471,7 @@ class Tree (object) :
           world!
          </foo>
         </pnml>
-        
+
         @param data: the data to add
         @type data: `str`
         @param sep: separator to insert between pieces of data
@@ -486,14 +488,14 @@ class Tree (object) :
             pass
     def __getitem__ (self, name) :
         """Returns one attribute
-        
+
         >>> Tree('foo', None, x='egg', y='spam')['x']
         'egg'
         >>> Tree('foo', None, x='egg', y='spam')['z']
         Traceback (most recent call last):
           ...
         KeyError: 'z'
-        
+
         @param name: the name of the attribute
         @type name: `str`
         @return: the value of the attribute
@@ -503,7 +505,7 @@ class Tree (object) :
         return self.attributes[name]
     def __setitem__ (self, name, value) :
         """Sets an attribute
-        
+
         >>> t = Tree('foo', None)
         >>> t['egg'] = 'spam'
         >>> t
@@ -511,7 +513,7 @@ class Tree (object) :
         <pnml>
          <foo egg="spam"/>
         </pnml>
-        
+
         @param name: the name of the attribute
         @type name: `str`
         @param value: the value of the attribute
@@ -520,20 +522,20 @@ class Tree (object) :
         self.attributes[name] = value
     def __iter__ (self) :
         """Iterate over children nodes
-        
+
         >>> [str(node) for node in Tree('foo', None,
         ...                             Tree('egg', None),
         ...                             Tree('spam', None,
         ...                                  Tree('bar', None)))]
         ["<PNML tree 'egg'>", "<PNML tree 'spam'>"]
-        
+
         @return: an iterator over direct children of the node
         @rtype: `generator`
         """
         return iter(self.children)
     def has_child (self, name) :
         """Test if the tree has the given tag as a direct child
-        
+
         >>> t = Tree('foo', None,
         ...          Tree('egg', None),
         ...          Tree('spam', None,
@@ -544,7 +546,7 @@ class Tree (object) :
         False
         >>> t.has_child('python')
         False
-        
+
         @param name: tag name to search for
         @type name: `str`
         @return: a Boolean value indicating wether such a child was
@@ -557,7 +559,7 @@ class Tree (object) :
         return False
     def child (self, name=None) :
         """Return the direct child that as the given tag
-        
+
         >>> t = Tree('foo', None,
         ...          Tree('egg', 'first'),
         ...          Tree('egg', 'second'),
@@ -582,7 +584,7 @@ class Tree (object) :
         >>> try : t.child()
         ... except SnakesError : print(sys.exc_info()[1])
         multiple children
-        
+
         @param name: name of the tag to search for, if `None`, the
             fisrt child is returned if it is the only child
         @type name: `str` or `None`
@@ -606,7 +608,7 @@ class Tree (object) :
         return result
     def get_children (self, name=None) :
         """Iterates over direct children having the given tag
-        
+
         >>> t = Tree('foo', None,
         ...          Tree('egg', 'first'),
         ...          Tree('egg', 'second'),
@@ -620,7 +622,7 @@ class Tree (object) :
         []
         >>> [str(n) for n in t.get_children('bar')]
         []
-        
+
         @param name: tag to search for or `None`
         @type name: `str` or `None`
         @return: iterator over all the children if `name` is `None`,
@@ -632,20 +634,20 @@ class Tree (object) :
                 yield child
     def __str__ (self) :
         """Return a simple string representation of the node
-        
+
         >>> str(Tree('foo', None, Tree('child', None)))
         "<PNML tree 'foo'>"
-        
+
         @return: simple string representation of the node
         @rtype: `str`
         """
         return "<PNML tree %r>" % self.name
     def __repr__ (self) :
         """Return a detailed representation of the node.
-        
+
         This is actually the XML text that corresponds to the `Tree`,
         as returned by `Tree.to_pnml`.
-        
+
         >>> print(repr(Tree('foo', None, Tree('child', None))))
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -653,7 +655,7 @@ class Tree (object) :
           <child/>
          </foo>
         </pnml>
-        
+
         @return: XML string representation of the node
         @rtype: `str`
         """
@@ -663,10 +665,10 @@ class Tree (object) :
     @classmethod
     def from_obj (cls, obj) :
         """Builds a PNML tree from an object.
-        
+
         Objects defined in SNAKES usually have a method `__pnmldump__`
         that handles the conversion, for instance:
-        
+
         >>> import snakes.nets
         >>> Tree.from_obj(snakes.nets.Place('p'))
         <?xml version="1.0" encoding="utf-8"?>
@@ -678,9 +680,9 @@ class Tree (object) :
           </initialMarking>
          </place>
         </pnml>
-        
+
         Most basic Python classes are handled has readable XML:
-        
+
         >>> Tree.from_obj(42)
         <?xml version="1.0" encoding="utf-8"?>
         <pnml>
@@ -703,10 +705,10 @@ class Tree (object) :
           </object>
          </object>
         </pnml>
-        
+
         Otherwise, the object is serialised using module `pickle`,
         which allows to embed almost anything into PNML.
-        
+
         >>> import re
         >>> Tree.from_obj(re.compile('foo|bar')) # serialized data replaced with '...'
         <?xml version="1.0" encoding="utf-8"?>
@@ -715,7 +717,7 @@ class Tree (object) :
           ...
          </object>
         </pnml>
-        
+
         @param obj: the object to convert to PNML
         @type obj: `object`
         @return: the corresponding PNML tree
@@ -854,7 +856,7 @@ class Tree (object) :
             return pickle.loads(self.data)
     def to_obj (self) :
         """Build an object from its PNML representation
-        
+
         This is just the reverse as `Tree.from_obj`, objects that have
         a `__pnmldump__` method should also have a `__pnmlload__`
         class method to perform the reverse operation, together with
@@ -863,10 +865,10 @@ class Tree (object) :
         that `C.__pnmltag__ == 'foo'` is searched in module
         `snakes.nets` and `C.__pnmlload__(tree)` is called to rebuild
         the object.
-        
+
         Standard Python objects and pickled ones are also recognised
         and correctly rebuilt.
-        
+
         >>> import snakes.nets
         >>> Tree.from_obj(snakes.nets.Place('p')).to_obj()
         Place('p', MultiSet([]), tAll)
@@ -877,7 +879,7 @@ class Tree (object) :
         >>> import re
         >>> Tree.from_obj(re.compile('foo|bar')).to_obj()
         <... object at ...>
-        
+
         @return: the Python object encoded by the PNML tree
         @rtype: `object`
         """
@@ -910,7 +912,7 @@ class Tree (object) :
 
 def dumps (obj) :
     """Dump an object to a PNML string
-    
+
     >>> print(dumps(42))
     <?xml version="1.0" encoding="utf-8"?>
     <pnml>
@@ -918,7 +920,7 @@ def dumps (obj) :
       42
      </object>
     </pnml>
-    
+
     @param obj: the object to dump
     @type obj: `object`
     @return: the PNML that represents the object
@@ -928,10 +930,10 @@ def dumps (obj) :
 
 def loads (source, plugins=[]) :
     """Load an object from a PNML string
-    
+
     >>> loads(dumps(42))
     42
-    
+
     @param source: the data to parse
     @type source: `str`
     @return: the object represented by the source

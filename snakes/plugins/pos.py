@@ -42,6 +42,8 @@ Position(1, 3)
 >>> n.transpose()
 >>> n.node('t01').pos
 Position(-3, 1)
+
+@todo: revise documentation
 """
 
 from snakes import SnakesError
