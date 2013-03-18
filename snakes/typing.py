@@ -1,7 +1,6 @@
-"""Typing system for places (and transitions guards).
-
-Types are contraint checkers to verify whether a value is in the type
-or not. For instance:
+"""Typing system for places (and transitions guards). Types are
+contraint checkers to verify whether a value is in the type or not.
+For instance:
 
 >>> 5 in tInteger
 True
@@ -46,7 +45,7 @@ are:
   * `tTuple`: tuple values
   * `tPair`: tuples of length two
 
-Types with finitely many elements can be iterated:
+Types with finitely many elements can be iterated over:
 
 >>> list(sorted(iter(CrossProduct(Range(0, 10, 2), tBoolean) & ~OneOf((4, True), (6, False)))))
 [(0, False), (0, True), (2, False), (2, True), (4, False), (6, True), (8, False), (8, True)]
@@ -55,13 +54,11 @@ Types with finitely many elements can be iterated:
 >>> iter(tInteger)
 Traceback (most recent call last):
 ...
-TypeError: ...
+TypeError: ... not iterable
 >>> iter(~OneOf(1, 2, 3))
 Traceback (most recent call last):
 ...
-TypeError: ...
-
-@todo: revise documentation
+TypeError: ... not iterable
 """
 
 import inspect, sys
@@ -80,13 +77,14 @@ def _iterable (obj, *types) :
             break
 
 class Type (object) :
-    """Base class for all types.
+    """Base class for all types. Implements operations `&`, `|`, `-`,
+    `^` and `~` to build new types. Also implement the typechecking of
+    several values. All the subclasses should implement the method
+    `__contains__` to typecheck a single object.
 
-    Implement operations `&`, `|`, `-`, `^` and `~` to build new
-    types. Also implement the typechecking of several values. All the
-    subclasses should implement the method `__contains__` to typecheck
-    a single object.
+    This class is abstract and should not be instantiated.
     """
+    # apidoc skip
     def __init__ (self) :
         """Abstract method
 
@@ -98,9 +96,11 @@ class Type (object) :
         @raise NotImplementedError: when called
         """
         raise NotImplementedError("abstract class")
+    # apidoc skip
     def __eq__ (self, other) :
         return (self.__class__ == other.__class__
                 and self.__dict__ == other.__dict__)
+    # apidoc skip
     def __hash__ (self) :
         return hash(repr(self))
     def __and__ (self, other) :
@@ -173,6 +173,7 @@ class Type (object) :
         @rtype: `Type`
         """
         return _Invert(self)
+    # apidoc skip
     def __iterable__ (self) :
         """Called to test if a type is iterable
 
@@ -201,6 +202,7 @@ class Type (object) :
         return True
     __pnmltag__ = "type"
     _typemap = None
+    # apidoc skip
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Load a `Type` from a PNML tree
@@ -402,7 +404,7 @@ class _All (Type) :
         """Typecheck values.
 
         @param values: values that have to be checked
-        @type values: any objet
+        @type values: `objet`
         @return: `True`
         """
         return True
@@ -453,7 +455,7 @@ class _Nothing (Type) :
         """Typecheck values.
 
         @param values: values that have to be checked
-        @type values: any objet
+        @type values: `objet`
         @return: `False`
         """
         return False
@@ -481,11 +483,12 @@ class Instance (Type) :
         Instance(int)
 
         @param _class: the class of instance
-        @type _class: any class
+        @type _class: `class`
         @return: initialized object
         @rtype: `Instance`
         """
         self._class = _class
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -569,11 +572,16 @@ class TypeCheck (Type) :
     False
     """
     def __init__ (self, checker, iterate=None) :
-        """Initialize the type
+        """Initialize the type, optionally, a function to iterate over
+        the elements may be provided.
 
         >>> import operator
         >>> TypeCheck(operator.truth)
         TypeCheck(...truth)
+        >>> list(TypeCheck(operator.truth))
+        Traceback (most recent call last):
+          ...
+        ValueError: type not iterable
         >>> def true_values () : # enumerates only choosen values
         ...     yield True
         ...     yield 42
@@ -583,16 +591,19 @@ class TypeCheck (Type) :
         ...     yield {True: 42}
         >>> TypeCheck(operator.truth, true_values)
         TypeCheck(...truth, snakes.typing.true_values)
+        >>> list(TypeCheck(operator.truth, true_values))
+        [True, 42, '42', [42], (42,), {True: 42}]
 
         @param checker: a function that checks one value and returns
             `True` if it is in te type and `False` otherwise
-        @type checker: `function(value)->bool`
+        @type checker: `callable`
         @param iterate: `None` or an iterator over the values of the
             type
-        @type iterate: `None` or `iterator`
+        @type iterate: `generator`
         """
         self._check = checker
         self._iterate = iterate
+    # apidoc stop
     def __iter__ (self) :
         """
         >>> def odd (val) :
@@ -734,10 +745,11 @@ class OneOf (Type) :
     >>> 0 in OneOf(1, 2, 3, 4, 5)
     False
     """
+    # apidoc stop
     def __init__ (self, *values) :
         """
         @param values: the enumeration of the values in the type
-        @type values: any objects
+        @type values: `object`
         """
         self._values = values
     def __contains__ (self, value) :
@@ -830,19 +842,20 @@ class Collection (Type) :
         Collection(Instance(list), (Instance(int) | Instance(float)), min=3, max=10)
 
         @param collection: the collection type
-        @type collection: any container type
+        @type collection: `Type`
         @param items: the type of the items
-        @type items: any type
+        @type items: `Type`
         @param min: the smallest allowed value
-        @type min: any value in `items`
+        @type min: `object`
         @param max: the greatest allowed value
-        @type max: any value in `items`
+        @type max: `object`
         """
         self._collection = collection
         self._class = collection._class
         self._items = items
         self._max = max
         self._min = min
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -970,10 +983,12 @@ def List (items, min=None, max=None) :
 
     @param items: the type of the elements in the collection
     @type items: `Type`
-    @param min: the minimum number of elements in the collection
-    @type min: `int` or `None`
-    @param max: the maximum number of elements in the collection
-    @type max: `int` or `None`
+    @param min: the minimum number of elements in the collection or
+        `None`
+    @type min: `int`
+    @param max: the maximum number of elements in the collection or
+        `None`
+    @type max: `int`
     @return: a type that checks the given constraints
     @rtype: `Collection`
     """
@@ -987,10 +1002,12 @@ def Tuple (items, min=None, max=None) :
 
     @param items: the type of the elements in the collection
     @type items: `Type`
-    @param min: the minimum number of elements in the collection
-    @type min: `int` or `None`
-    @param max: the maximum number of elements in the collection
-    @type max: `int` or `None`
+    @param min: the minimum number of elements in the collection or
+        `None`
+    @type min: `int`
+    @param max: the maximum number of elements in the collection or
+        `None`
+    @type max: `int`
     @return: a type that checks the given constraints
     @rtype: `Collection`
     """
@@ -1004,10 +1021,12 @@ def Set (items, min=None, max=None) :
 
     @param items: the type of the elements in the collection
     @type items: `Type`
-    @param min: the minimum number of elements in the collection
-    @type min: `int` or `None`
-    @param max: the maximum number of elements in the collection
-    @type max: `int` or `None`
+    @param min: the minimum number of elements in the collection or
+        `None`
+    @type min: `int`
+    @param max: the maximum number of elements in the collection or
+        `None`
+    @type max: `int`
     @return: a type that checks the given constraints
     @rtype: `Collection`
     """
@@ -1031,15 +1050,16 @@ class Mapping (Type) :
         Mapping(Instance(int), Instance(float), Instance(hdict))
 
         @param keys: the type for the keys
-        @type keys: any type
+        @type keys: `Type`
         @param items: the type for the items
-        @type items: any type
+        @type items: `Type`
         @param _dict: the class that mapping must be instances of
-        @type _dict: any `dict` like class
+        @type _dict: `dict`
         """
         self._keys = keys
         self._items = items
         self._dict = _dict
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1152,6 +1172,7 @@ class Range (Type) :
         @type step: `int`
         """
         self._first, self._last, self._step = first, last, step
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1262,9 +1283,10 @@ class Greater (Type) :
         Greater(5)
 
         @param min: the greatest value not included in the type
-        @type min: any `object` that support comparison
+        @type min: `object`
         """
         self._min = min
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1342,9 +1364,10 @@ class GreaterOrEqual (Type) :
         GreaterOrEqual(5)
 
         @param min: the minimal allowed value
-        @type min: any `object` that support comparison
+        @type min: `object`
         """
         self._min = min
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1422,9 +1445,10 @@ class Less (Type) :
         Less(5)
 
         @param min: the smallest value not included in the type
-        @type min: any `object` that support comparison
+        @type min: `object`
         """
         self._max = max
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1497,10 +1521,11 @@ class LessOrEqual (Type) :
         LessOrEqual(5)
 
         @param min: the greatest value the type
-        @type min: any `object` that support comparison
+        @type min: `object`
         """
 
         self._max = max
+    # apidoc stop
     def __contains__ (self, value) :
         """Check wether a value is in the type.
 
@@ -1583,6 +1608,7 @@ class CrossProduct (Type) :
         """
         self._types = types
         _iterable(self, *types)
+    # apidoc stop
     def __repr__ (self) :
         """Return a string representation of the type suitable for `eval`
 
