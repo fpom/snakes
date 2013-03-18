@@ -1,10 +1,8 @@
-"""An implementation of the M-nets synchronisation.
-
-This plugins extends the basic Petri net model in order to provide an
-action-based synchronisation scheme that implements that of M-nets.
-The plugin proposes a generalisation of the M-nets synchronisation in
-that it does not impose a fixed correspondence between action names
-and action arities.
+"""This plugin provides an implementation of the action-based
+synchronisation from algebras of Petri nets. With respect to the usual
+definition of synchronisation, the plugin is slightly more general in
+that it does not impose a fixed arity for action. The extensions are
+as follows:
 
   * class `Action` corresponds to a synchronisable action, it has a
     name, a send/receive flag and a list of parameters. Actions have
@@ -12,60 +10,109 @@ and action arities.
     arity will be able to synchronise
   * class `MultiAction` corresponds to a multiset of actions. It is
     forbidden to build a multiaction that holds a pair of conjugated
-    actions (this leads to infinite nets when synchronising)
-  * Transition.__init__ accepts a parameter `actions` that is a
-    collection of instances of `Action`, this multiaction is added in
-    the attribute `actions` of the transition
-  * PetriNet is given new methods: `synchronise(action_name)` to
-    perform the M-net synchronisation, `restrict(action_name)` to
-    perform the restriction and `scope(action_name)` for the scoping
+    actions because this leads to infinite nets upon synchronisation
+  * the constructor of `Transition` accepts a parameter `actions` that
+    is a collection of instances of `Action`, this multiaction is
+    added in the attribute `actions` of the transition
+  * PetriNet is given new methods: `synchronise` to perform the
+    synchronisation, `restrict` to perform the restriction (ie, remove
+    transitions with a given action) and `scope` for the scoping (ie,
+    synchronisation followed by restriction)
 
-**Remark:** the instances of `Substitution` used in this plugins must
-map variable names to instances of `Variable` or `Value`, but not to
-other variable names.
+### Example ###
+
+Let's start with an example: we build a Petri net with two transitions
+in parallel that will be synchronised later on.
 
 >>> import snakes.plugins
 >>> snakes.plugins.load('synchro', 'snakes.nets', 'nets')
 <module ...>
->>> from nets import PetriNet, Place, Transition, Expression
+>>> from nets import *
 >>> n = PetriNet('N')
 >>> n.add_place(Place('e1'))
 >>> n.add_place(Place('x1'))
->>> n.add_transition(Transition('t1', guard=Expression('x!=y'),
-...                             actions=[Action('a', True, [Variable('x'), Value(2)]),
-...                                      Action('a', True, [Value(3), Variable('y')]),
-...                                      Action('b', False, [Variable('x'), Variable('y')])]))
+>>> m1 = [Action('a', True, [Variable('x'), Value(2)]),
+...       Action('b', True, [Value(3), Variable('y')]),
+...       Action('c', False, [Variable('x'), Variable('y')])]
+>>> print(', '.join(str(action) for action in m1))
+a!(x,2), b!(3,y), c?(x,y)
+>>> n.add_transition(Transition('t1', guard=Expression('x!=y'), actions=m1))
 >>> n.add_input('e1', 't1', Variable('x'))
 >>> n.add_output('x1', 't1', Variable('z'))
 >>> n.add_place(Place('e2'))
 >>> n.add_place(Place('x2'))
->>> n.add_transition(Transition('t2', guard=Expression('z>0'),
-...                             actions=[Action('a', False, [Variable('w'), Variable('y')]),
-...                                      Action('c', False, [Variable('z')])]))
+>>> m2 = [Action('a', False, [Variable('w'), Variable('y')]),
+...       Action('d', False, [Variable('z')])]
+>>> print(', '.join(str(action) for action in m2))
+a?(w,y), d?(z)
+>>> n.add_transition(Transition('t2', guard=Expression('z>0'), actions=m2))
 >>> n.add_input('e2', 't2', Variable('w'))
 >>> n.add_output('x2', 't2', Variable('z'))
 >>> n.transition('t1').vars() == set(['x', 'y', 'z'])
 True
->>> n.transition('t2').copy().vars() == set(['w', 'y', 'z'])
-True
->>> n.synchronise('a')
->>> for t in sorted(n.transition(), key=str) :
-...     print('%s %s' % (t, t.guard))
-...     for place, label in sorted(t.input(), key=str) :
-...         print('   %s >> %s' % (place, label))
-...     for place, label in sorted(t.output(), key=str) :
-...         print('   %s << %s' % (place, label))
-((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)] (...)
-...
-t2 z>0
-   e2 >> w
-   x2 << z
->>> n.restrict('a')
->>> [t.name for t in sorted(n.transition(), key=str)]
-["((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)]",
- "((t1{...}+t2{...})[a(...)]{...}+t2{...})[a(...)]"]
 
-@todo: revise documentation
+On transition `t1`, we have put a multiaction that can be abbreviated
+as `a!(x,2), a!(3,y), b?(x,y)` and can be interpreted as three
+synchronous communication performed atomically and simultaneously when
+`t1` fires:
+
+  * `a!(x,2)` emits `(x,2)` on channel `a`
+  * `b!(2,y)` emits `(2,y)` on channel `b`
+  * `c?(x,y)` receives `(x,y)` on channel `c`
+
+And similarly for transition `t2` that has two actions:
+
+  * `a?(w,y)` receives `(w,y)` on channel `a`
+  * `d?(z)` receives `z` on channel `d`
+
+Thus, `t1` and `t2` hold _conjugated actions_, which are matching
+emitting and receiving actions `a!(x,2)` and `a?(x,y)`. So we can
+synchronise the net on `a` which builds a new transition whose firing
+is exactly equivalent to the simultaneous firing of `t1` and `t2`
+performing the communications over channel `a`.
+
+>>> n.synchronise('a')
+>>> t = [t for t in n.transition() if t.name not in ('t1', 't2')][0]
+>>> print(t.name)
+a(w,2)@(t1[x=w,y=e,z=f]+t2[y=2])
+>>> print(t.guard)
+((w != e)) and ((z > 0))
+>>> print(', '.join(sorted(str(action) for action in t.actions)))
+b!(3,e), c?(w,e), d?(z)
+
+The second statement `t = ...` retrieves the new transition then we
+print its name and guard. The names can be read as: this is the result
+of execution action `a(w,2)` on `t1` substituted by `{x->w, y->e,
+z->f}` and `t2` substituted by `{y->2}`. Indeed, both transitions have
+variables `y` and `z`in common, so they are replaced in `t1` to avoid
+names clashes, then, actions a can be `a!(x,2)` and `a?(w,y)` can be
+matched by considering `x=w` and `y=2` which yields the rest of the
+substitutions for the transitions. The resulting transition results
+from the merging of the unified transitions, its guard is the `and` of
+the guards of the merged transitions and its multiaction is the union
+of the multiactions of the merged transitions minus the actions that
+did synchronise.
+
+The net now has three transitions: `t1`, `t2` and the new one
+resulting from the synchronisation. This allows both synchronous and
+asynchronous behaviour:
+
+>>> for t in sorted(t.name for t in n.transition()) :
+...     print(t)
+a(w,2)@(t1[x=w,y=e,z=f]+t2[y=2])
+t1
+t2
+
+If we want to force the synchronous behaviour, we have to restrict
+over `'a'` which removes any transition that hold an action `a?(...)`
+or `a!(...)`. In practice, this is what we want and so we may have
+used method `n.scope('a')` to apply directly the synchronisation
+followed by the restriction.
+
+>>> n.restrict('a')
+>>> for t in sorted(t.name for t in n.transition()) :
+...     print(t)
+a(w,2)@(t1[x=w,y=e,z=f]+t2[y=2])
 """
 
 from snakes import ConstraintError
@@ -77,15 +124,21 @@ from snakes.plugins import new_instance
 from snakes.compat import *
 
 class Action (object) :
+    """Models one action with a name, a direction (send or receive)
+    and parameters.
+    """
     def __init__ (self, name, send, params) :
-        """
+        """Constructor. The direction is passed as a Boolean: `True`
+        for a send action, `False` for a receive.
+
         @param name: the name of the action
         @type name: `str`
         @param send: a flag indicating whether this is a send or
             receive action
         @type send: `bool`
-        @param params: the list of parameters
-        @type params: `list` of `Variable` or `Value`
+        @param params: the list of parameters that must me instances
+            of `Variable` or `Value`
+        @type params: `list`
         """
         self.name = name
         self.send = send
@@ -99,13 +152,9 @@ class Action (object) :
         <pnml>...
          <action name="a" send="True">
           <value>
-           <object type="int">
-            1
-           </object>
+           <object type="int">1</object>
           </value>
-          <variable>
-           x
-          </variable>
+          <variable>x</variable>
          </action>
         </pnml>
         """
@@ -115,7 +164,7 @@ class Action (object) :
         for param in self.params :
             result.add_child(Tree.from_obj(param))
         return result
-    # apidoc skip
+    # apidoc stop
     @classmethod
     def __pnmlload__ (cls, tree) :
         """
@@ -138,7 +187,6 @@ class Action (object) :
             return "%s!(%s)" % (self.name, ",".join([str(p) for p in self]))
         else :
             return "%s?(%s)" % (self.name, ",".join([str(p) for p in self]))
-    # apidoc stop
     def __repr__ (self) :
         """
         >>> a = Action('a', True, [Value(1), Variable('x')])
@@ -213,9 +261,9 @@ class Action (object) :
         Action('a', True, [Value(3), Value(2)])
 
         @param subst: if not `None`, a substitution to apply to the
-            parameters of the copy
-        @type subst: `None` or `Substitution` mapping variables names
-            to `Value` or `Variable`
+            parameters of the copy mapping variables names to `Value`
+            or `Variable`
+        @type subst: `Substitution`
         @return: a copy of the action, substituted by `subst` if not
             `None`
         @rtype: `Action`
@@ -233,9 +281,9 @@ class Action (object) :
         >>> a
         Action('a', True, [Value(3), Value(2)])
 
-        @param subst: a substitution to apply to the parameters
-        @type subst: `Substitution` mapping variables names to `Value`
-            or `Variable`
+        @param subst: a substitution to apply to the parameters,
+            mapping variables names to `Value` or `Variable`
+        @type subst: `Substitution`
         """
         for i, p in enumerate(self.params) :
             if isinstance(p, Variable) and p.name in subst :
@@ -320,16 +368,29 @@ class Action (object) :
         return result
 
 class MultiAction (object) :
+    """Models a multiset of actions.
+    """
     def __init__ (self, actions) :
-        """
+        """The only restriction when building a multiaction is to
+        avoid putting two conjugated actions in it. Indeed, this may
+        lead to infinite Petri nets upon synchronisation. For example,
+        consider two transitions `t1` and `t2` with both `a?()` and
+        `a!()` in their multiactions. We can synchronise say `a?()`
+        from `t1` with `a!()` from `t2` yielding a transition whose
+        multiaction has `a!()` from `t1` and `a?() from `t2` and thus
+        can be synchronised with `t1` or `t2`, yielding a new
+        transition with `a?()` and `a!()`, etc. Fortunately, it makes
+        little sense to let a transition synchronise with itself, so
+        this situation is simply forbidden.
+
         >>> try : MultiAction([Action('a', True, [Variable('x')]),
         ...                    Action('a', False, [Value(2)])])
         ... except ConstraintError : print(sys.exc_info()[1])
         conjugated actions in the same multiaction
 
-        @param actions: a collection of actions with no conjugated
-            actions in it
-        @type actions: `list` of `Action`
+        @param actions: a collection of `Action` instances with no
+            conjugated actions in it
+        @type actions: `iterable`
         """
         self._actions = []
         self._sndrcv = {}
@@ -337,6 +398,7 @@ class MultiAction (object) :
         for act in actions :
             self.add(act)
     __pnmltag__ = "multiaction"
+    # apidoc stop
     def __pnmldump__ (self) :
         """
         >>> MultiAction([Action('a', True, [Variable('x')]),
@@ -346,18 +408,12 @@ class MultiAction (object) :
         <pnml>...
          <multiaction>
           <action name="a" send="True">
-           <variable>
-            x
-           </variable>
+           <variable>x</variable>
           </action>
           <action name="b" send="False">
-           <variable>
-            y
-           </variable>
+           <variable>y</variable>
            <value>
-            <object type="int">
-             2
-            </object>
+            <object type="int">2</object>
            </value>
           </action>
          </multiaction>
@@ -472,14 +528,11 @@ class MultiAction (object) :
 
         @param subst: if not `None`, the substitution to apply to the
             copy.
-        @type subst: `None` or `Substitution`
+        @type subst: `Substitution`
         @return: a copy of the multiaction, optionally substituted
         @rtype: `MultiAction`
         """
-        result = self.__class__(act.copy() for act in self._actions)
-        if subst is not None :
-            result.substitute(subst)
-        return result
+        return self.__class__(act.copy(subst) for act in self._actions)
     def __contains__ (self, action) :
         """Search an action in the multiaction.
 
@@ -504,7 +557,7 @@ class MultiAction (object) :
 
         @param action: an complete action, or its name or its name and
             send flag
-        @type action: `Action` or `str` or `tuple(str, bool)`
+        @type action: `Action`
         @return: `True` if the specified action was found, `False`
             otherwise
         @rtype: `bool`
@@ -590,13 +643,24 @@ class MultiAction (object) :
         for action in self._actions :
             result.update(action.vars())
         return result
-    def synchronise (self, other, name) :
+    def names (self) :
+        """Return the set of action names used in the multiaction.
+
+        >>> MultiAction([Action('a', True, [Variable('x'), Value(2)]),
+        ...              Action('a', True, [Value(3), Variable('y')]),
+        ...              Action('b', False, [Variable('x'), Variable('z')])]).names() == set(['a', 'b'])
+        True
+
+        @return: the set of variable names
+        @rtype: `set` of `str`
+        """
+        return set([action.name for action in self._actions])
+    def synchronise (self, other, name, common, allnames) :
         """Search all the possible synchronisation on an action name with
         another multiaction.
 
         This method returns an iterator that yields for each possible
         synchronisation a 4-tuple whose components are:
-
 
 
           * the sending action that did synchronise, it is already
@@ -614,43 +678,58 @@ class MultiAction (object) :
         ...                  Action('b', False, [Variable('x'), Variable('y')])])
         >>> n = MultiAction([Action('a', False, [Variable('w'), Variable('y')]),
         ...                  Action('c', False, [Variable('y')])])
-        >>> for a, x, u, v in m.synchronise(n, 'a') :
-        ...    print('%s %s %s %s' % (str(a), str(x), list(sorted(u.items())), list(sorted(v.items()))))
-        a!(w,2) [a!(3,y), b?(w,y), c?(a)] [('a', Value(2)), ('x', Variable('w'))] [('a', Value(2)), ('x', Variable('w')), ('y', Variable('a'))]
-        a!(3,a) [a!(x,2), b?(x,a), c?(a)] [('w', Value(3)), ('y', Variable('a'))] [('w', Value(3)), ('y', Variable('a'))]
+        >>> _m, _n = m.vars(), n.vars()
+        >>> for a, x, u, v in m.synchronise(n, 'a', _m & _n, _m | _n) :
+        ...    print('%s %s' % (str(a), str(x)))
+        ...    print(list(sorted(u.items())))
+        ...    print(list(sorted(v.items())))
+        a!(w,2) [a!(3,d), b?(w,d), c?(2)]
+        [('x', Variable('w')), ('y', Variable('d'))]
+        [('x', Variable('w')), ('y', Value(2))]
+        a!(3,y) [a!(x,2), b?(x,y), c?(y)]
+        [('d', Variable('y')), ('w', Value(3)), ('y', Variable('d'))]
+        [('d', Variable('y')), ('w', Value(3))]
 
         @param other: the other multiaction to synchronise with
         @type other: `MultiAction`
         @param name: the name of the action to synchronise on
         @type name: `str`
+        @param common: the set of names in common on both transitions
+        @type common: `set`
+        @param allnames: the set of all names involved in the transitions
+        @type allnames: `set`
         @return: an iterator over the possible synchronisations
         @rtype: iterator of `tuple(Action, MultiAction, Substitution,
             Substitution)`
         """
         renamer = Substitution()
-        common = self.vars() & other.vars()
-        if len(common) > 0 :
-            names = WordSet(common)
+        if common :
+            names = WordSet(set(allnames) | self.names() | other.names())
             for var in common :
                 renamer += Substitution({var : Variable(names.fresh(add=True))})
         for left in (act for act in self._actions if act.name == name) :
             for right in (act for act in other._actions if act.name == name
                           if act.send != left.send) :
-                _right = right.copy(renamer)
+                _left = left.copy(renamer)
                 try :
-                    unifier = left & _right
+                    unifier = _left & right
                 except :
                     continue
-                _unifier = unifier * renamer
-                _self = self - left
+                _self = self.copy(renamer) - _left
                 _self.substitute(unifier)
                 _other = other - right
-                _other.substitute(_unifier)
-                yield left.copy(unifier), _self + _other, unifier, _unifier
+                _other.substitute(unifier)
+                yield (_left.copy(unifier), _self + _other,
+                       unifier * renamer, unifier)
 
 @snakes.plugins.plugin("snakes.nets")
 def extend (module) :
     class Transition (module.Transition) :
+        """Class `Transition` is extended to allow a keyword argument
+        `actions` in several of its methods `__init__` and `copy` (to
+        replace a multiaction upon copy).
+        """
+        # apidoc stop
         def __init__ (self, name, guard=None, **args) :
             self.actions = MultiAction(args.pop("actions", []))
             module.Transition.__init__(self, name, guard, **args)
@@ -677,18 +756,12 @@ def extend (module) :
              <transition id="t">
               <multiaction>
                <action name="a" send="True">
-                <variable>
-                 x
-                </variable>
+                <variable>x</variable>
                </action>
                <action name="b" send="False">
-                <variable>
-                 y
-                </variable>
+                <variable>y</variable>
                 <value>
-                 <object type="int">
-                  2
-                 </object>
+                 <object type="int">2</object>
                 </value>
                </action>
               </multiaction>
@@ -713,6 +786,13 @@ def extend (module) :
             return result
     class PetriNet (module.PetriNet) :
         def synchronise (self, name) :
+            """Synchronise the net wrt `name`.
+
+            @param name: the action name to be synchronised
+            @type name: `str`
+            @return: the synchronised Petri net
+            @rtype: `PetriNet`
+            """
             snd = []
             rcv = []
             for trans in self.transition() :
@@ -729,11 +809,17 @@ def extend (module) :
                         if (_snd.name, _rcv.name) in done :
                             continue
                         try :
-                            new = _snd.actions.synchronise(_rcv.actions, name)
+                            _s, _r = _snd.vars(), _rcv.vars()
+                            new = _snd.actions.synchronise(_rcv.actions,
+                                                           name,
+                                                           _s & _r, _s | _r)
                         except ConstraintError :
                             continue
                         for a, m, s, r in new :
-                            t = self._synchronise(_snd, s, _rcv, r, m, a)
+                            t = self._synchronise(
+                                _snd, s.restrict(_snd.vars()),
+                                _rcv, r.restrict(_rcv.vars()),
+                                m, a)
                             if (name, True) in t.actions :
                                 snd.append(t)
                                 loop = True
@@ -742,17 +828,14 @@ def extend (module) :
                                 loop = True
                         done.add((_snd.name, _rcv.name))
         def _synchronise (self, snd, s, rcv, r, actions, sync) :
+            def _str (binding) :
+                return ",".join("%s=%s" % i for i in sorted(binding.items()))
             collect = []
-            varset = WordSet()
             for trans, subst in ((snd, s), (rcv, r)) :
-                new = "%s%s" % (trans.name, str(subst))
+                new = "%s[%s]" % (trans.name, _str(subst))
                 self.copy_transition(trans.name, new)
                 collect.append(new)
                 new = self.transition(new)
-                nv = new.vars()
-                for v in varset & nv :
-                    new.substitute(Substitution({v : varset.fresh(add=True)}))
-                varset.update(nv)
                 for var, val in subst.items() :
                     if isinstance(val, Variable) :
                         new.substitute(Substitution({var : val.name}))
@@ -766,21 +849,49 @@ def extend (module) :
                             self.remove_output(place.name, new.name)
                             self.add_output(place.name, new.name,
                                             label.replace(Variable(var), val))
-            merged = "(%s%s+%s%s)[%s]" % (snd.name, str(s), rcv.name, str(s),
-                                          str(sync).replace("?", "").replace("!", ""))
+                new.substitute(subst)
+            merged = ("%s@(%s)" %
+                      (str(sync).replace("?", "").replace("!", ""),
+                       "+".join(collect)))
             self.merge_transitions(merged, collect, actions=actions)
             for name in collect :
                 self.remove_transition(name)
             return self.transition(merged)
-        def restrict (self, action) :
+        def restrict (self, name) :
+            """Restrict the net wrt `name`.
+
+            @param name: the action name to be synchronised
+            @type name: `str`
+            @return: the synchronised Petri net
+            @rtype: `PetriNet`
+            """
             removed = [trans.name for trans in self.transition()
-                       if action in trans.actions]
+                       if name in trans.actions]
             for trans in removed :
                 self.remove_transition(trans)
-        def scope (self, action) :
-            self.synchronise(action)
-            self.restrict(action)
+        def scope (self,  name) :
+            """Scope the net wrt `name`, this is equivalent to apply
+            synchronisation followed by restriction on the same
+            `name`.
+
+            @param name: the action name to be synchronised
+            @type name: `str`
+            @return: the synchronised Petri net
+            @rtype: `PetriNet`
+            """
+
+            self.synchronise(name)
+            self.restrict(name)
         def merge_transitions (self, target, sources, **args) :
+            """Accepts a keyword parameter `actions` to change the
+            multiaction of the resulting transition. If `actions` is
+            not given, the multiaction of the new transition is the
+            sum of the multiactions of the merged transition.
+
+            @keyword actions: the multiaction of the transition
+                resulting from the merge
+            @type actions: `MultiAction`
+            """
             actions = args.pop("actions", None)
             module.PetriNet.merge_transitions(self, target, sources, **args)
             if actions is None :
@@ -791,6 +902,15 @@ def extend (module) :
             else :
                 self.transition(target).actions = MultiAction(actions)
         def copy_transition (self, source, targets, **args) :
+            """Accepts a keyword parameter `actions` to change the
+            multiaction of the resulting transition. If `actions` is
+            not given, the multiaction of the new transition is the
+            the same multiaction as the copied transition.
+
+            @keyword actions: the multiaction of the transition
+                resulting from the copy
+            @type actions: `MultiAction`
+            """
             actions = args.pop("actions", None)
             module.PetriNet.copy_transition(self, source, targets, **args)
             if actions is None :

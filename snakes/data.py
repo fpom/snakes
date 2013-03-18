@@ -895,6 +895,25 @@ class Substitution (object) :
         for var in other :
             res._dict[var] = self(other(var))
         return res
+    def restrict (self, domain) :
+        """Restrict the substitution to `domain`, ie remove all
+        elements that are not in `domain`. Note that `domain` may
+        include names that are not in the substitution, they are
+        simply ignored.
+
+        >>> s = Substitution(a=1, b=2, c=3, d=4).restrict(['a', 'b', 'z'])
+        >>> list(sorted(s.domain()))
+        ['a', 'b']
+
+        @param domain: the new domain as a set/list/... of names
+        @type domain: `iterable`
+        @return: the restricted substitution
+        @rtype: `Substitution`
+        """
+        result = self.copy()
+        for name in result.domain() - set(domain) :
+            result._dict.pop(name, None)
+        return result
 
 class Symbol (object) :
     """A symbol that may be used as a constant

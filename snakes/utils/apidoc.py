@@ -382,7 +382,7 @@ class DocExtract (object) :
                                    % (info["type"].get(arg, "object").strip("`"),
                                       arg))
             for kw, text in sorted(info["keyword"].items()) :
-                self.writelist("`%s`: %s" % (kw, text))
+                self.writelist("keyword `%s`: %s" % (kw, text))
             if any(k in info for k in ("return", "rtype")) :
                 if "return" in info :
                     self.writelist("`return %s`: %s"

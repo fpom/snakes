@@ -1,7 +1,7 @@
-"""Draw Petri nets using PyGraphViz
+"""Adds methods to draw `PetriNet` and `StateGraph` instances using
+GraphViz.
 
-  * adds a method `draw` to `PetriNet` and `StateGraph` that creates
-    a drawing of the object in a file.
+For example, let's first define a Petri net:
 
 >>> import snakes.plugins
 >>> snakes.plugins.load('gv', 'snakes.nets', 'nets')
@@ -16,18 +16,35 @@
 >>> n.add_output('p11', 't10', Expression('x+1'))
 >>> n.add_input('p11', 't01', Variable('y'))
 >>> n.add_output('p00', 't01', Expression('y-1'))
+
+Thanks to plugin `gv`, we can draw it using the various engines of
+GraphViz; we can also draw the state graph:
+
 >>> for engine in ('neato', 'dot', 'circo', 'twopi', 'fdp') :
 ...     n.draw(',test-gv-%s.png' % engine, engine=engine)
 >>> s = StateGraph(n)
 >>> s.build()
 >>> s.draw(',test-gv-graph.png')
->>> for node in sorted(n.node(), key=str) :
+
+The plugin also allows to layout the nodes without drawing the net
+(this is only available for `PetriNet`, not for `StateGraph`). We
+first move every node to position `(-100, -100)`; then, we layout the
+net; finally, we check that every node has indeed been moved away from
+where we had put it:
+
+>>> for node in n.node() :
 ...     node.pos.moveto(-100, -100)
+>>> all(node.pos.x == node.pos.y == -100 for node in n.node())
+True
 >>> n.layout()
->>> any(node.pos == (-100, -100) for node in sorted(n.node(), key=str))
+>>> any(node.pos.x == node.pos.y == -100 for node in n.node())
 False
 
-@todo: revise documentation
+@note: setting nodes position has no influence on how a net is drawn:
+    GraphViz will redo the layout in any case. Method `layout` is here
+    just in the case you would need a layout of your nets.
+@note: this plugin depens on plugins `pos` and `clusters` (that are
+    automatically loaded)
 """
 
 import os, os.path, subprocess, collections
@@ -35,6 +52,7 @@ import snakes.plugins
 from snakes.plugins.clusters import Cluster
 from snakes.compat import *
 
+# apidoc skip
 class Graph (Cluster) :
     def __init__ (self, attr) :
         Cluster.__init__(self)
@@ -150,37 +168,56 @@ class Graph (Cluster) :
                                 "snakes.plugins.pos"])
 def extend (module) :
     class PetriNet (module.PetriNet) :
-        "An extension with a method `draw`"
-        def draw (self, filename=None, engine="dot", debug=False,
+        "An extension with methods `draw` and `layout`"
+        def draw (self, filename, engine="dot", debug=False,
                   graph_attr=None, cluster_attr=None,
                   place_attr=None, trans_attr=None, arc_attr=None) :
-            """
-            @param filename: the name of the image file to create or
-                `None` if only the computed graph is needed
-            @type filename: `None` or `str`
-            @param engine: the layout engine to use: 'dot' (default),
-                'neato', 'circo', 'twopi' or 'fdp'
+            """Draw the Petri net to a picture file. How the net is
+            rendered can be controlled using the arguments `..._attr`.
+            For instance, to draw place in red with names in
+            uppercase, and hide True guards, we can proceed as
+            follows:
+
+            >>> import snakes.plugins
+            >>> snakes.plugins.load('gv', 'snakes.nets', 'nets')
+            <module ...>
+            >>> from nets import *
+            >>> n = PetriNet('N')
+            >>> n.add_place(Place('p'))
+            >>> n.add_transition(Transition('t'))
+            >>> n.add_input('p', 't', Value(dot))
+            >>> def draw_place (place, attr) :
+            ...     attr['label'] = place.name.upper()
+            ...     attr['color'] = '#FF0000'
+            >>> def draw_transition (trans, attr) :
+            ...     if str(trans.guard) == 'True' :
+            ...         attr['label'] = trans.name
+            ...     else :
+            ...         attr['label'] = '%s\\n%s' % (trans.name, trans.guard)
+            >>> n.draw(',net-with-colors.png',
+            ...        place_attr=draw_place, trans_attr=draw_transition)
+
+            @param filename: the name of the image file to create
+            @type filename: `str`
+            @param engine: the layout engine to use: `'dot'` (default),
+                `'neato'`, `'circo'`, `'twopi'` or `'fdp'`
             @type engine: `str`
             @param place_attr: a function to format places, it will be
                 called with the place and its attributes dict as
                 parameters
-            @type place_attr: `function(Place,dict)->None`
+            @type place_attr: `callable`
             @param trans_attr: a function to format transitions, it
                 will be called with the transition and its attributes
                 dict as parameters
-            @type trans_attr: `function(Transition,dict)->None`
+            @type trans_attr: `callable`
             @param arc_attr: a function to format arcs, it will be
                 called with the label and its attributes dict as
                 parameters
-            @type arc_attr: `function(ArcAnnotation,dict)->None`
+            @type arc_attr: `callable`
             @param cluster_attr: a function to format clusters of
                 nodes, it will be called with the cluster and its
                 attributes dict as parameters
-            @type cluster_attr:
-                `function(snakes.plugins.clusters.Cluster,dict)->None`
-            @return: `None` if `filename` is not `None`, the computed
-                graph otherwise
-            @rtype: `None` or `pygraphviz.AGraph`
+            @type cluster_attr: `callable`
             """
             nodemap = dict((node.name, "node_%s" % num)
                            for num, node in enumerate(self.node()))
@@ -236,17 +273,51 @@ def extend (module) :
         def layout (self, xscale=1.0, yscale=1.0, engine="dot",
                     debug=False, graph_attr=None, cluster_attr=None,
                     place_attr=None, trans_attr=None, arc_attr=None) :
+            """Layout the nodes of the Petri net by calling GraphViz
+            and reading back the picture it creates. The effect is to
+            change attributes `pos` (see plugin `pos`) for every node
+            according to the positions calculated by GraphViz.
+
+            @param xscale: how much the image is scaled in the
+                horizontal axis after GraphViz has done the layout
+            @type xscale: `float`
+            @param yscale: how much the image is scaled in the
+                vertical axis after GraphViz has done the layout
+            @type yscale: `float`
+            @param filename: the name of the image file to create
+            @type filename: `str`
+            @param engine: the layout engine to use: `'dot'` (default),
+                `'neato'`, `'circo'`, `'twopi'` or `'fdp'`
+            @type engine: `str`
+            @param place_attr: a function to format places, it will be
+                called with the place and its attributes dict as
+                parameters
+            @type place_attr: `callable`
+            @param trans_attr: a function to format transitions, it
+                will be called with the transition and its attributes
+                dict as parameters
+            @type trans_attr: `callable`
+            @param arc_attr: a function to format arcs, it will be
+                called with the label and its attributes dict as
+                parameters
+            @type arc_attr: `callable`
+            @param cluster_attr: a function to format clusters of
+                nodes, it will be called with the cluster and its
+                attributes dict as parameters
+            @type cluster_attr: `callable`
+            """
             g = self.draw(None, engine, debug, graph_attr, cluster_attr,
                           place_attr, trans_attr, arc_attr)
             node = dict((v, k) for k, v in g.nodemap.items())
             for n, x, y in g.layout(engine, debug) :
                 self.node(node[n]).pos.moveto(x*xscale, y*yscale)
-
     class StateGraph (module.StateGraph) :
         "An extension with a method `draw`"
-        def draw (self, filename=None, engine="dot", debug=False,
+        def draw (self, filename, engine="dot", debug=False,
                   node_attr=None, edge_attr=None, graph_attr=None) :
-            """@param filename: the name of the image file to create or
+            """Draw the state graph to a picture file.
+
+            @param filename: the name of the image file to create or
                 `None` if only the computed graph is needed
             @type filename: `None` or `str`
             @param engine: the layout engine to use: 'dot' (default),
@@ -255,19 +326,16 @@ def extend (module) :
             @param node_attr: a function to format nodes, it will be
                 called with the state number, the `StateGraph` object
                 and attributes dict as parameters
-            @type node_attr: `function(int,StateGraph,dict)->None`
+            @type node_attr: `callable`
             @param edge_attr: a function to format edges, it will be
                 called with the transition, its mode and attributes
                 dict as parameters
             @type trans_attr:
-                `function(Transition,Substitution,dict)->None`
+                `callable`
             @param graph_attr: a function to format grapg, it will be
                 called with the state graphe and attributes dict as
                 parameters
-            @type graph_attr: `function(StateGraph,dict)->None`
-            @return: `None` if `filename` is not `None`, the computed
-                graph otherwise
-            @rtype: `None` or `pygraphviz.AGraph`
+            @type graph_attr: `callable`
             """
             attr = dict(style="invis",
                         splines="true")
