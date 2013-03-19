@@ -1,10 +1,13 @@
-"""A module to save and load objects in PNML.
+"""This module allows to save and load objects in PNML. The standard
+is correctly handled for low-level nets, ie, nets with only `True`
+guards and black tokens. However, module `snakes.pnml` was actually
+created long before the PNML standard was extended to handle
+high-level nets (in particular coloured variants) and so the standard
+is not respected in this case. Consequently, in the following, we
+abuse the term PNML for the XML produced and read by SNAKES.
 
-Petri nets objects are saved in PNML, other Python objects are saved
-in a readable format when possible and pickled as a last solution.
-This should result in a complete PNML serialization of any object.
-
-@todo: revise documentation
+@warning: this module will be replaced in a future version of SNAKES,
+    so its documentation will be kept minimal.
 """
 
 import xml.dom.minidom
@@ -160,6 +163,7 @@ class _set (object) :
         """
         return len(self._data)
 
+# apidoc skip
 class Tree (object) :
     """Abstraction of a PNML tree
 
@@ -911,7 +915,9 @@ class Tree (object) :
         raise SnakesError("unsupported PNML tag '%s'" % self.name)
 
 def dumps (obj) :
-    """Dump an object to a PNML string
+    """Dump an object to a PNML string, any Python object may be
+    serialised this way (resorting to pickling when the object does
+    not support serialisation to PNML).
 
     >>> print(dumps(42))
     <?xml version="1.0" encoding="utf-8"?>

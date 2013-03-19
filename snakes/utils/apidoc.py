@@ -24,9 +24,9 @@ at SNAKES source code. However, let's note a few points:
   * most Epydoc fields are supported: `@param`, `@type`, `@note`, ...
   * directive `# apidoc skip` allow not to include the next object in
     the generated documentation
-  * directive `apidoc stop` allow to stop the processing of current
+  * directive `# apidoc stop` allow to stop the processing of current
     object (module or class)
-  * directive `apidoc include 'filename' lang='language'` allow to
+  * directive `# apidoc include 'filename' lang='language'` allow to
     include the content of a file as a block of source code in the
     specified language
   * when statement `pass` is found in a doctest, the rest of the
@@ -38,11 +38,12 @@ at SNAKES source code. However, let's note a few points:
     options nor customisation, however, it is quite flexible already
     by the way it handles documentation
 
-@note: we do not build doc for the sub-modules of `snakes.lang`
-    because some of them are programmed for distinct versions of
-    Python with incompatible syntaxes. So `apidoc` will fail for sure
-    on one or another of these modules. Fortunately, most of the
-    documentation for `snakes.lang` is in the package itself.
+@note: in the example above we do not build doc for the sub-modules of
+    `snakes.lang` because some of them are programmed for distinct
+    versions of Python with incompatible syntaxes. So `apidoc` will
+    fail for sure on one or another of these modules. Fortunately,
+    most of the documentation for `snakes.lang` is in the package
+    itself.
 @note: for better rendering, `apidoc` uses [Python
     Markdown](http://pythonhosted.org/Markdown), however, it will
     handle situations when it is not installed
@@ -578,10 +579,11 @@ class DocExtract (object) :
             for exc, reason in sorted(info["raise"].items()) :
                 self.writelist("`%s`: %s" % (exc, reason))
             self.newline()
-    def write_include (self, name, lang="python") :
+    def write_include (self, name, lang="python", first=1, last=-1) :
         """Write a block of source code included through directive
         `apidoc include ...`
         """
+        first, last = int(first), int(last)
         if os.path.exists(name) :
             path = name
         else :
@@ -591,8 +593,9 @@ class DocExtract (object) :
         with open(path) as infile :
             self.newline()
             self.writeline("    :::%s" % lang)
-            for line in infile :
-                self.writeline("    " + line.rstrip())
+            for i, line in enumerate(infile) :
+                if first <= i+1 and (last == -1 or i+1 <= last) :
+                    self.writeline("    " + line.rstrip())
             self.newline()
 
 def main (finder, args, source=None) :

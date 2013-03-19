@@ -1,6 +1,6 @@
 from snakes.lang.ctlstar.parser import parse
 from snakes.lang.ctlstar import asdl as ast
-from snakes.lang import getvars, bind
+from snakes.lang import bind
 import _ast
 
 class SpecError (Exception) :
@@ -53,7 +53,7 @@ class Builder (object) :
             node.atomic = (isinstance(node.op, ast.Not)
                            and node.child.atomic)
         else :
-            assert False, "how did we get there?"
+            raise SpecError(node, "not a CTL* formula")
         return node
     def _build_place (self, param, ctx) :
         if isinstance(param, ast.Parameter) :
@@ -144,9 +144,7 @@ class Builder (object) :
         del new.params[:]
         return new
 
-def build (spec, main=None) :
-    b = Builder(spec)
-    if main is None :
-        return b.build(spec.main)
-    else :
-        return b.build(main)
+def build (spec) :
+    if isinstance(spec, str) :
+        spec = parse(spec)
+    return Builder(spec).build(spec.main)
