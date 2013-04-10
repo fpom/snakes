@@ -17,7 +17,11 @@ def doc_files() :
 
 if __name__ == "__main__" :
     print("Compiling Emacs files...")
-    os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el")
+    if os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el") :
+        emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el",
+                                            "utils/abcd-mode.elc"])]
+    else :
+        emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el"])]
     #
     setup(name="SNAKES",
           version=open("VERSION").read().strip(),
@@ -47,7 +51,5 @@ if __name__ == "__main__" :
                     "snakes.utils.abcd",
                     "snakes.utils.ctlstar",
                     ],
-          data_files=(doc_files()
-                      + [("share/emacs/site-lisp", ["utils/abcd-mode.el",
-                                                    "utils/abcd-mode.elc"])]),
+          data_files=doc_files() + emacs,
           )

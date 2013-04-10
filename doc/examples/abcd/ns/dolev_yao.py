@@ -11,7 +11,7 @@ class Nonce (object) :
     def __str__ (self) :
         return self.__repr__()
     def __repr__ (self) :
-        return "Nonce(%x)" % self._agent
+        return "Nonce(%s)" % self._agent
 
 def _cross (sets) :
     if len(sets) == 0 :
