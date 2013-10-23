@@ -229,6 +229,7 @@ class PidEnv (dict) :
         dict.__init__(self)
         self.killed = set()
         self.spawned = defaultdict(list)
+        self.next = {}
         self._vars = set()
         self(prog)
     def __call__ (self, prog) :
@@ -256,11 +257,15 @@ def extend (module) :
     class Transition (snk.Transition) :
         def __init__ (self, name, guard=None, **args) :
             self.pids = PidEnv(args.pop("pids", ""))
+            vars = WordSet(self.pids.vars())
             if self.pids.spawned :
                 assign = []
                 for parent, children in self.pids.spawned.items() :
+                    pidcount = vars.fresh(add=True, base="next_%s" % parent)
+                    self.pids.next[parent] = pidcount
                     for n, child in enumerate(children) :
-                        assign.append("%s=%s.next(%s)" % (child, parent, n))
+                        assign.append("%s=%s.next(%s+%s)"
+                                      % (child, parent, n, pidcount))
                 if guard is None :
                     guard = snk.Expression("newpids(%s)" % ", ".join(assign))
                 else :
@@ -272,7 +277,6 @@ def extend (module) :
     class PetriNet (snk.PetriNet) :
         def __init__ (self, name, **args) :
             snk.PetriNet.__init__(self, name, **args)
-            self.globals["newpids"] = snk.let
             self.nextpids, nextpids = None, args.pop("nextpids", "nextpids")
             self.add_place(snk.Place(nextpids, [], tNextPid))
             self.nextpids = nextpids
@@ -284,9 +288,8 @@ def extend (module) :
         def add_transition (self, trans, **args) :
             snk.PetriNet.add_transition(self, trans, **args)
             cons, prod = {}, {}
-            vars = WordSet(trans.vars())
             for parent, children in trans.pids.spawned.items() :
-                pidcount = vars.fresh(add=True, base="next_%s" % parent)
+                pidcount = trans.pids.next[parent]
                 cons[parent] = snk.Tuple([snk.Variable(parent),
                                           snk.Variable(pidcount)])
                 prod[parent] = snk.Tuple([snk.Variable(parent),
@@ -310,4 +313,4 @@ def extend (module) :
             elif len(cons) == 1 :
                 self.add_output(self.nextpids, trans.name,
                                 iter(prod.values()).next())
-    return PetriNet, Transition, Pid
+    return PetriNet, Transition, Pid, ("tPid", tPid), ("tNextPid", tNextPid)
