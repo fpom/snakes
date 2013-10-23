@@ -1040,43 +1040,6 @@ class Expression (ArcAnnotation) :
     def __hash__ (self) :
         return hash(self._str.strip())
 
-def let (**args) :
-    """A dirty trick to allow side effects in expressions
-
-    Assignement takes place when method `bind` of the expression is
-    called. Assigned variables are then stored in the `Substitution`
-    passed to `bind`. This is useful in some cases when you want to
-    repeat a computation in several output arcs: you do it once in the
-    guard and then use the bounded variable on the output arcs.
-
-    >>> n = PetriNet('n')
-    >>> n.globals['let'] = let
-    >>> t = Transition('t', Expression('x is not None and let(foo=42)'))
-    >>> n.add_transition(t)
-    >>> n.add_place(Place('p', [dot]))
-    >>> n.add_input('p', 't', Variable('x'))
-    >>> t.modes() == [Substitution(x=dot, foo=42)]
-    True
-
-    Note in the example above that `let` is not known by default, you
-    have to import it explicitly in the global environment of your
-    `PetriNet` (line 2). This is intended so it is clear that you
-    known what you do.
-
-    @param args: a list of `name=value` to assign
-    @return: `True` if assignment could be made, `False` otherwise
-    @rtype: `bool`
-    @warning: use with care, sides effects are nasty tricks, you may
-        get unexpected results while playing with `let`
-    """
-    try :
-        __binding__ = inspect.stack()[1][0].f_locals["__binding__"]
-        for name, value in args.items() :
-            __binding__[name] = value
-    except :
-        return False
-    return True
-
 class MultiArc (ArcAnnotation) :
     """A collection of other annotations, allowing to consume or produce
     several tokens at once.
