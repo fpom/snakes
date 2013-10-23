@@ -277,6 +277,7 @@ def extend (module) :
     class PetriNet (snk.PetriNet) :
         def __init__ (self, name, **args) :
             snk.PetriNet.__init__(self, name, **args)
+            self.globals["newpids"] = self.globals["let"]
             self.nextpids, nextpids = None, args.pop("nextpids", "nextpids")
             self.add_place(snk.Place(nextpids, [], tNextPid))
             self.nextpids = nextpids
