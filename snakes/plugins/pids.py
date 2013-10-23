@@ -249,7 +249,8 @@ class PidEnv (dict) :
     def vars (self) :
         return set(self._vars)
 
-@snakes.plugins.plugin("snakes.nets")
+@snakes.plugins.plugin("snakes.nets",
+                       depends=["snakes.plugins.let"])
 def extend (module) :
     snk = module
     class Transition (snk.Transition) :
