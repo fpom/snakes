@@ -286,7 +286,7 @@ def extend (module) :
         def add_place (self, place, **args) :
             if place.name == self.nextpids :
                 raise ConstraintError("reserved place name %r"
-                                      % self.netxpids)
+                                      % self.nextpids)
             snk.PetriNet.add_place(self, place, **args)
         def add_transition (self, trans, **args) :
             snk.PetriNet.add_transition(self, trans, **args)
