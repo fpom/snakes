@@ -251,7 +251,8 @@ class PidEnv (dict) :
         return set(self._vars)
 
 @snakes.plugins.plugin("snakes.nets",
-                       depends=["snakes.plugins.let"])
+                       depends=["snakes.plugins.let",
+                                "snakes.plugins.status"])
 def extend (module) :
     snk = module
     class Transition (snk.Transition) :
@@ -279,7 +280,8 @@ def extend (module) :
             snk.PetriNet.__init__(self, name, **args)
             self.globals["newpids"] = self.globals["let"]
             self.nextpids, nextpids = None, args.pop("nextpids", "nextpids")
-            self.add_place(snk.Place(nextpids, [], tNextPid))
+            self.add_place(snk.Place(nextpids, [], tNextPid,
+                                     status=snk.buffer(nextpids)))
             self.nextpids = nextpids
         def add_place (self, place, **args) :
             if place.name == self.nextpids :
