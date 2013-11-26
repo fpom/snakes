@@ -7,6 +7,12 @@ Moreover, when nodes are attached to a net, they inherit the modules
 from this net. When nodes are merged, their sets of modules is added
 to build the set of modules of the new node.
 
+The plugin implements a very basic notion of modules, un particular,
+it does not support hierarchy and when a module is attached to a node,
+it is not possible to remove it. So modules are only a way to remember
+where a node comes from and to tag nodes as we aggregate nets, e.g.,
+through compositions (see plugin `ops`).
+
 Internally, modules are stored in a label called `"modules"` (see
 plugin `snakes.plugins.labels`).
 
@@ -23,11 +29,17 @@ set(['hello'])
 >>> n2.add_place(Place("r"))
 >>> n2.add_place(Place("s", modules="spam"))
 >>> n = n1|n2
->>> list(sorted((p.name, p.modules()) for p in n.place()))
-[('[p|]', set(['hello'])),
- ('[q|]', set(['hello'])),
- ('[|r]', set(['world'])),
- ('[|s]', set(['world', 'spam']))]
+>>> list(sorted((p.name, list(sorted(p.modules()))) for p in n.place()))
+[('[p|]', ['hello']),
+ ('[q|]', ['hello']),
+ ('[|r]', ['world']),
+ ('[|s]', ['spam', 'world'])]
+>>> n.modules("egg")
+>>> list(sorted((p.name, list(sorted(p.modules()))) for p in n.place()))
+[('[p|]', ['egg', 'hello']),
+ ('[q|]', ['egg', 'hello']),
+ ('[|r]', ['egg', 'world']),
+ ('[|s]', ['egg', 'spam', 'world'])]
 """
 
 from snakes.plugins import plugin, new_instance
@@ -65,8 +77,10 @@ def extend (module) :
         def modules (self, modules=None) :
             if modules is None :
                 return self.label("modules")
-            else :
-                self.label(modules=set(iterate(modules)))
+            mod = set(iterate(modules))
+            self.label(modules=mod)
+            for node in self.node() :
+                node.modules(mod | node.modules())
         def add_place (self, place, **options) :
             mod = set(iterate(options.pop("modules", self.modules())))
             module.PetriNet.add_place(self, place, **options)
