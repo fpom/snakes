@@ -1514,6 +1514,7 @@ class Inhibitor (Test) :
         all.
 
         For instance:
+
           * `Inhibitor(Value(3))` ensures that there is no token whose
             value is `3` in the place when the transition is fired
           * `Inhibitor(Variable('x'))` ensures that there is no token
