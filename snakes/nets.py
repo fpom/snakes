@@ -1507,11 +1507,22 @@ class Inhibitor (Test) :
         """Like `Test`, it works by encapsulating another annotation.
         Additionally, a condition may be given which allows to select
         the forbidden tokens more precisely. This is generally better
-        to make this selection at thise level rather that at the level
+        to make this selection at this level rather that at the level
         of a transition guard: indeed, in the latter case, we may
         build many modes and reject most of them because of the guard;
         while in the former case, we will not build these modes at
         all.
+
+        For instance:
+          * `Inhibitor(Value(3))` ensures that there is no token whose
+            value is `3` in the place when the transition is fired
+          * `Inhibitor(Variable('x'))` ensures that there is no token
+            at all in the place
+          * `Inhibitor(Variable('x'), Expression('x<3'))` ensures that
+            there is no token whose value is less that `3`
+          * `Inhibitor(MultiArc([Variable('x'), Variable('y')]),
+            Expression('x>y'))` ensures that there is no pair of
+            tokens such that one is greater that the other
         """
         self._annotation = annotation
         if hasattr(annotation, "globals") :
@@ -1553,6 +1564,7 @@ class Inhibitor (Test) :
         return Tree(self.__pnmltag__, None,
                     Tree("annotation", None, Tree.from_obj(self._annotation)),
                     Tree("condition", None, Tree.from_obj(self._condition)))
+    # apidoc skip
     @classmethod
     def __pnmlload__ (cls, tree) :
         """Create a `Inhibitor` from a PNML tree
