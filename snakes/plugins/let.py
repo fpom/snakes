@@ -70,7 +70,7 @@ class MakeLet (object) :
     def __init__ (self, globals) :
         self.globals = globals
     def match (self, match, binding) :
-        env = binding.dict()
+        env = dict(binding)
         env.update(iter(self.globals))
         exec("", env)
         old = set(env)
