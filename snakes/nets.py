@@ -905,9 +905,12 @@ class Expression (ArcAnnotation) :
         if self._true :
             return Token(True)
         else :
-            env = binding.dict()
-            env["__binding__"] = env
-            return Token(self.globals(self._expr, env))
+            env = binding._dict
+            env["__binding__"] = binding._dict
+            try :
+                return Token(self.globals(self._expr, env))
+            finally :
+                del env["__binding__"]
     def __call__ (self, binding) :
         """Returns the value from `bind` (but not encapsulated in a
         `Token`).
