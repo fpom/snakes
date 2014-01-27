@@ -1,6 +1,7 @@
 syntax: glob
 
 dist/*
+utils/abcd-mode.elc
 dput.sh
 *.pyc
 *~

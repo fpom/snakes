@@ -15,6 +15,15 @@ def doc_files() :
             result[target_dir].append(os.path.join(root, name))
     return list(result.items())
 
+try :
+    long_description=open("README").read()
+except :
+    long_description="""SNAKES is a general purpose Petri net Python
+library allowing to define and execute most classes of Petri
+nets. It features a plugin system to allow its extension. In
+particular, plugins are provided to implement the operations
+usually found in the PBC and M-nets family."""
+
 if __name__ == "__main__" :
     print("Compiling Emacs files...")
     if os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el") :
@@ -26,16 +35,12 @@ if __name__ == "__main__" :
     setup(name="SNAKES",
           version=open("VERSION").read().strip(),
           description="SNAKES is the Net Algebra Kit for Editors and Simulators",
-          long_description="""SNAKES is a general purpose Petri net Python
-          library allowing to define and execute most classes of Petri
-          nets. It features a plugin system to allow its extension. In
-          particular, plugins are provided to implement the operations
-          usually found in the PBC and M-nets family.""",
+          long_description=long_description,
           author="Franck Pommereau",
-          author_email="pommereau@univ-paris12.fr",
+          author_email="franck.pommereau@ibisc.univ-evry.fr",
           maintainer="Franck Pommereau",
-          maintainer_email="pommereau@univ-paris12.fr",
-          url="http://lacl.univ-paris12.fr/pommereau/soft/snakes",
+          maintainer_email="franck.pommereau@ibisc.univ-evry.fr",
+          url="http://http://www.ibisc.univ-evry.fr/~fpommereau/SNAKES/",
           scripts=["bin/abcd",
                    "bin/snkc",
                    "bin/snkd",
