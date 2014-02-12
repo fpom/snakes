@@ -267,14 +267,14 @@ def extend (module) :
                     for n, child in enumerate(children) :
                         assign.append("%s=%s.next(%s+%s)"
                                       % (child, parent, n, pidcount))
-                for pid in self.pids.killed :
-                    pidcount = vars.fresh(add=True, base="next_%s" % pid)
-                    self.pids.next[pid] = pidcount
                 if guard is None :
                     guard = snk.Expression("newpids(%s)" % ", ".join(assign))
                 else :
                     guard = guard & snk.Expression("newpids(%s)"
                                                    % ", ".join(assign))
+            for pid in self.pids.killed :
+                pidcount = vars.fresh(add=True, base="next_%s" % pid)
+                self.pids.next[pid] = pidcount
             snk.Transition.__init__(self, name, guard, **args)
         def vars (self) :
             return self.pids.vars() | snk.Transition.vars(self)
