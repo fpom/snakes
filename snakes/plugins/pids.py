@@ -303,6 +303,10 @@ def extend (module) :
                     prod[child] = snk.Tuple([snk.Variable(child),
                                              snk.Value(0)])
             for pid in trans.pids.killed :
+                if pid not in trans.pids.spawned :
+                    pidcount = trans.pids.next[pid]
+                    cons[pid] = snk.Tuple([snk.Variable(pid),
+                                           snk.Variable(pidcount)])
                 prod.pop(pid, None)
             if len(cons) > 1 :
                 self.add_input(self.nextpids, trans.name,
