@@ -320,7 +320,7 @@ def extend (module) :
             if len(prod) > 1 :
                 self.add_output(self.nextpids, trans.name,
                                 snk.MultiArc(prod.values()))
-            elif len(cons) == 1 :
+            elif len(prod) == 1 :
                 self.add_output(self.nextpids, trans.name,
                                 iter(prod.values()).next())
     return PetriNet, Transition, Pid, ("tPid", tPid), ("tNextPid", tNextPid)
