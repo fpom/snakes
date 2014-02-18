@@ -906,11 +906,13 @@ class Expression (ArcAnnotation) :
             return Token(True)
         else :
             env = binding._dict
-            env["__binding__"] = binding._dict
+            # just to allow a cleaner implementation of let
+            env["__binding__"] = env
             env["__globals__"] = self.globals
             try :
                 return Token(self.globals(self._expr, env))
             finally :
+                # cleanup what was added above
                 del env["__binding__"]
                 del env["__globals__"]
     def __call__ (self, binding) :
