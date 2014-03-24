@@ -47,7 +47,7 @@ False
     automatically loaded)
 """
 
-import os, os.path, subprocess, collections
+import os, os.path, subprocess, collections, codecs
 import snakes.plugins
 from snakes.plugins.clusters import Cluster
 from snakes.compat import *
@@ -78,7 +78,7 @@ class Graph (Cluster) :
         else :
             tag = "%s " % tag
         return (["%s[" % tag,
-                 ["%s=%s" % (key, self.escape(str(val)))
+                 ["%s=%s" % (key, self.escape(unicode(val)))
                   for key, val in attr.items()],
                  "];"])
     def _dot (self) :
@@ -97,7 +97,7 @@ class Graph (Cluster) :
         return lines
     def _dot_text (self, lines, indent=0) :
         for l in lines :
-            if isinstance(l, str) :
+            if isinstance(l, (str, unicode)) :
                 yield " "*indent*2 + l
             else :
                 for x in self._dot_text(l, indent+1) :
@@ -105,6 +105,7 @@ class Graph (Cluster) :
     def dot (self) :
         self.done = set()
         return "\n".join(self._dot_text(["digraph {",
+                                         'charset="UTF-8"',
                                          ['node [label="N",'
                                           ' fillcolor="#FFFFFF",'
                                           ' fontcolor="#000000",'
@@ -115,13 +116,15 @@ class Graph (Cluster) :
                                          self._dot(),
                                          "}"]))
     def escape (self, text) :
-        return '"%s"' % text.replace('"', r'\"')
+        if text.startswith("<") and text.endswith(">") :
+            return text
+        else :
+            return '"%s"' % text.replace('"', r'\"')
     def render (self, filename, engine="dot", debug=False) :
         if engine not in ("dot", "neato", "twopi", "circo", "fdp") :
             raise ValueError("unknown GraphViz engine %r" % engine)
-        outfile = open(filename + ".dot", "w")
-        outfile.write(self.dot())
-        outfile.close()
+        with codecs.open(filename + ".dot", "w", "utf-8") as outfile :
+            outfile.write(self.dot())
         if debug :
             dot = subprocess.Popen([engine, "-T" + filename.rsplit(".", 1)[-1],
                                     "-o" + filename, outfile.name],
@@ -226,11 +229,10 @@ def extend (module) :
             self._copy_edges(nodemap, g, arc_attr)
             if graph_attr :
                 graph_attr(self, g.attr)
-            if filename is None :
-                g.nodemap = nodemap
-                return g
-            else :
+            if filename is not None :
                 g.render(filename, engine, debug)
+            g.nodemap = nodemap
+            return g
         def _copy (self, nodemap, sub, cluster_attr, place_attr, trans_attr) :
             attr = dict(style="invis")
             if cluster_attr :
@@ -249,6 +251,8 @@ def extend (module) :
                                 label="%s\\n%s" % (node.name, str(node.guard)))
                     if trans_attr :
                         trans_attr(node, attr)
+                attr["tooltip"] = node.name
+                attr["id"] = nodemap[name]
                 graph.add_node(nodemap[name], attr)
             for child in sub.children() :
                 graph.add_child(self._copy(nodemap, child, cluster_attr,

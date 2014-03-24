@@ -3,7 +3,7 @@
 import sys, os
 from distutils.core import setup
 
-def doc_files() :
+def doc_files () :
     import os, os.path
     result = {}
     for root, dirs, files in os.walk("doc") :
@@ -14,6 +14,15 @@ def doc_files() :
                 result[target_dir] = []
             result[target_dir].append(os.path.join(root, name))
     return list(result.items())
+
+def abcd_resources () :
+    collected = ["*.txt", "*.html", "*.css", "*.js", "*.png", "*.jpg"]
+    import glob, os.path
+    result = []
+    for pattern in collected :
+        for path in glob.glob("snakes/utils/abcd/resources/" + pattern) :
+            result.append(os.path.join("resources", os.path.basename(path)))
+    return result
 
 try :
     long_description=open("README").read()
@@ -56,5 +65,6 @@ if __name__ == "__main__" :
                     "snakes.utils.abcd",
                     "snakes.utils.ctlstar",
                     ],
+          package_data={"snakes.utils.abcd": abcd_resources()},
           data_files=doc_files() + emacs,
           )

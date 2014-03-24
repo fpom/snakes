@@ -432,7 +432,24 @@ class Builder (object) :
         self.instances.add(name)
         path = self.path + [name]
         builder = self.__class__(self.snk, path, self)
-        return builder.build(spec)
+        net = builder.build(spec)
+        src = (node.st.source(),
+               node.st.srow, node.st.scol,
+               node.st.erow, node.st.ecol)
+        for trans in net.transition() :
+            try :
+                lbl = trans.label("instances")
+                trans.label(instances=[src] + lbl)
+            except KeyError :
+                trans.label(instances=[src])
+        for place in net.place() :
+            if place.status == self.snk.Status(None) :
+                try :
+                    lbl = place.label("instances")
+                    place.label(instances=[src] + lbl)
+                except KeyError :
+                    place.label(instances=[src])
+        return net
     # control flow operations
     def build_Sequence (self, node) :
         return self.snk.PetriNet.__and__
