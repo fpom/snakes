@@ -67,9 +67,11 @@ def unlet (expr, *names) :
     return unparse(new), drop.calls
 
 class MakeLet (object) :
+    def __init__ (self, globals) :
+        self.globals = globals
     def match (self, match, binding) :
         env = dict(binding)
-        env.update(env["__globals__"])
+        env.update(iter(self.globals))
         exec("", env)
         old = set(env)
         exec(match, env)
@@ -93,5 +95,5 @@ def extend (module) :
     class PetriNet (module.PetriNet) :
         def __init__ (self, name, **args) :
             module.PetriNet.__init__(self, name, **args)
-            self.globals["let"] = MakeLet()
+            self.globals["let"] = MakeLet(self.globals)
     return PetriNet, unlet

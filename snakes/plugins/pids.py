@@ -272,9 +272,6 @@ def extend (module) :
                 else :
                     guard = guard & snk.Expression("newpids(%s)"
                                                    % ", ".join(assign))
-            for pid in self.pids.killed :
-                pidcount = vars.fresh(add=True, base="next_%s" % pid)
-                self.pids.next[pid] = pidcount
             snk.Transition.__init__(self, name, guard, **args)
         def vars (self) :
             return self.pids.vars() | snk.Transition.vars(self)
@@ -306,10 +303,6 @@ def extend (module) :
                     prod[child] = snk.Tuple([snk.Variable(child),
                                              snk.Value(0)])
             for pid in trans.pids.killed :
-                if pid not in trans.pids.spawned :
-                    pidcount = trans.pids.next[pid]
-                    cons[pid] = snk.Tuple([snk.Variable(pid),
-                                           snk.Variable(pidcount)])
                 prod.pop(pid, None)
             if len(cons) > 1 :
                 self.add_input(self.nextpids, trans.name,
@@ -320,7 +313,7 @@ def extend (module) :
             if len(prod) > 1 :
                 self.add_output(self.nextpids, trans.name,
                                 snk.MultiArc(prod.values()))
-            elif len(prod) == 1 :
+            elif len(cons) == 1 :
                 self.add_output(self.nextpids, trans.name,
                                 iter(prod.values()).next())
     return PetriNet, Transition, Pid, ("tPid", tPid), ("tNextPid", tNextPid)

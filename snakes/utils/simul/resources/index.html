@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <script type="text/javascript">
+      var server = {key : "%(key)s",
+                    url : "%(url)s",
+                    host : "%(host)s",
+                    port : "%(port)s"};
+    </script>
+    <script type="text/javascript" src="r/jquery.min.js"></script>
+    <script type="text/javascript" src="r/jquery.periodic.js"></script>
+    <script type="text/javascript" src="r/simulator.js"></script>
+    <link type="text/css" href="r/simulator.css" rel="stylesheet"/>
+    <link type="text/css" href="r/model.css" rel="stylesheet"/>
+    <link type="text/css" href="r/trace.css" rel="stylesheet"/>
+    <link type="text/css" href="r/about.css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="alive">
+      <ul class="ui">
+        <li><a id="ui-reset" href="#">Reset simulation</a></li>
+        <li><a id="ui-quit" href="#">Stop server</a></li>
+        <li><a id="ui-help" href="#">Help</a></li>
+        <li><a id="ui-about" href="#">About</a></li>
+      </ul>
+      <span class="ping">Starting...</span>
+    </div>
+    <div id="model">%(model)s</div>
+    <div id="trace"></div>
+    <div id="about">%(about)s</div>
+  </body>
+</html>

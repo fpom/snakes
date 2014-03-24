@@ -1,4 +1,4 @@
-import sys, optparse, os.path
+import sys, optparse, os.path, webbrowser
 import pdb, traceback
 import snakes.plugins
 from snakes.utils.abcd.build import Builder
@@ -7,6 +7,7 @@ from snakes.lang.pgen import ParseError
 from snakes.utils.abcd import CompilationError, DeclarationError
 from snakes.utils.abcd.simul import Simulator
 from snakes.utils.abcd.checker import Checker
+from snakes.utils.abcd.html import build as html
 
 ##
 ## error messages
@@ -21,10 +22,16 @@ ERR_COMPILE = 6
 ERR_OUTPUT = 7
 ERR_BUG = 255
 
+def log (message) :
+    sys.stdout.write("abcd: %s\n" % message.strip())
+    sys.stdout.flush()
+
 def err (message) :
     sys.stderr.write("abcd: %s\n" % message.strip())
+    sys.stderr.flush()
 
 def die (code, message=None) :
+    global options
     if message :
         err(message)
     if options.debug :
@@ -33,6 +40,7 @@ def die (code, message=None) :
         sys.exit(code)
 
 def bug () :
+    global options
     sys.stderr.write("""
     ********************************************************************
     *** An unexpected error ocurred. Please report this bug to       ***
@@ -79,12 +87,19 @@ opt.add_option("--debug",
 opt.add_option("-s", "--simul",
                dest="simul", action="store_true", default=False,
                help="launch interactive code simulator")
+opt.add_option("--headless",
+               dest="headless", action="store_true", default=False,
+               help="headless code simulator (don't start browser)")
+opt.add_option("-H", "--html",
+               dest="html", action="store", default=None,
+               help="save net as HTML",
+               metavar="OUTFILE")
 opt.add_option("--check",
                dest="check", action="store_true", default=False,
                help="check assertions")
 
 def getopts (args) :
-    global options, abcd
+    global options, abcd, tmp
     (options, args) = opt.parse_args(args)
     plugins = []
     for p in options.plugins :
@@ -98,6 +113,8 @@ def getopts (args) :
         if gvopt and "gv" not in plugins :
             plugins.append("gv")
             break
+    if (options.html or options.simul) and "gv" not in plugins :
+        plugins.append("gv")
     options.plugins = plugins
     if len(args) < 1 :
         err("no input file provided")
@@ -110,6 +127,10 @@ def getopts (args) :
     abcd = args[0]
     if options.pnml == abcd :
         err("input file also used as output (--pnml)")
+        opt.print_help()
+        die(ERR_ARG)
+    if options.html == abcd :
+        err("input file also used as output (--html)")
         opt.print_help()
         die(ERR_ARG)
     for engine in gv_engines :
@@ -129,7 +150,7 @@ def place_attr (place, attr) :
     elif place.status == snk.internal :
         pass
     elif place.status == snk.exit :
-        attr["fillcolor"] = "yellow"
+        attr["fillcolor"] = "orange"
     else :
         attr["fillcolor"] = "lightblue"
     # fix shape
@@ -142,9 +163,9 @@ def place_attr (place, attr) :
         if count == 0 :
             marking = " "
         elif count == 1 :
-            marking = "@"
+            marking = "&#8226;"
         else :
-            marking = "%s@" % count
+            marking = "%s&#8226;" % count
     else :
         marking = str(place.tokens)
     # node label
@@ -167,12 +188,13 @@ def arc_attr (label, attr) :
         attr["arrowhead"] = "box"
         attr["label"] = " %s " % label._annotation
 
-def draw (net, engine, target) :
+
+def draw (net, target, engine="dot") :
     try :
-        net.draw(target, engine=engine,
-                 place_attr=place_attr,
-                 trans_attr=trans_attr,
-                 arc_attr=arc_attr)
+        return net.draw(target, engine=engine,
+                        place_attr=place_attr,
+                        trans_attr=trans_attr,
+                        arc_attr=arc_attr)
     except :
         die(ERR_OUTPUT, str(sys.exc_info()[1]))
 
@@ -193,7 +215,7 @@ def save_pnml (net, target) :
 ##
 
 def main (args=sys.argv[1:], src=None) :
-    global snk
+    global options, snk
     # get options
     try:
         if src is None :
@@ -232,7 +254,7 @@ def main (args=sys.argv[1:], src=None) :
     build = Builder(snk)
     try :
         net = build.build(node)
-        net.label(srcfile=abcd)
+        net.label(srcfile=abcd, snakes=snk)
     except (CompilationError, DeclarationError) :
         die(ERR_COMPILE, str(sys.exc_info()[1]))
     except :
@@ -243,12 +265,24 @@ def main (args=sys.argv[1:], src=None) :
     for engine in gv_engines :
         target = getattr(options, "gv%s" % engine)
         if target :
-            draw(net, engine, target)
+            draw(net, target, engine)
+    if options.html :
+        try :
+            html(abcd, node, net, draw(net, None), options.html)
+        except :
+            bug()
     trace, lineno = [], None
     if options.check :
         lineno, trace = Checker(net).run()
     if options.simul :
-        Simulator(snk, source, net, trace, lineno).run()
+        try :
+            simul = Simulator(abcd, node, net, draw(net, None))
+        except :
+            bug()
+        simul.start()
+        if not options.headless :
+            webbrowser.open(simul.url)
+        simul.wait()
     elif trace :
         if lineno is None :
             print("unsafe execution:")
