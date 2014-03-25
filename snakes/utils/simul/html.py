@@ -66,10 +66,15 @@ class Factory (object) :
 
 H = Factory()
 
+def utf8 (text) :
+    return text.encode("utf-8")
+
 class JSONEncoder(JSON.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Tag):
-            return str(obj)
+            return utf8(str(obj))
+        elif isinstance(obj, (unicode, str)) :
+            return utf8(obj)
         else :
             return JSON.JSONEncoder.default(self, obj)
 
