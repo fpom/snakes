@@ -93,7 +93,8 @@ body {
 }
 
 #dialog-close {
-    display: inline;
+    /* TODO: fix position when dialog has a horizontal scrollbar */
+    display: block;
     float: right;
     border: solid 1px #AAA;
     padding: 5px 10px;
