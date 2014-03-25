@@ -33,10 +33,17 @@ var update = {
         $.each(action.items, function (num, item) {
             ul.append("<li>" + item + "</li>");
         });
-    }
+    },
+    dropclass : function (action) {
+        $(action.select).removeClass(action.class);
+    },
+    addclass : function (action) {
+        $(action.select).addClass(action.class);
+    },
 }
 
 function setstate (state) {
+    $("#trace").append("<div class='state'>" + state.id + "</div>");
     $.each(state.states, function (num, item) {
         update[item.do](item);
     });
@@ -44,16 +51,16 @@ function setstate (state) {
         ul = $(action.select);
         ul.html("");
         $.each(action.items, function (pos, item) {
-            ul.append("<li><a href='#' data-mode='" + state.id + ":"
-                      + pos + "''>" + item + "</a></li>"); 
+            ul.append("<li><a href='#'>" + item.html + "</a></li>");
+                
             a = ul.children().last().children().first();
+            a.attr({"data-state" : item.state, "data-mode" : item.mode});
             a.click(function () {
-                next = $(this).attr("data-mode").split(":");
-                text = $(this).text();
-                $("#trace").append("<div class='trace'><div class='state'>"
-                                   + state.id + "</div><div class='mode'>"
-                                   + text + "</div></div>");
-                $.get("succ", {state: next[0], mode: next[1]},
+                state = $(this).attr("data-state");
+                mode = $(this).attr("data-mode");
+                content = $(this).html();
+                $("#trace").append("<div class='mode'>" + content + "</div></div>");
+                $.get("succ", {state: state, mode: mode},
                       function (newstate) {
                           setstate(newstate);
                       });

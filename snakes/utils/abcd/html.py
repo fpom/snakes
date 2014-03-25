@@ -396,7 +396,7 @@ class Net2HTML (object) :
             pos = pos[((20, srow, scol), "instance", TreeInfo(t, name))]
         prefix = sum(len(p) for p in path) + len(path)
         srow, scol, _, _ = node.label("srcloc")
-        pos[((weight, srow, scol), kind, node.name[prefix:])] = tid
+        pos[((weight, srow, scol), kind, (node, node.name[prefix:]))] = tid
     def _tree (self, tree, indent="") :
         yield indent + "<ul>"
         for (_, kind, data), child in sorted(tree.items()) :
@@ -406,14 +406,19 @@ class Net2HTML (object) :
                     yield item
                 yield indent + "</li>"
             else :
+                node, name = data
                 if kind == "buffer" :
                     content = ("<span class='kw'>buffer</span> "
-                               "<span class='buffer'>%s</span></li>" % data)
+                               "<span class='name'>%s</span> = "
+                               "<span class='content'>%s</span>"
+                               % (name, node.tokens))
+                    yield indent + "<li>%s%s</span></li>" % (child, content)
                 elif kind == "action" :
-                    content = data
+                    content = name
+                    yield (indent + "<li>%s%s</span><ul class='modes'>"
+                           + "</ul></li>") % (child, content)
                 else :
                     raise ValueError("unexpected data %r" % kind)
-                yield indent + "<li>%s%s</span></li>" % (child, content)
         yield indent + "</ul>"
     def html (self) :
         return template_tree % {"tree" : "\n".join(self._tree(self.tree))}

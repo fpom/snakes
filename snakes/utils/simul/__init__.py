@@ -73,17 +73,18 @@ class WatchDog (multiprocessing.Process) :
             shutdown.set()
 
 class BaseHTTPSimulator (Node) :
-    def __init__ (self, net, port=8000, resources=[]) :
+    def __init__ (self, net, port=8000, respatt=[], resdict={}) :
         self.res = {}
         for cls in reversed(inspect.getmro(self.__class__)[:-2]) :
             path = os.path.dirname(inspect.getsourcefile(cls))
-            for pattern in resources + ["resources/*.js",
-                                        "resources/*.css",
-                                        "resources/*.html",
-                                        "resources/alive.txt"] :
+            for pattern in respatt + ["resources/*.js",
+                                      "resources/*.css",
+                                      "resources/*.html",
+                                      "resources/alive.txt"] :
                 for res in glob.glob(os.path.join(path, pattern)) :
                     with open(res) as infile :
                         self.res[os.path.basename(res)] = infile.read()
+        self.res.update(resdict)
         Node.__init__(self, r=ResourceNode(self.res))
         # create HTTP server
         self.port = port
@@ -129,9 +130,11 @@ class BaseHTTPSimulator (Node) :
                                H.span(marking(place.name), class_="token"))
                   for place in sorted(self.states.net.place(),
                                       key=operator.attrgetter("name"))]
-        modes = ["%s : %s" % (H.span(trans.name, class_="trans"),
-                              H.span(binding, class_="binding"))
-                  for trans, binding in marking.modes]
+        modes = [{"state" : state,
+                  "mode" : i,
+                  "html" : "%s : %s" % (H.span(trans.name, class_="trans"),
+                                        H.span(binding, class_="binding"))}
+                  for i, (trans, binding) in enumerate(marking.modes)]
         return {"id" : state,
                 "states" : [{"do" : "sethtml",
                              "select" : "#net",

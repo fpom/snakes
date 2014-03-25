@@ -1,7 +1,7 @@
 import sys, os.path, httplib, cgi, urlparse, functools, mimetypes
 import os, signal, traceback, random, base64, inspect
 import BaseHTTPServer
-from snakes.utils.simul.html import json
+from snakes.utils.simul.html import json, utf8
 
 ##
 ##
@@ -25,8 +25,8 @@ class HTTPError (Exception) :
 ##
 
 encoders = {"application/json" : json,
-            "text/plain" : str,
-            "text/html" : str,
+            "text/plain" : utf8,
+            "text/html" : utf8,
             }
 
 def http (content_type=None, **types) :
