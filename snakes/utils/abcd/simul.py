@@ -58,7 +58,12 @@ class Simulator (BaseHTTPSimulator) :
     def init_model (self) :
         return self.res["model.html"] % self.info
     def init_ui (self) :
-        return BaseHTTPSimulator.init_ui(self)[:-1]
+        return BaseHTTPSimulator.init_ui(self)[:-1] + [{
+            "label" : "Show net",
+            "id" : "ui-shownet",
+            "href" : "#",
+            "script" : "dialog($('#model .petrinet').html())"
+            }]
     def init_help (self) :
         help = BaseHTTPSimulator.init_help(self)
         help.update({"#model .abcd" : "ABCD source code",
