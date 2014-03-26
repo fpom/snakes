@@ -160,9 +160,13 @@ class Translator (PyTranslator) :
         while len(nodes) > 1 :
             left = nodes.pop(0)
             right = nodes.pop(0)
-            nodes.insert(0, self.ST.AbcdFlowOp(lineno=left.lineno,
-                                               col_offset=left.col_offset,
-                                               left=left, op=op(), right=right))
+            theop = op()
+            theop.st = st[1]
+            flow = self.ST.AbcdFlowOp(lineno=left.lineno,
+                                      col_offset=left.col_offset,
+                                      left=left, op=theop, right=right)
+            flow.st = st
+            nodes.insert(0, flow)
         return nodes[0]
     def do_abcd_expr (self, st, ctx) :
         """abcd_expr: abcd_choice_expr ('|' abcd_choice_expr)*

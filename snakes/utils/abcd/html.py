@@ -252,7 +252,8 @@ class ABCD2HTML (ast.NodeVisitor) :
             t = t[0]
             while t[0].text == '(' :
                 t = t[1]
-        self.setspan("flow", t[1])
+        for op in t[1::2] :
+            self.setspan("flow", op)
         self.generic_visit(node)
     def visit_SimpleAccess (self, node) :
         self.setspan("name", node.st[0])
