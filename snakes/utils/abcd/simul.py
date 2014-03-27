@@ -1,3 +1,4 @@
+import tempfile, anydbm, os
 from snakes.utils.simul import *
 import snakes.utils.abcd.html as html
 
@@ -25,6 +26,11 @@ class Simulator (BaseHTTPSimulator) :
             if nid in n2html.n2a :
                 self.abcd[trans.name] = ", ".join("#" + i for i in
                                                   n2html.n2a[nid])
+        # persistency
+        self.tmp = tempfile.NamedTemporaryFile()
+        self.tmp.file.close()
+        os.unlink(self.tmp.name)
+        self.store = anydbm.open(self.tmp.name, "c")
     def getstate (self, state) :
         marking = self.states[state]
         modes = dict((t, []) for t in self.transid)
@@ -70,4 +76,15 @@ class Simulator (BaseHTTPSimulator) :
                      "#model .tree" : "hierarchy of ABCD objects",
                      "#model .petrinet" : "Petri nets semantics"})
         return help
-
+    @http("text/plain", key=str)
+    def get (self, key) :
+        try :
+            print self.store[key]
+            return self.store[key]
+        except KeyError :
+            raise HTTPError(httplib.NOT_FOUND)
+    @http("text/plain", key=str, value=str)
+    def put (self, key, value) :
+        print "store[%r] = %r" % (key, value)
+        self.store[key] = value
+        return "OK"

@@ -25,6 +25,7 @@ class HTTPError (Exception) :
 ##
 
 encoders = {"application/json" : json,
+            "application/binary" : str,
             "text/plain" : utf8,
             "text/html" : utf8,
             }
@@ -108,21 +109,30 @@ class ResourceNode (Node) :
 
 class HTTPRequestHandler (BaseHTTPServer.BaseHTTPRequestHandler) :
     def do_GET (self) :
+        url = self.geturl()
+        self.do(url, url.query)
+    def do_POST (self) :
+        content_len = int(self.headers.getheader('content-length'))
+        data = self.rfile.read(content_len)
+        self.do(self.geturl(), data)
+    def geturl (self) :
         try :
-            try :
-                url = urlparse.urlparse(self.path)
-            except :
-                raise HTTPError(httplib.BAD_REQUEST, "invalid URL")
+            return urlparse.urlparse(self.path)
+        except :
+            raise HTTPError(httplib.BAD_REQUEST, "invalid URL")
+    def do (self, url, data) :
+        try :
+            # warning: parse_qs returns lists for values => use parse_qsl
+            query = dict(cgi.parse_qsl(data))
+            # jQuery may add _ in query for cache control, let's drop it
+            query.pop("_", None)
+        except :
+            raise HTTPError(httplib.BAD_REQUEST, "invalid query")
+        try :
             try :
                 handler = self.server[url.path]
             except KeyError :
                 raise HTTPError(httplib.NOT_FOUND)
-            try :
-                query = dict(cgi.parse_qsl(url.query))
-                # jQuery may add _ in query for cache control, let's drop it
-                query.pop("_", None)
-            except :
-                raise HTTPError(httplib.BAD_REQUEST, "invalid query")
             content_type, data = handler(**query)
             self.send_response(httplib.OK)
             self.send_header("Content-type", content_type)
