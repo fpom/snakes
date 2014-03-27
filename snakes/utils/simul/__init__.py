@@ -151,7 +151,7 @@ class BaseHTTPSimulator (Node) :
                            ],
                 }
     def init_index (self) :
-        return {"res" : "%s/r" % self.url,
+        return {"res" : "%sr" % self.url,
                 "url" : self.url,
                 "key" : self.server.httpd.key,
                 "host" : "127.0.0.1",

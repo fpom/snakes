@@ -8,6 +8,7 @@ from snakes.utils.abcd import CompilationError, DeclarationError
 from snakes.utils.abcd.simul import Simulator
 from snakes.utils.abcd.checker import Checker
 from snakes.utils.abcd.html import build as html
+from snakes.utils.simul.html import json
 
 ##
 ## error messages
@@ -88,8 +89,9 @@ opt.add_option("-s", "--simul",
                dest="simul", action="store_true", default=False,
                help="launch interactive code simulator")
 opt.add_option("--headless",
-               dest="headless", action="store_true", default=False,
-               help="headless code simulator (don't start browser)")
+               dest="headless", action="store", default=None,
+               help="headless code simulator, with saved parameters",
+               metavar="JSONFILE")
 opt.add_option("-H", "--html",
                dest="html", action="store", default=None,
                help="save net as HTML",
@@ -280,7 +282,14 @@ def main (args=sys.argv[1:], src=None) :
         except :
             bug()
         simul.start()
-        if not options.headless :
+        if options.headless :
+            with open(options.headless, "w") as out :
+                out.write(json({"res" : "%sr" % simul.url,
+                                "url" : simul.url,
+                                "key" : simul.server.httpd.key,
+                                "host" : "127.0.0.1",
+                                "port" : simul.port}))
+        else :
             webbrowser.open(simul.url)
         simul.wait()
     elif trace :
