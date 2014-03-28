@@ -73,8 +73,9 @@ class WatchDog (multiprocessing.Process) :
             shutdown.set()
 
 class BaseHTTPSimulator (Node) :
-    def __init__ (self, net, port=8000, respatt=[], resdict={}) :
+    def __init__ (self, net, port=8000, respatt=[]) :
         self.res = {}
+        dirs = {}
         for cls in reversed(inspect.getmro(self.__class__)[:-2]) :
             path = os.path.dirname(inspect.getsourcefile(cls))
             for pattern in respatt + ["resources/*.js",
@@ -82,10 +83,14 @@ class BaseHTTPSimulator (Node) :
                                       "resources/*.html",
                                       "resources/alive.txt"] :
                 for res in glob.glob(os.path.join(path, pattern)) :
-                    with open(res) as infile :
-                        self.res[os.path.basename(res)] = infile.read()
-        self.res.update(resdict)
-        Node.__init__(self, r=ResourceNode(self.res))
+                    if os.path.isfile(res) :
+                        with open(res) as infile :
+                            self.res[os.path.basename(res)] = infile.read()
+                    elif os.path.isdir(res) :
+                        dirs[os.path.basename(res)] = DirNode(res)
+                    else :
+                        raise ValueError("invalid resource %r" % res)
+        Node.__init__(self, r=ResourceNode(self.res, dirs))
         # create HTTP server
         self.port = port
         while True :

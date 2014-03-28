@@ -89,8 +89,9 @@ class DirNode (Node) :
         return handler
 
 class ResourceNode (Node) :
-    def __init__ (self, data) :
+    def __init__ (self, data, dirs) :
         self.data = data
+        self.dirs = dirs
         self.ct = dict((path, mimetypes.guess_type(path)[0]
                         or "application/octet-stream")
                        for path in self.data)
@@ -101,7 +102,12 @@ class ResourceNode (Node) :
                 return self.data[path]
             return handler
         else :
-            raise HTTPError(httplib.NOT_FOUND)
+            try :
+                base, child = path.split("/", 1)
+                return self.dirs[base][child]
+            except :
+                raise HTTPError(httplib.NOT_FOUND)
+
 
 ##
 ##
