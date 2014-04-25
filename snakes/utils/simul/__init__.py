@@ -72,8 +72,45 @@ class WatchDog (multiprocessing.Process) :
         finally :
             shutdown.set()
 
+class BaseSimulator (object) :
+    def __init__ (self, net) :
+        self.states = StateSpace(net)
+    def getstate (self, state) :
+        marking = self.states[state]
+        places = ["%s = %s" % (H.span(place.name, class_="place"),
+                               H.span(marking(place.name), class_="token"))
+                  for place in sorted(self.states.net.place(),
+                                      key=operator.attrgetter("name"))]
+        modes = [{"state" : state,
+                  "mode" : i,
+                  "html" : "%s : %s" % (H.span(trans.name, class_="trans"),
+                                        H.span(binding, class_="binding"))}
+                  for i, (trans, binding) in enumerate(marking.modes)]
+        return {"id" : state,
+                "states" : [{"do" : "sethtml",
+                             "select" : "#net",
+                             "html" : H.i(self.states.net)},
+                            {"do" : "settext",
+                             "select" : "#state",
+                             "text" : state},
+                            {"do" : "setlist",
+                             "select" : "#marking",
+                             "items" : places},
+                            ],
+                "modes" : [{"select" : "#modes",
+                            "items" : modes},
+                           ],
+                }
+    def init (self, state=-1) :
+        if state < 0 :
+            state = self.states.current
+        return {"state" : self.getstate(state)}
+    def succ (self, state, mode) :
+        state = self.states.succ(state, mode)
+        return self.getstate(state)
+
 class BaseHTTPSimulator (Node) :
-    def __init__ (self, net, port=8000, respatt=[]) :
+    def __init__ (self, net, port=8000, respatt=[], simulator=None) :
         self.res = {}
         dirs = {}
         for cls in reversed(inspect.getmro(self.__class__)[:-2]) :
@@ -106,7 +143,10 @@ class BaseHTTPSimulator (Node) :
         self.url = "http://127.0.0.1:%s/%s/" % (port, httpd.key)
         self._alive = self.res["alive.txt"].splitlines()
         self._ping = 0
-        self.states = StateSpace(net)
+        if simulator is None :
+            self.simul = BaseSimulator(net)
+        else :
+            self.simul = simulator
     def start (self) :
         log("starting at %r" % self.url)
         shutdown.clear()
@@ -129,32 +169,6 @@ class BaseHTTPSimulator (Node) :
             if self.watchdog.pid :
                 os.kill(self.watchdog.pid, sig)
         log("bye!")
-    def getstate (self, state) :
-        marking = self.states[state]
-        places = ["%s = %s" % (H.span(place.name, class_="place"),
-                               H.span(marking(place.name), class_="token"))
-                  for place in sorted(self.states.net.place(),
-                                      key=operator.attrgetter("name"))]
-        modes = [{"state" : state,
-                  "mode" : i,
-                  "html" : "%s : %s" % (H.span(trans.name, class_="trans"),
-                                        H.span(binding, class_="binding"))}
-                  for i, (trans, binding) in enumerate(marking.modes)]
-        return {"id" : state,
-                "states" : [{"do" : "sethtml",
-                             "select" : "#net",
-                             "html" : H.i(self.states.net)},
-                            {"do" : "settext",
-                             "select" : "#state",
-                             "text" : state},
-                            {"do" : "setlist",
-                             "select" : "#marking",
-                             "items" : places},
-                            ],
-                "modes" : [{"select" : "#modes",
-                            "items" : modes},
-                           ],
-                }
     def init_index (self) :
         return {"res" : "%sr" % self.url,
                 "url" : self.url,
@@ -191,15 +205,13 @@ class BaseHTTPSimulator (Node) :
                 "#alive .ui #ui-about" : "show information about the simulator"}
     @http("application/json", state=int)
     def init (self, state=-1) :
-        if state < 0 :
-            state = self.states.current
-        return {"ui" : self.init_ui(),
-                "state" : self.getstate(state),
-                "help" : self.init_help()}
+        ret = {"ui" : self.init_ui(),
+               "help" : self.init_help()}
+        ret.update(self.simul.init(state))
+        return ret
     @http("application/json", state=int, mode=int)
     def succ (self, state, mode) :
-        state = self.states.succ(state, mode)
-        return self.getstate(state)
+        return self.simul.succ(state, mode)
     @http("text/plain")
     def ping (self) :
         ping.set()
