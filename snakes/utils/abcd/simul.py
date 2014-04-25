@@ -3,8 +3,14 @@ from snakes.utils.simul import *
 import snakes.utils.abcd.html as html
 
 class ABCDSimulator (BaseSimulator) :
-    def __init__ (self, net, a2html, n2html, gv) :
+    def __init__ (self, node, net, gv) :
         BaseSimulator.__init__(self, net)
+        a2html = html.ABCD2HTML(node)
+        n2html = html.Net2HTML(net, gv, a2html)
+        self.info = {"filename" :  node.st.filename,
+                     "abcd" : a2html.html(),
+                     "tree" : n2html.html(),
+                     "net" : n2html.svg()}
         self.tree = {}
         for node in net.node() :
             nid = gv.nodemap[node.name]
@@ -52,17 +58,11 @@ class ABCDSimulator (BaseSimulator) :
                 }
 
 class Simulator (BaseHTTPSimulator) :
-    def __init__ (self, abcd, node, net, gv) :
-        a2html = html.ABCD2HTML(node)
-        n2html = html.Net2HTML(net, gv, a2html)
-        simul = ABCDSimulator(net, a2html, n2html, gv)
+    def __init__ (self, node, net, gv) :
+        simul = ABCDSimulator(node, net, gv)
         BaseHTTPSimulator.__init__(self, net, simulator=simul)
-        self.info = {"filename" :  node.st.filename,
-                     "abcd" : a2html.html(),
-                     "tree" : n2html.html(),
-                     "net" : n2html.svg()}
     def init_model (self) :
-        return self.res["model.html"] % self.info
+        return self.res["model.html"] % self.simul.info
     def init_ui (self) :
         return BaseHTTPSimulator.init_ui(self)[:-1] + [{
             "label" : "Show net",

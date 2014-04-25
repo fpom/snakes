@@ -5,7 +5,7 @@ from snakes.utils.abcd.build import Builder
 from snakes.lang.abcd.parser import parse
 from snakes.lang.pgen import ParseError
 from snakes.utils.abcd import CompilationError, DeclarationError
-from snakes.utils.abcd.simul import Simulator
+from snakes.utils.abcd.simul import Simulator, ABCDSimulator
 from snakes.utils.abcd.checker import Checker
 from snakes.utils.abcd.html import build as html
 from snakes.utils.simul.html import json
@@ -213,6 +213,20 @@ def save_pnml (net, target) :
         die(ERR_OUTPUT, str(sys.exc_info()[1]))
 
 ##
+## simulator (not standalone)
+##
+
+def simulate (source, filename="<string>") :
+    global options, snk
+    getopts(["--simul", filename])
+    node = parse(source, filename=filename)
+    snk = snakes.plugins.load(options.plugins, "snakes.nets", "snk")
+    build = Builder(snk)
+    net = build.build(node)
+    net.label(srcfile=filename, snakes=snk)
+    return ABCDSimulator(node, net, draw(net, None))
+
+##
 ## main
 ##
 
@@ -278,7 +292,7 @@ def main (args=sys.argv[1:], src=None) :
         lineno, trace = Checker(net).run()
     if options.simul :
         try :
-            simul = Simulator(abcd, node, net, draw(net, None))
+            simul = Simulator(node, net, draw(net, None))
         except :
             bug()
         simul.start()
