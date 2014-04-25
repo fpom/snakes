@@ -2,15 +2,9 @@ import tempfile, anydbm, os
 from snakes.utils.simul import *
 import snakes.utils.abcd.html as html
 
-class Simulator (BaseHTTPSimulator) :
-    def __init__ (self, abcd, node, net, gv) :
-        BaseHTTPSimulator.__init__(self, net)
-        a2html = html.ABCD2HTML(node)
-        n2html = html.Net2HTML(net, gv, a2html)
-        self.info = {"filename" :  node.st.filename,
-                     "abcd" : a2html.html(),
-                     "tree" : n2html.html(),
-                     "net" : n2html.svg()}
+class ABCDSimulator (BaseSimulator) :
+    def __init__ (self, net, a2html, n2html, gv) :
+        BaseSimulator.__init__(self, net)
         self.tree = {}
         for node in net.node() :
             nid = gv.nodemap[node.name]
@@ -26,11 +20,6 @@ class Simulator (BaseHTTPSimulator) :
             if nid in n2html.n2a :
                 self.abcd[trans.name] = ", ".join("#" + i for i in
                                                   n2html.n2a[nid])
-        # persistency
-        self.tmp = tempfile.NamedTemporaryFile()
-        self.tmp.file.close()
-        os.unlink(self.tmp.name)
-        self.store = anydbm.open(self.tmp.name, "c")
     def getstate (self, state) :
         marking = self.states[state]
         modes = dict((t, []) for t in self.transid)
@@ -61,6 +50,17 @@ class Simulator (BaseHTTPSimulator) :
                             "items" : items}
                            for trans, items in modes.items()],
                 }
+
+class Simulator (BaseHTTPSimulator) :
+    def __init__ (self, abcd, node, net, gv) :
+        a2html = html.ABCD2HTML(node)
+        n2html = html.Net2HTML(net, gv, a2html)
+        simul = ABCDSimulator(net, a2html, n2html, gv)
+        BaseHTTPSimulator.__init__(self, net, simulator=simul)
+        self.info = {"filename" :  node.st.filename,
+                     "abcd" : a2html.html(),
+                     "tree" : n2html.html(),
+                     "net" : n2html.svg()}
     def init_model (self) :
         return self.res["model.html"] % self.info
     def init_ui (self) :
@@ -76,15 +76,3 @@ class Simulator (BaseHTTPSimulator) :
                      "#model .tree" : "hierarchy of ABCD objects",
                      "#model .petrinet" : "Petri nets semantics"})
         return help
-    @http("text/plain", key=str)
-    def get (self, key) :
-        try :
-            print self.store[key]
-            return self.store[key]
-        except KeyError :
-            raise HTTPError(httplib.NOT_FOUND)
-    @http("text/plain", key=str, value=str)
-    def put (self, key, value) :
-        print "store[%r] = %r" % (key, value)
-        self.store[key] = value
-        return "OK"
