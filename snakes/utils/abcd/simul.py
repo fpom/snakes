@@ -26,6 +26,17 @@ class ABCDSimulator (BaseSimulator) :
             if nid in n2html.n2a :
                 self.abcd[trans.name] = ", ".join("#" + i for i in
                                                   n2html.n2a[nid])
+    def init (self, state=-1) :
+        res = BaseSimulator.init(self, state)
+        res.update(self.info)
+        res["help"] = self.init_help()
+        return res
+    def init_help (self) :
+        help = BaseSimulator.init_help(self)
+        help.update({"#model .abcd" : "ABCD source code",
+                     "#model .tree" : "hierarchy of ABCD objects",
+                     "#model .petrinet" : "Petri nets semantics"})
+        return help
     def getstate (self, state) :
         marking = self.states[state]
         modes = dict((t, []) for t in self.transid)
@@ -70,9 +81,3 @@ class Simulator (BaseHTTPSimulator) :
             "href" : "#",
             "script" : "dialog($('#model .petrinet').html())"
             }]
-    def init_help (self) :
-        help = BaseHTTPSimulator.init_help(self)
-        help.update({"#model .abcd" : "ABCD source code",
-                     "#model .tree" : "hierarchy of ABCD objects",
-                     "#model .petrinet" : "Petri nets semantics"})
-        return help

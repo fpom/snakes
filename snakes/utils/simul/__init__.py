@@ -108,6 +108,12 @@ class BaseSimulator (object) :
     def succ (self, state, mode) :
         state = self.states.succ(state, mode)
         return self.getstate(state)
+    def init_help (self) :
+        return {"#trace": "the states and transitions explored so far",
+                "#model" : "the model being simulated",
+                "#alive .ui #ui-quit" : "stop the simulator (server side)",
+                "#alive .ui #ui-help" : "show this help",
+                "#alive .ui #ui-about" : "show information about the simulator"}
 
 class BaseHTTPSimulator (Node) :
     def __init__ (self, net, port=8000, respatt=[], simulator=None) :
@@ -197,12 +203,6 @@ class BaseHTTPSimulator (Node) :
                  "id" : "ui-argv",
                  "href" : "#",
                  "script" : "dialog(%r)" % argv}]
-    def init_help (self) :
-        return {"#trace": "the states and transitions explored so far",
-                "#model" : "the model being simulated",
-                "#alive .ui #ui-quit" : "stop the simulator (server side)",
-                "#alive .ui #ui-help" : "show this help",
-                "#alive .ui #ui-about" : "show information about the simulator"}
     @http("application/json", state=int)
     def init (self, state=-1) :
         ret = {"ui" : self.init_ui(),
