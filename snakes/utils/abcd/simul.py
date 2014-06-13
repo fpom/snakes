@@ -1,5 +1,4 @@
-import tempfile, anydbm, os
-from snakes.utils.simul import *
+from snakes.utils.simul import BaseSimulator, BaseHTTPSimulator
 import snakes.utils.abcd.html as html
 
 class ABCDSimulator (BaseSimulator) :
@@ -33,9 +32,19 @@ class ABCDSimulator (BaseSimulator) :
         return res
     def init_help (self) :
         help = BaseSimulator.init_help(self)
-        help.update({"#model .abcd" : "ABCD source code",
-                     "#model .tree" : "hierarchy of ABCD objects",
-                     "#model .petrinet" : "Petri nets semantics"})
+        help.update({
+            "#model .abcd" : {
+                "title" : "Source",
+                "content" : "ABCD source code"
+            },
+            "#model .tree" : {
+                "title" : "State",
+                "content" : "hierarchy of ABCD objects",
+            },
+            "#model .petrinet" : {
+                "title" : "Net",
+                "content" : "Petri nets semantics"
+            }})
         return help
     def getstate (self, state) :
         marking = self.states[state]

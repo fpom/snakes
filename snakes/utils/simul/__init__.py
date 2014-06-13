@@ -1,7 +1,7 @@
 import snakes
 from snakes.utils.simul.httpd import *
 from snakes.utils.simul.html import H
-import multiprocessing, time, sys, json, os.path, signal, inspect, glob
+import multiprocessing, time, sys, os.path, signal, inspect, glob
 import operator
 
 class StateSpace (dict) :
@@ -109,11 +109,28 @@ class BaseSimulator (object) :
         state = self.states.succ(state, mode)
         return self.getstate(state)
     def init_help (self) :
-        return {"#trace": "the states and transitions explored so far",
-                "#model" : "the model being simulated",
-                "#alive .ui #ui-quit" : "stop the simulator (server side)",
-                "#alive .ui #ui-help" : "show this help",
-                "#alive .ui #ui-about" : "show information about the simulator"}
+        return {
+            "#trace": {
+                "title" : "Trace",
+                "content" : "the states and transitions explored so far"
+            },
+            "#model" : {
+                "title" : "Model",
+                "content" : "the model being simulated"
+            },
+            "#alive .ui #ui-quit" : {
+                "title" : "Stop",
+                "content" : "stop the simulator (server side)"
+            },
+            "#alive .ui #ui-help" : {
+                "title" : "Help",
+                "content" : "show this help"
+            },
+            "#alive .ui #ui-about" : {
+                "title" : "About",
+                "content" : "show information about the simulator"
+            },
+        }
 
 class BaseHTTPSimulator (Node) :
     def __init__ (self, net, port=8000, respatt=[], simulator=None) :
@@ -139,7 +156,7 @@ class BaseHTTPSimulator (Node) :
         while True :
             try :
                 httpd = HTTPServer(('', self.port), self)
-            except Exception as err :
+            except :
                 self.port += 1
             else :
                 break
@@ -206,7 +223,7 @@ class BaseHTTPSimulator (Node) :
     @http("application/json", state=int)
     def init (self, state=-1) :
         ret = {"ui" : self.init_ui(),
-               "help" : self.init_help()}
+               "help" : self.simul.init_help()}
         ret.update(self.simul.init(state))
         return ret
     @http("application/json", state=int, mode=int)
