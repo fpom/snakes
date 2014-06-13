@@ -23,6 +23,7 @@ class CinziaSimulator (BaseSimulator) :
         marking = self.states[state]
         ret["variables"] = dict((place, tokens.items()[0])
                                 for place, tokens in marking.items())
+        ret["groups"] = ["timed", "even", "odd"]
         ret["modes"] = []
         for i, (trans, binding) in enumerate(marking.modes) :
             if (state + i) % 5 == 0 :
