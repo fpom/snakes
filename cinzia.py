@@ -46,7 +46,7 @@ class CinziaHTTPSimulator (BaseHTTPSimulator) :
 if __name__ == "__main__" :
     import sys, webbrowser
     system = dict(a.split("=", 1) for a in sys.argv[1:])
-    simul = BaseHTTPSimulator(**system)
+    simul = CinziaHTTPSimulator(**system)
     simul.start()
     webbrowser.open(simul.url)
     simul.wait()
