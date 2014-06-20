@@ -133,7 +133,7 @@ class BaseSimulator (object) :
         }
 
 class BaseHTTPSimulator (Node) :
-    def __init__ (self, net, port=8000, respatt=[], simulator=None) :
+    def __init__ (self, net=None, port=8000, respatt=[], simulator=None) :
         self.res = {}
         dirs = {}
         for cls in reversed(inspect.getmro(self.__class__)[:-2]) :
