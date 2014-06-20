@@ -1,5 +1,5 @@
 import snakes.nets as snk
-from snakes.utils.simul import BaseSimulator
+from snakes.utils.simul import BaseSimulator, BaseHTTPSimulator
 
 class CinziaSimulator (BaseSimulator) :
     def __init__ (self, **system) :
@@ -38,3 +38,15 @@ class CinziaSimulator (BaseSimulator) :
              })
         return ret
 
+class CinziaHTTPSimulator (BaseHTTPSimulator) :
+    def __init__ (self, **system) :
+        simul = CinziaSimulator(**system)
+        BaseHTTPSimulator.__init__(self, simulator=simul)
+
+if __name__ == "__main__" :
+    import sys, webbrowser
+    system = dict(a.split("=", 1) for a in sys.argv[1:])
+    simul = BaseHTTPSimulator(**system)
+    simul.start()
+    webbrowser.open(simul.url)
+    simul.wait()
