@@ -24,18 +24,19 @@ class CinziaSimulator (BaseSimulator) :
         ret["variables"] = dict((place, tokens.items()[0])
                                 for place, tokens in marking.items())
         ret["groups"] = ["timed", "even", "odd"]
-        ret["modes"] = []
+        modes = []
         for i, (trans, binding) in enumerate(marking.modes) :
             if (state + i) % 5 == 0 :
                 groups = ["timed"]
             else :
                 groups = []
-            ret["modes"].append(
+            modes.append(
                 {"state" : state,
                  "mode" : i,
                  "html" : "%s (%s)" % (trans.name[7:], binding),
                  "groups" : groups + ["odd" if (state % 2) else "even"]
-             })
+                })
+        ret["modes"] = [{"select": "#modes", "items": modes}]
         return ret
 
 class CinziaHTTPSimulator (BaseHTTPSimulator) :
