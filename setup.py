@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os
+import subprocess
 from distutils.core import setup
 
 def doc_files() :
@@ -25,11 +25,13 @@ particular, plugins are provided to implement the operations
 usually found in the PBC and M-nets family."""
 
 if __name__ == "__main__" :
-    print("Compiling Emacs files...")
-    if os.system("emacs -batch -f batch-byte-compile utils/abcd-mode.el") :
+    try :
+        subprocess.check_output(["emacs", "-batch", "-f",
+                                 "batch-byte-compile", "utils/abcd-mode.el"],
+                                stderr=subprocess.STDOUT)
         emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el",
                                             "utils/abcd-mode.elc"])]
-    else :
+    except :
         emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el"])]
     #
     setup(name="SNAKES",
