@@ -78,9 +78,9 @@ class ABCDSimulator (BaseSimulator) :
                 }
 
 class Simulator (BaseHTTPSimulator) :
-    def __init__ (self, node, net, gv) :
+    def __init__ (self, node, net, gv, port) :
         simul = ABCDSimulator(node, net, gv)
-        BaseHTTPSimulator.__init__(self, net, simulator=simul)
+        BaseHTTPSimulator.__init__(self, net, simulator=simul, port=port)
     def init_model (self) :
         return self.res["model.html"] % self.simul.info
     def init_ui (self) :

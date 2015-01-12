@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link type="text/css" href="r/css/bootstrap-theme.css" rel="stylesheet"/>
+        <link type="text/css" href="r/css/bootstrap.css" rel="stylesheet"/>
+        <link type="text/css" href="r/css/docs.css" rel="stylesheet"/>
+        <link type="text/css" href="r/simulator.css" rel="stylesheet"/>
+        <link type="text/css" href="r/model.css" rel="stylesheet"/>
+        <script src="r/jquery.min.js"></script>
+        <script src="r/js/bootstrap.min.js"></script>
+        <script src="r/jquery.periodic.js"></script>
+        <script src="r/js/bootstrap.file-input.js"></script>
+        <script src="r/d3.min.js"></script>
+        <script src="r/js/petri.js"></script>
+        <script src="r/simulator.js"></script>
+    </head>
+    <style>
+        path {
+        stroke: steelblue;
+        stroke-width: 2;
+        fill: none;
+        }
+
+        line {
+        stroke: black;
+        }
+
+        text {
+        font-family: Arial;
+        font-size: 9pt;
+        }
+
+    </style>
+  <body>
+
+    <header class="navbar navbar-static-top">
+        <div class="container">
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header"><button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-6"> <span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button> <a class="navbar-brand" href="#">Simulation SNAKES</a></div>
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-6">
+                    <ul id="nav_sim" class="nav navbar-nav">
+                        <li><a href="#" id="ui-reset">Reset Simulation</a></li>
+                        <li><a href="#" id="ui-quit">Stop Simulation</a></li>
+                        <li><a href="#" id="ui-help">Help</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        </div>
+    </header>
+    <div class="container">
+
+        %(model)s
+
+        <div class="modal fade" id="about" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" id="myModalLabel">Petri Net</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p><span class="title">ABCD simulator is part of the SNAKES toolkit</span><br /> (C) 2014 Franck Pommereau</p>
+                        <p><a href="http://www.ibisc.univ-evry.fr/~fpommereau/SNAKES" target="_blank">SNAKES homepage</a></p>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button></div>
+                </div>
+            </div>
+        </div>
+<script>
+    $(document).ready(function(){
+        $.simisc({
+            "nav":{
+                "about": {
+                    "text": "About",
+                    "attr": {
+                        "id":"ui-about",
+                        "data-toggle": "modal",
+                        "data-target": "#about"
+                    }
+                },
+                "net": {
+                    "text": "Petri Net",
+                    "attr": {
+                        "id":"ui-net",
+                        "data-toggle": "modal",
+                        "data-target": "#net"
+                    }
+                }
+            },
+            "graph": {
+                "activate": false
+            }
+        });
+    });
+</script>
+</body>
+</html>
