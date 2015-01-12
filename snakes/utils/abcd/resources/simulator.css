@@ -1,0 +1,125 @@
+body {
+    font-family: sans-serif;
+}
+
+#alive {
+    border: solid 1px #AAA;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #DDD;
+    overflow:auto;
+}
+
+#alive .ui {
+    display: inline;
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+#alive .ui li {
+    display: inline;
+    border: solid 1px #AAA;
+    padding: 5px 10px;
+    margin: 0px 3px;
+    background-color: #EEE;
+}
+
+#alive .ui a {
+    text-decoration: none;
+    color: #333;
+}
+
+#alive .ui li:hover {
+    background-color: #FFF;
+}
+
+#alive .ui a:hover {
+    color: #A33;
+}
+
+#alive .ping {
+    color: #DDD;
+    float: right;
+}
+
+#model {
+    border: solid 1px #AAA;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #EEE;
+    overflow:auto;
+}
+
+#trace {
+    border: solid 1px #AAA;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #EEE;
+    overflow:auto;
+}
+
+#about {
+    display: none;
+}
+
+#dialog {
+    display: none;
+    position: fixed;
+    z-index: 2;
+    top: 10%;
+    left: 20%;
+    width: 60%;
+    border: solid 2px #AAA;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #FFF;
+    overflow:auto;
+}
+
+#dialog-bg {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    margin: 0px;
+}
+
+#dialog-close {
+    /* TODO: fix position when dialog has a horizontal scrollbar */
+    display: block;
+    float: right;
+    border: solid 1px #AAA;
+    padding: 5px 10px;
+    margin: 0px 3px;
+    background-color: #EEE;
+    text-decoration: none;
+    color: #333;
+}
+
+#dialog-close:hover {
+    background-color: #FFF;
+    color: #A33;
+}
+
+.dialog p {
+    margin: 10px 20px 0px 20px;
+}
+
+.dialog .title {
+    margin: 0px 20px 5px 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.dialog .subtitle {
+    margin: 0px 20px 5px 20px;
+    text-align: center;
+}

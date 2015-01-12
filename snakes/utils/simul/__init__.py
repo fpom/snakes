@@ -1,6 +1,7 @@
 import snakes
 from snakes.utils.simul.httpd import *
 from snakes.utils.simul.html import H
+from snakes.utils.simul import logger as log
 import multiprocessing, time, sys, os.path, signal, inspect, glob
 import operator
 
@@ -35,10 +36,6 @@ class StateSpace (dict) :
     def modes (self, state) :
         return self[state].modes
 
-def log (message) :
-    sys.stderr.write("[simulator] %s\n" % message.strip())
-    sys.stderr.flush()
-
 shutdown = multiprocessing.Event()
 ping = multiprocessing.Event()
 
@@ -64,8 +61,7 @@ class WatchDog (multiprocessing.Process) :
                 if ping.wait(self.timeout) :
                     ping.clear()
                 else :
-                    log("client not active - %s\n"
-                        % time.strftime("%d/%b/%Y %H:%M:%S"))
+                    log.info("client has gone", "simul")
                     break
         except KeyboardInterrupt :
             pass
@@ -138,14 +134,12 @@ class BaseHTTPSimulator (Node) :
         dirs = {}
         for cls in reversed(inspect.getmro(self.__class__)[:-2]) :
             path = os.path.dirname(inspect.getsourcefile(cls))
-            for pattern in respatt + ["resources/*.js",
-                                      "resources/*.css",
-                                      "resources/*.html",
-                                      "resources/alive.txt"] :
+            for pattern in respatt + ["resources/*/*.*",
+                                      "resources/*.*"] :
                 for res in glob.glob(os.path.join(path, pattern)) :
                     if os.path.isfile(res) :
                         with open(res) as infile :
-                            self.res[os.path.basename(res)] = infile.read()
+                            self.res[res[len(path + "resources/")+1:]] = infile.read()
                     elif os.path.isdir(res) :
                         dirs[os.path.basename(res)] = DirNode(res)
                     else :
@@ -171,7 +165,7 @@ class BaseHTTPSimulator (Node) :
         else :
             self.simul = simulator
     def start (self) :
-        log("starting at %r" % self.url)
+        log.info("starting at %r" % self.url, "simul")
         shutdown.clear()
         ping.clear()
         self.server.start()
@@ -179,11 +173,11 @@ class BaseHTTPSimulator (Node) :
     def wait (self) :
         try :
             shutdown.wait()
-            log("preparing to shut down...")
+            log.info("preparing to shut down...", "simul")
             time.sleep(2)
         except KeyboardInterrupt :
             shutdown.set()
-        log("shuting down...")
+        log.info("shuting down...", "simul")
         sig = getattr(signal, "CTRL_C_EVENT",
                       getattr(signal, "SIGTERM", None))
         if sig is not None :
@@ -191,7 +185,7 @@ class BaseHTTPSimulator (Node) :
                 os.kill(self.server.pid, sig)
             if self.watchdog.pid :
                 os.kill(self.watchdog.pid, sig)
-        log("bye!")
+        log.info("bye!", "simul")
     def init_index (self) :
         return {"res" : "%sr" % self.url,
                 "url" : self.url,

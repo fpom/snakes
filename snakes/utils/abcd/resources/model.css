@@ -1,15 +1,5 @@
 /* ABCD source code */
 
-#model .abcd {
-    border: solid 1px #DDD;
-    border-radius: 5px;
-    padding: 5px 10px;
-    margin: 5px;
-    background-color: #F4F4F4;
-    overflow: auto; 
-    float: left;
-}
-
 #model .abcd .comment {
     color: #888;
 }
@@ -58,22 +48,10 @@
     background-color: #B6F8AE; 
 }
 
-#model .abcd .highlight {
+#model .abcd .highlight_simul {
     background-color: yellow; 
 }
 
-/* Objects tree */
-
-#model .tree {
-    border: solid 1px #DDD;
-    border-radius: 5px; 
-    padding: 5px 10px;
-    margin: 5px;
-    background-color: #F4F4F4;
-    overflow: auto;
-    font-family: monospace; 
-    float: left;
-}
 
 #model .tree .buffer .kw {
     color: #800;
@@ -127,20 +105,8 @@
     background-color: #B6F8AE;
 }
 
-#model .tree .highlight { 
+#model .tree .highlight_simul { 
     background-color: yellow; 
 }
 
-/* Petri net picture */
-
-#model .petrinet {
-    border: solid 1px #DDD;
-    border-radius: 5px;
-    padding: 5px 10px;
-    margin: 5px;
-    background-color: #FFF;
-    overflow: auto;
-    clear: both; 
-    display: none;
-}
 

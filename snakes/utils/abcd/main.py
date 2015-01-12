@@ -14,6 +14,8 @@ from snakes.utils.simul.html import json
 ## error messages
 ##
 
+options = None
+
 ERR_ARG = 1
 ERR_OPT = 2
 ERR_IO = 3
@@ -92,6 +94,10 @@ opt.add_option("--headless",
                dest="headless", action="store", default=None,
                help="headless code simulator, with saved parameters",
                metavar="JSONFILE")
+opt.add_option("--port",
+               dest="port", action="store", default=8000, type=int,
+               help="port on which the simulator server runs",
+               metavar="PORT")
 opt.add_option("-H", "--html",
                dest="html", action="store", default=None,
                help="save net as HTML",
@@ -292,7 +298,7 @@ def main (args=sys.argv[1:], src=None) :
         lineno, trace = Checker(net).run()
     if options.simul :
         try :
-            simul = Simulator(node, net, draw(net, None))
+            simul = Simulator(node, net, draw(net, None), options.port)
         except :
             bug()
         simul.start()

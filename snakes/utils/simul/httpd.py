@@ -1,6 +1,7 @@
 import sys, os.path, httplib, cgi, urlparse, functools, mimetypes
-import os, signal, traceback, random, base64, inspect
+import os, traceback, random, base64, inspect, math
 import BaseHTTPServer
+from snakes.utils.simul import logger as log
 from snakes.utils.simul.html import json, utf8
 
 ##
@@ -156,6 +157,21 @@ class HTTPRequestHandler (BaseHTTPServer.BaseHTTPRequestHandler) :
                              "<body><p>%s</p></body>" % (v.answer, v.message))
             if v.code == 500 :
                 traceback.print_exception(*v.debug)
+    def log_request (self, code="-", size="-") :
+        code = str(code or "-")
+        method, path, version = self.requestline.split()
+        if code[0] in "45" :
+            logger = log.warn
+        else :
+            path = path.split("/", 2)[-1]
+            if len(path) > 28 :
+                path = "..." + path[-28:]
+            logger = log.debug
+        logger("%s %s => %s" % (method, path, code), "httpd")
+    def log_message (self, format, *args) :
+        log.info(format % args, "httpd")
+    def log_error (self, format, *args) :
+        log.error(format % args, "httpd")
 
 class HTTPServer (BaseHTTPServer.HTTPServer):
     def __init__ (self, server_address, root):
