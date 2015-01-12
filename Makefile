@@ -15,7 +15,7 @@ committed:
 	hg summary|grep -q '^commit: (clean)$$'
 
 pip:
-	python setup.py upload
+	python setup.py sdist bdist_wheel upload
 
 next-deb:
 	echo 1 > debian/PPA
