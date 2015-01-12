@@ -13,6 +13,7 @@
 .hgignore
 .hgtags
 BUGS
+MANIFEST
 MANIFEST.in
 Makefile
 NEWS
@@ -97,3 +98,4 @@ snakes/utils/abcd/transform.py
 snakes/utils/ctlstar/__init__.py
 snakes/utils/ctlstar/build.py
 utils/abcd-mode.el
+utils/abcd-mode.elc

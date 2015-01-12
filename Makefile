@@ -9,9 +9,13 @@ all:
 	@echo "  next-ppa   increments debian/PPA"
 	@echo "  lang       build generated files in snakes/lang"
 	@echo "  emacs      compile Emacs files"
+	@echo "  pip        upload to PyPI"
 
 committed:
 	hg summary|grep -q '^commit: (clean)$$'
+
+pip:
+	python setup.py sdist bdist_wheel upload
 
 next-deb:
 	echo 1 > debian/PPA
