@@ -1139,7 +1139,7 @@ class MultiArc (ArcAnnotation) :
     # apidoc skip
     def __hash__ (self) :
         # 1575269934 = hash("snakes.nets.MultiArc")
-        return reduce(operator.xor, (hash(c) for f in self._components),
+        return reduce(operator.xor, (hash(c) for c in self._components),
                       1575269934)
     def __contains__ (self, item) :
         """Test if an item is part of the multi-arc
