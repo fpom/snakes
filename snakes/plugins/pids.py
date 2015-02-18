@@ -283,6 +283,22 @@ def extend (module) :
             self.add_place(snk.Place(nextpids, [], tNextPid,
                                      status=snk.buffer(nextpids)))
             self.nextpids = nextpids
+        def copy (self, name=None) :
+            if name is None :
+                name = self.name
+            result = self.__class__(name)
+            result._declare = self._declare[:]
+            result.globals = self.globals.copy()
+            for place in self.place() :
+                if place.name != self.nextpids :
+                    result.add_place(place.copy())
+            for trans in self.transition() :
+                result.add_transition(trans.copy())
+                for place, label in trans.input() :
+                    result.add_input(place.name, trans.name, label.copy())
+                for place, label in trans.output() :
+                    result.add_output(place.name, trans.name, label.copy())
+            return result
         def add_place (self, place, **args) :
             if place.name == self.nextpids :
                 raise ConstraintError("reserved place name %r"
