@@ -1,5 +1,4 @@
-SNAKES is the Net Algebra Kit for Editors and Simulators
-========================================================
+# SNAKES is the Net Algebra Kit for Editors and Simulators
 
 SNAKES is a Python library that provides all the necessary to define
 and execute many sorts of Petri nets, in particular algebras of Petri
@@ -18,23 +17,22 @@ of Petri nets (e.g., plugins are provided to draw nets, or to compose
 them using the various control-flows operations). Plugins are another
 way to introduce flexibility but requiring some involvement.
 
-Next step to use SNAKES should be to read the tutorial that describes installation and first steps.
+Next step to use SNAKES should be to read the tutorial that describes
+installation and first steps.
 
-Useful links
-------------
+## Useful links
 
-- SNAKES homepage (documentation, tutorial, API reference, ...)
+* SNAKES homepage (documentation, tutorial, API reference, ...)
   http://www.ibisc.univ-evry.fr/~fpommereau/SNAKES/
-- SNAKES development page (source repository, history, bug reports,
+* SNAKES development page (source repository, history, bug reports,
   feature requests, ...)
-  http://code.google.com/p/python-snakes
-- Ubuntu packages
-  http://launchpad.net/~pommereau/+archive/ppa    
+  https://github.com/fpom/snakes
+* Ubuntu packages
+  http://launchpad.net/~pommereau/+archive/ppa
 
-Copyright
----------
+## Copyright / Licence
 
-(C) 2007-2014 Franck Pommereau <franck.pommereau@ibisc.univ-evry.fr>
+(C) 2007-2014 [Franck Pommereau](mailto:franck.pommereau@ibisc.univ-evry.fr)
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -49,4 +47,4 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
-USA
+USA.
