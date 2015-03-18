@@ -29,6 +29,7 @@ Useful links
 * SNAKES development page (source repository, history, bug reports,
   feature requests, ...)
   https://github.com/fpom/snakes
+  https://forge.ibisc.univ-evry.fr/fpom/snakes (mirror)
 * Ubuntu packages
   http://launchpad.net/~pommereau/+archive/ppa
 
