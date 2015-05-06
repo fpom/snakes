@@ -1,0 +1,39 @@
+<div class="page-header">
+    <h1><tt>%(filename)s</tt> <small> powered by Franck</small></h1>
+</div>
+<div class="row">
+    <div class="col-md-3">
+
+        <div class="row">
+            <h3>Player</h3>
+            <div id="player"></div>
+        </div>
+    </div>
+</div>
+<div id="model" class="row">
+    <div class="col-md-6">
+        <div class="row">
+            <h3>ABCD</h3>
+            <div class="abcd">%(abcd)s</div>
+        </div>
+
+    </div>
+    <div class=col-md-6>
+        <div class="row">
+            <h3>Tree</h3>
+            <div class="tree">%(tree)s</div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div id="trace_zone"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="net" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="width:auto;">
+        <div class="modal-content" style="overflow: scroll;">
+            %(net)s
+        </div>
+    </div>
+</div>

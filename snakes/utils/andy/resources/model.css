@@ -1,0 +1,112 @@
+/* ABCD source code */
+
+#model .abcd .comment {
+    color: #888;
+}
+
+#model .abcd .ident {
+    color: #808;
+}
+
+#model .abcd .string {
+    color: #088;
+}
+
+#model .abcd .kw {
+    color: #800;
+    font-weight: bold;
+}
+
+#model .abcd .flow {
+    color: #800;
+    font-weight: bold;
+}
+
+#model .abcd .buffer .decl {
+    color: #080;
+    font-weight: bold; 
+}
+
+#model .abcd .net .decl {
+    color: #008;
+    font-weight: bold; 
+}
+
+#model .abcd .instance .name {
+    color: #008; 
+}
+
+#model .abcd .action .delim {
+    font-weight: bold;
+}
+
+#model .abcd .action .name {
+    color: #080;
+}
+
+#model .abcd .active {
+    background-color: #B6F8AE; 
+}
+
+#model .abcd .highlight_simul {
+    background-color: yellow; 
+}
+
+
+#model .tree .buffer .kw {
+    color: #800;
+    font-weight: bold; 
+}
+
+#model .tree .buffer .name {
+    color: #080;
+    font-weight: bold; 
+}
+
+#model .tree .ident { 
+    color: #808; 
+}
+
+#model .tree .instance .name { 
+    color: #008; 
+}
+
+#model .tree .action .delim { 
+    font-weight: bold; 
+}
+
+#model .tree .action .name { 
+    color: #080; 
+}
+
+#model .tree .string { 
+    color: #088; 
+}
+
+#model .tree .modes li {
+    margin: 12px 0px;
+}
+
+#model .tree .modes a {
+    background-color: #B6F8AE;
+    border: solid 1px #AAA;
+    border-radius: 5px;
+    padding: 5px 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+#model .tree .modes a:hover {
+    color: #A33;
+    background-color: #F8B6AE;
+}
+
+#model .tree .active { 
+    background-color: #B6F8AE;
+}
+
+#model .tree .highlight_simul { 
+    background-color: yellow; 
+}
+
+
