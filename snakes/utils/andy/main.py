@@ -1,13 +1,9 @@
 import sys, optparse, os.path, webbrowser
 import pdb, traceback
 import snakes.plugins
-from snakes.utils.abcd.build import Builder
-from snakes.lang.abcd.parser import parse
-from snakes.lang.pgen import ParseError
-from snakes.utils.abcd import CompilationError, DeclarationError
-from snakes.utils.abcd.simul import Simulator, ABCDSimulator
-from snakes.utils.abcd.checker import Checker
-from snakes.utils.abcd.html import build as html
+from snakes.utils.andy import CompilationError, DeclarationError
+from snakes.utils.andy.simul import Simulator, AndySimulator
+from snakes.utils.andy.andy import andy2snakes
 from snakes.utils.simul.html import json
 
 ##
@@ -26,11 +22,11 @@ ERR_OUTPUT = 7
 ERR_BUG = 255
 
 def log (message) :
-    sys.stdout.write("abcd: %s\n" % message.strip())
+    sys.stdout.write("andy: %s\n" % message.strip())
     sys.stdout.flush()
 
 def err (message) :
-    sys.stderr.write("abcd: %s\n" % message.strip())
+    sys.stderr.write("andy: %s\n" % message.strip())
     sys.stderr.flush()
 
 def die (code, message=None) :
@@ -66,7 +62,7 @@ def bug () :
 
 gv_engines = ("dot", "neato", "twopi", "circo", "fdp")
 
-opt = optparse.OptionParser(prog="abcd",
+opt = optparse.OptionParser(prog="andy",
                             usage="%prog [OPTION]... FILE")
 opt.add_option("-l", "--load",
                dest="plugins", action="append", default=[],
@@ -81,9 +77,6 @@ for engine in gv_engines :
                    dest="gv" + engine, action="store", default=None,
                    help="draw net using '%s' (from GraphViz)" % engine,
                    metavar="OUTFILE")
-opt.add_option("-a", "--all-names",
-               dest="allnames", action="store_true", default=False,
-               help="draw control-flow places names (default: hide)")
 opt.add_option("--debug",
                dest="debug", action="store_true", default=False,
                help="launch debugger on compiler error (default: no)")
@@ -98,22 +91,13 @@ opt.add_option("--port",
                dest="port", action="store", default=8000, type=int,
                help="port on which the simulator server runs",
                metavar="PORT")
-opt.add_option("-H", "--html",
-               dest="html", action="store", default=None,
-               help="save net as HTML",
-               metavar="OUTFILE")
-opt.add_option("--check",
-               dest="check", action="store_true", default=False,
-               help="check assertions")
 
 def getopts (args) :
-    global options, abcd, tmp
+    global options, andy, tmp
     (options, args) = opt.parse_args(args)
     plugins = []
     for p in options.plugins :
         plugins.extend(t.strip() for t in p.split(","))
-    if "ops" not in options.plugins :
-        plugins.append("ops")
     if "labels" not in plugins :
         plugins.append("labels")
     for engine in gv_engines :
@@ -121,7 +105,7 @@ def getopts (args) :
         if gvopt and "gv" not in plugins :
             plugins.append("gv")
             break
-    if (options.html or options.simul) and "gv" not in plugins :
+    if (options.simul) and "gv" not in plugins :
         plugins.append("gv")
     options.plugins = plugins
     if len(args) < 1 :
@@ -132,17 +116,13 @@ def getopts (args) :
         err("more than one input file provided")
         opt.print_help()
         die(ERR_ARG)
-    abcd = args[0]
-    if options.pnml == abcd :
+    andy = args[0]
+    if options.pnml == andy :
         err("input file also used as output (--pnml)")
         opt.print_help()
         die(ERR_ARG)
-    if options.html == abcd :
-        err("input file also used as output (--html)")
-        opt.print_help()
-        die(ERR_ARG)
     for engine in gv_engines :
-        if getattr(options, "gv%s" % engine) == abcd :
+        if getattr(options, "gv%s" % engine) == andy :
             err("input file also used as output (--%s)" % engine)
             opt.print_help()
             die(ERR_ARG)
@@ -151,58 +131,9 @@ def getopts (args) :
 ## drawing nets
 ##
 
-def place_attr (place, attr) :
-    # fix color
-    if place.status == snk.entry :
-        attr["fillcolor"] = "green"
-    elif place.status == snk.internal :
-        pass
-    elif place.status == snk.exit :
-        attr["fillcolor"] = "orange"
-    else :
-        attr["fillcolor"] = "lightblue"
-    # fix shape
-    if (not options.allnames
-        and place.status in (snk.entry, snk.internal, snk.exit)) :
-        attr["shape"] = "circle"
-    # render marking
-    if place._check == snk.tBlackToken :
-        count = len(place.tokens)
-        if count == 0 :
-            marking = " "
-        elif count == 1 :
-            marking = "&#8226;"
-        else :
-            marking = "%s&#8226;" % count
-    else :
-        marking = str(place.tokens)
-    # node label
-    if (options.allnames
-        or place.status not in (snk.entry, snk.internal, snk.exit)) :
-        attr["label"] = "%s\\n%s" % (place.name, marking)
-    else :
-        attr["label"] = "%s" % marking
-
-def trans_attr (trans, attr) :
-    pass
-
-def arc_attr (label, attr) :
-    if label == snk.Value(snk.dot) :
-        del attr["label"]
-    elif isinstance(label, snk.Test) :
-        attr["arrowhead"] = "none"
-        attr["label"] = " %s " % label._annotation
-    elif isinstance(label, snk.Flush) :
-        attr["arrowhead"] = "box"
-        attr["label"] = " %s " % label._annotation
-
-
 def draw (net, target, engine="dot") :
     try :
-        return net.draw(target, engine=engine,
-                        place_attr=place_attr,
-                        trans_attr=trans_attr,
-                        arc_attr=arc_attr)
+        return net.draw(target, engine=engine)
     except :
         die(ERR_OUTPUT, str(sys.exc_info()[1]))
 
@@ -222,49 +153,36 @@ def save_pnml (net, target) :
 ## simulator (not standalone)
 ##
 
-def simulate (source, filename="<string>") :
+def simulate (entities, potential, obligatory, filename='<string>') :
     global options, snk
     getopts(["--simul", filename])
-    node = parse(source, filename=filename)
     snk = snakes.plugins.load(options.plugins, "snakes.nets", "snk")
-    build = Builder(snk)
-    net = build.build(node)
+    net = andy2snakes(snk, entities, potential, obligatory)
     net.label(srcfile=filename, snakes=snk)
-    return ABCDSimulator(node, net, draw(net, None))
+    return AndySimulator(net)
 
 ##
 ## main
 ##
 
-def main (args=sys.argv[1:], src=None) :
+def main (args=sys.argv[1:]) :
     global options, snk
     # get options
     try:
-        if src is None :
-            getopts(args)
-        else :
-            getopts(list(args) + ["<string>"])
+        getopts(args)
     except SystemExit :
         raise
     except :
         die(ERR_OPT, str(sys.exc_info()[1]))
-    # read source
-    if src is not None :
-        source = src
-    else :
-        try :
-            source = open(abcd).read()
-        except :
-            die(ERR_IO, "could not read input file %r" % abcd)
-    # parse
-    try :
-        node = parse(source, filename=abcd)
-    except ParseError :
-        die(ERR_PARSE, str(sys.exc_info()[1]))
-    except :
-        bug()
-    # compile
-    dirname = os.path.dirname(abcd)
+    # read andy spec
+    try:
+        env = {}
+        execfile(andy, env)
+        del env['__builtins__']
+    except:
+        die(ERR_IO, "could not read input file %r" % andy)
+    # compile to net
+    dirname = os.path.dirname(andy)
     if dirname and dirname not in sys.path :
         sys.path.append(dirname)
     elif "." not in sys.path :
@@ -273,14 +191,13 @@ def main (args=sys.argv[1:], src=None) :
         snk = snakes.plugins.load(options.plugins, "snakes.nets", "snk")
     except :
         die(ERR_PLUGIN, str(sys.exc_info()[1]))
-    build = Builder(snk)
-    try :
-        net = build.build(node)
-        net.label(srcfile=abcd, snakes=snk)
-    except (CompilationError, DeclarationError) :
-        die(ERR_COMPILE, str(sys.exc_info()[1]))
-    except :
+
+    try:
+        net = andy2snakes(snk, env['entities'], env['potential'],
+                          env['obligatory'])
+    except:
         bug()
+
     # output
     if options.pnml :
         save_pnml(net, options.pnml)
@@ -288,17 +205,10 @@ def main (args=sys.argv[1:], src=None) :
         target = getattr(options, "gv%s" % engine)
         if target :
             draw(net, target, engine)
-    if options.html :
-        try :
-            html(abcd, node, net, draw(net, None), options.html)
-        except :
-            bug()
     trace, lineno = [], None
-    if options.check :
-        lineno, trace = Checker(net).run()
     if options.simul :
         try :
-            simul = Simulator(node, net, draw(net, None), options.port)
+            simul = Simulator(net, options.port)
         except :
             bug()
         simul.start()

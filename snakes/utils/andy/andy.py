@@ -1,8 +1,3 @@
-import snakes.plugins
-snakes.plugins.load(['gv', 'ops'], 'snakes.nets', 'nets')
-from nets import *
-
-
 ###############################################################################
 ## AUXILIARY FUNCTIONS ########################################################
 
@@ -132,14 +127,14 @@ def potentialt (name, lp, up, lambdap, R) :
 
 ###############################################################################
 ## MAIN #######################################################################
-def andy2snakes(entities, potential, obligatory):
+def andy2snakes(snk, entities, potential, obligatory):
     # compute maximal duration of activities
     D=0
     for alpha in potential : D = max(D, alpha[3])
 
     for alpha in obligatory : D = max(D, alpha[3])
 
-    n = PetriNet('andy')
+    n = snk.PetriNet('andy')
 
     n.globals["obligatory"] = obligatory
     n.globals["D"] = D
@@ -153,13 +148,13 @@ def andy2snakes(entities, potential, obligatory):
         level = entities[i][1]
         deltas = entities[i][2]
         vector = [0]*len(deltas)
-        n.add_place(Place(name, [(level,0, tuple(vector))]))
+        n.add_place(snk.Place(name, [(level,0, tuple(vector))]))
 
     ################# clock transition
     inputlist = dict()
     n.globals["inputlist"] = inputlist
 
-    n.add_transition(Transition('tc'))
+    n.add_transition(snk.Transition('tc'))
 
 
     # connect all obligatory clocks
@@ -167,7 +162,7 @@ def andy2snakes(entities, potential, obligatory):
         # transition name
         obname = 'ob'+str(i)
         # for every obligatory activity connect corresponding place to clock
-        n.add_place(Place('p'+obname, [0]))
+        n.add_place(snk.Place('p'+obname, [0]))
         n.add_input('p'+obname, 'tc', Variable('w'+obname))
         inputlist.update({obname:'w'+obname})
 
@@ -178,20 +173,20 @@ def andy2snakes(entities, potential, obligatory):
         deltas = entities[i][2]
         n.globals["deltas"+name] = deltas
         n.globals[name] = name
-        n.add_input(name, 'tc', Tuple([Variable('l'+name), Variable('u'+name), Variable('lambda'+name) ]))
+        n.add_input(name, 'tc', snk.Tuple([snk.Variable('l'+name), snk.Variable('u'+name), snk.Variable('lambda'+name) ]))
         inputlist.update({name:['l'+name, 'u'+name, 'lambda'+name ]})
 
 
 
     for i in range(0,len(entities)):
         name=entities[i][0]
-        n.add_output(name, 'tc', Expression("clockt(obligatory,"+name+",l"+name+',u'+name+',lambda'+name+',deltas'+name+',inputlist,D)'))
+        n.add_output(name, 'tc', snk.Expression("clockt(obligatory,"+name+",l"+name+',u'+name+',lambda'+name+',deltas'+name+',inputlist,D)'))
 
 
     for i in range(0,len(obligatory)):
         obname = 'ob'+str(i)
         # for every obligatory activity connect corresponding place to clock
-        n.add_output('p'+obname, 'tc', Expression("clockbetat(obligatory,"+str(i)+',w'+obname+',inputlist,D)'))
+        n.add_output('p'+obname, 'tc', snk.Expression("clockbetat(obligatory,"+str(i)+',w'+obname+',inputlist,D)'))
 
 
     ## potential activities
@@ -200,15 +195,15 @@ def andy2snakes(entities, potential, obligatory):
         trname = 'tr'+str(i)
 
         # for every potential activity connect corresponding place to clock
-        n.add_place(Place('p'+trname, [0]))
-        n.add_input('p'+trname, 'tc', Variable('w'+trname))
-        n.add_output('p'+trname, 'tc', Expression('min(D,w'+trname+'+1)'))
+        n.add_place(snk.Place('p'+trname, [0]))
+        n.add_input('p'+trname, 'tc', snk.Variable('w'+trname))
+        n.add_output('p'+trname, 'tc', snk.Expression('min(D,w'+trname+'+1)'))
 
 
         activators = potential[i][0]
         inhibitors = potential[i][1]
         results = potential[i][2]
-        print results
+        #print results
         n.globals["results"+trname] = results
         duration = potential[i][3]
 
@@ -240,14 +235,14 @@ def andy2snakes(entities, potential, obligatory):
             level = str(inhibitors[nameinhib[j]])
             guard += ' and l'+spec+'< '+ level + ' and lambda' +spec+'['+level+']>='+str(duration)
 
-        n.add_transition(Transition(trname, Expression(guard)))
-        n.add_input('p'+trname, trname, Variable('w'))
-        n.add_output('p'+trname, trname, Expression('0'))
+        n.add_transition(snk.Transition(trname, snk.Expression(guard)))
+        n.add_input('p'+trname, trname, snk.Variable('w'))
+        n.add_output('p'+trname, trname, snk.Expression('0'))
 
         # arcs of the transition from and to involved entities
         for j in range(0,len(names)) :
-            n.add_input(names[j], trname, Tuple([Variable('l'+names[j]), Variable('u'+names[j]), Variable('lambda'+names[j]) ]))
-            n.add_output(names[j], trname, Expression("potentialt(" +names[j]+",l"+names[j]+',u'+names[j]+',lambda'+names[j]+', results'+trname+')'))
+            n.add_input(names[j], trname, snk.Tuple([snk.Variable('l'+names[j]), snk.Variable('u'+names[j]), snk.Variable('lambda'+names[j]) ]))
+            n.add_output(names[j], trname, snk.Expression("potentialt(" +names[j]+",l"+names[j]+',u'+names[j]+',lambda'+names[j]+', results'+trname+')'))
 
     return n
 
@@ -255,7 +250,7 @@ def andy2snakes(entities, potential, obligatory):
 def draw_net(net, out_name='repress'):
     net.draw(out_name+'.ps')
 
-def draw_stategraph(net, entities_names, out_name='repressgraph',
+def draw_stategraph(snk, net, entities_names, out_name='repressgraph',
                     with_dot=True):
     def node_attr (state, graph, attr) :
         marking = graph[state]
@@ -264,7 +259,7 @@ def draw_stategraph(net, entities_names, out_name='repressgraph',
     def edge_attr (trans, mode, attr) :
         attr["label"] = trans.name
 
-    s = StateGraph(net)
+    s = snk.StateGraph(net)
     s.build()
 
     s.draw(out_name+'.ps', node_attr=node_attr, edge_attr=edge_attr,
@@ -278,6 +273,9 @@ def draw_stategraph(net, entities_names, out_name='repressgraph',
         g.render(out_name+"-layout.dot", engine="dot")
 
 if __name__=='__main__':
+    import snakes.plugins
+    snakes.plugins.load(['gv', 'ops'], 'snakes.nets', 'snk')
+
     # entities: tuple of name of the entities, initial level, tuple of decays 0
     #           denotes unbounded decay (omega)
     # examples:
@@ -325,7 +323,7 @@ if __name__=='__main__':
 
     obligatory = ()
 
-    net = andy2snakes(entities, potential, obligatory)
+    net = andy2snakes(snk, entities, potential, obligatory)
     draw_net(net, out_name="repress")
-    draw_stategraph(net, ("s1", "s2", "s3"), out_name="repressgraph")
+    draw_stategraph(snk, net, ("s1", "s2", "s3"), out_name="repressgraph")
 

@@ -1,18 +1,17 @@
-"""This package features the ABCD compiler, this is mainly a
+"""This package features the Andy compiler, this is mainly a
 command-line tool but it can be called also from Python. The API is
 very simple and mimics the command line interface
 
-### Function `snakes.utils.abcd.main.main` ###
+### Function `snakes.utils.andy.main.main` ###
 
     :::python
-    def main (args=sys.argv[1:], src=None) : ...
+    def main (args=sys.argv[1:]) : ...
 
 Entry point of the compiler
 
 ##### Call API #####
 
   * `list args`:
-  * `str src`:
   * `return PetriNet`:
 
 ##### Exceptions #####
