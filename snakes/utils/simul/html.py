@@ -1,4 +1,3 @@
-import functools
 import json as JSON
 
 def _tag (name) :

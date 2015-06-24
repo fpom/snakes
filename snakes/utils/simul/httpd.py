@@ -1,5 +1,5 @@
 import sys, os.path, httplib, cgi, urlparse, functools, mimetypes
-import os, traceback, random, base64, inspect, math
+import os, traceback, random, base64, inspect
 import BaseHTTPServer
 from snakes.utils.simul import logger as log
 from snakes.utils.simul.html import json, utf8
