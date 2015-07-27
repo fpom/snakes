@@ -1865,7 +1865,10 @@ class Node (NetElement) :
         @param name: the new name of the node
         @type name: `str`
         """
-        self.name = name
+        try :
+            self.net.rename_node(self.name, name)
+        except AttributeError :
+            self.name = name
 
 class Place (Node) :
     "A place of a Petri net."
