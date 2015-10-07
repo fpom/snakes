@@ -1,0 +1,3 @@
+#!/usr/bin/env python
+import snakes.utils.andy.main as andymain
+andymain.main()

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link type="text/css" href="r/css/bootstrap-theme.css" rel="stylesheet"/>
+    <link type="text/css" href="r/css/bootstrap.css" rel="stylesheet"/>
+    <script src="r/js/jquery.min.js"></script>
+    <script src="r/js/jquery.periodic.js"></script>
+    <script src="r/js/bootstrap.min.js"></script>
+    <script src="r/js/d3.min.js"></script>
+    <script src="r/js/simulator.js"></script>
+    <style>
+        path {  stroke: steelblue;
+                stroke-width: 2;
+                fill: none; }
+        line {  stroke: black;  }
+        text {  font-family: Arial;
+                font-size: 9pt; }
+    </style>
+</head>
+<body>
+    <header class="navbar navbar-static-top">
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle"
+                            data-toggle="collapse"
+                            data-target="#bs-example-navbar-collapse-6">
+                        <span class="sr-only">Toggle navigation</span>
+                    </button>
+                    <a class="navbar-brand" href="#">Simulation SNAKES</a>
+                </div>
+                <div class="collapse navbar-collapse"
+                     id="bs-example-navbar-collapse-6">
+                    <ul class="nav navbar-nav" id="nav_sim">
+                        <li><a id="ui-reset">Reset Simulation</a></li>
+                        <li><a id="ui-quit">Stop Simulation</a></li>
+                        <li><a id="ui-help">Help</a></li>
+                    </ul>
+                </div><!-- /.navbar-collapse -->
+            </div>
+        </nav>
+    </header>
+    <!-- model to be simulated -->
+    %(model)s
+
+    <!-- information about the simulator -->
+    <div aria-hidden="true" aria-labelledby="myModalLabel" class="modal fade"
+         id="about" role="dialog" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button aria-hidden="true" class="close"
+                            data-dismiss="modal" type="button">x</button>
+                    <h4 class="modal-title" id="myModalLabel">Petri Net</h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        <span class="title">Andy simulator is part of the
+                                            SNAKES toolkit</span><br />
+                        (C) 2014 Franck Pommereau
+                    </p>
+                    <p>
+                        <a href="http://www.ibisc.univ-evry.fr/~fpommereau/SNAKES"
+                           target="_blank">SNAKES homepage</a>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" data-dismiss="modal"
+                            type="button">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function(){
+            $.simisc({  "nav":{ "about": {  "text": "About",
+                                            "attr": {   "id":"ui-about",
+                                                        "data-toggle": "modal",
+                                                        "data-target": "#about"
+                                                                     }   }   },
+                        "graph": {  "color": {  "y":"red",
+                                                "x":"blue"  }   }   });
+            });
+    </script>
+</body>
+</html>
