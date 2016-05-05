@@ -31,8 +31,7 @@ Useful links
   https://github.com/fpom/snakes
   and its mirror at
   https://forge.ibisc.univ-evry.fr/fpom/snakes
-* Ubuntu packages
-  http://launchpad.net/~pommereau/+archive/ppa
+* Follow [@SNAKESlib](https://twitter.com/SNAKESlib) on Twitter
 
 Copyright / Licence
 -------------------
