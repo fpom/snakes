@@ -1637,22 +1637,23 @@ class Inhibitor (Test) :
     def __hash__ (self) :
         return hash(("inhibitor", self._annotation, self._condition))
     def bind (self, binding) :
-        """Return the value of the annotation evaluated through
-        `binding`, or raise `ValueError` of this binding does not
-        validate the condition.
+        """Return no tokens since arc corresponds to an absence of tokens.
+        Raise `ValueError` if this binding does not validate the
+        condition.
 
         >>> Inhibitor(Expression('x+1'), Expression('x>0')).bind(Substitution(x=2))
-        Token(3)
+        ()
         >>> try : Inhibitor(Expression('x+1'), Expression('x<0')).bind(Substitution(x=2))
         ... except ValueError : print(sys.exc_info()[1])
         condition not True for {x -> 2}
 
         @param binding: a substitution
         @type binding: `Substitution`
-        @return: a value
+        @return: empty tuple
+
         """
         if self._condition(binding) :
-            return self._annotation.bind(binding)
+            return ()
         else :
             raise ValueError("condition not True for %s" % str(binding))
     def modes (self, values) :
@@ -2731,6 +2732,9 @@ class Marking (hdict) :
         """
         return cls(((child["id"], child.child("tokens").child().to_obj())
                     for child in tree.get_children("place")))
+    def __str__ (self) :
+        base = "{%s}" % ", ".join("%s=%s" % pair for pair in sorted(self.items()))
+        return base.replace("={dot}", "")
     def __call__ (self, place) :
         """Return the marking of `place`. The empty multiset is
         returned if `place` is not explicitely given in the marking.
