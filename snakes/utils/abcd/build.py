@@ -90,8 +90,11 @@ class Builder (object) :
         """raise an exception with appropriate location
         """
         if self.stack :
-            pos = "[%s:%s]: " % (self.stack[-1].lineno,
-                                 self.stack[-1].col_offset)
+            try :
+                pos = "[%s:%s]: " % (self.stack[-1].lineno,
+                                     self.stack[-1].col_offset)
+            except :
+                pos = ""
         else :
             pos = ""
         raise error(pos+message)

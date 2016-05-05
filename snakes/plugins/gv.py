@@ -105,7 +105,7 @@ class Graph (Cluster) :
     def dot (self) :
         self.done = set()
         return "\n".join(self._dot_text(["digraph {",
-                                         'charset="UTF-8"',
+#                                         'charset="UTF-8"',
                                          ['node [label="N",'
                                           ' fillcolor="#FFFFFF",'
                                           ' fontcolor="#000000",'
@@ -120,7 +120,9 @@ class Graph (Cluster) :
             return text
         else :
             return '"%s"' % text.replace('"', r'\"')
-    def render (self, filename, engine="dot", debug=False) :
+    def render (self, filename, engine=None, debug=False) :
+        if engine is None :
+            engine = getattr(self, "engine", "dot")
         if engine not in ("dot", "neato", "twopi", "circo", "fdp") :
             raise ValueError("unknown GraphViz engine %r" % engine)
         with codecs.open(filename + ".dot", "w", "utf-8") as outfile :
@@ -134,12 +136,15 @@ class Graph (Cluster) :
                                     "-o" + filename, outfile.name],
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        dot.communicate()
+                                   stderr=subprocess.STDOUT)
+        stdout, stderr = dot.communicate()
         if not debug :
             os.unlink(outfile.name)
         if dot.returncode != 0 :
-            raise IOError("%s exited with status %s" % (engine, dot.returncode))
+            if stdout.strip() + stderr.strip() :
+                stdout = "\n*** Original error message follows ***\n " + stdout
+            raise IOError("%s exited with status %s%s"
+                          % (engine, dot.returncode, stdout))
     def layout (self, engine="dot", debug=False) :
         if engine not in ("dot", "neato", "twopi", "circo", "fdp") :
             raise ValueError("unknown GraphViz engine %r" % engine)
@@ -226,6 +231,7 @@ def extend (module) :
                            for num, node in enumerate(self.node()))
             g = self._copy(nodemap, self.clusters, cluster_attr,
                            place_attr, trans_attr)
+            g.engine = engine
             self._copy_edges(nodemap, g, arc_attr)
             if graph_attr :
                 graph_attr(self, g.attr)

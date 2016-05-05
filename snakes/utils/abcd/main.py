@@ -297,8 +297,13 @@ def main (args=sys.argv[1:], src=None) :
     if options.check :
         lineno, trace = Checker(net).run()
     if options.simul :
+        engine = "dot"
+        for eng in gv_engines :
+            if getattr(options, "gv%s" % eng) :
+                engine = eng
+                break
         try :
-            simul = Simulator(node, net, draw(net, None), options.port)
+            simul = Simulator(node, net, draw(net, None, engine), options.port)
         except :
             bug()
         simul.start()
