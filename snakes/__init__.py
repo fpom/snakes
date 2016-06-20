@@ -19,7 +19,7 @@
 @contact: franck.pommereau@ibisc.univ-evry.fr
 """
 
-version = "0.9.17"
+version = "0.9.18"
 defaultencoding = "utf-8"
 
 """## Module `snakes`
