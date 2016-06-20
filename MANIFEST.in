@@ -1,2 +1,3 @@
 recursive-include doc *
 include *
+exclude dist/* dput.sh *.pyc *~ ,* *.class *.bak __pycache__

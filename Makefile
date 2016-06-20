@@ -14,14 +14,14 @@ all:
 committed:
 	hg summary|grep -q '^commit: (clean)$$'
 
-pip: emacs
-	python setup.py sdist bdist_wheel upload
+pip: utils/abcd-mode.el
+	python setup.py sdist upload
 
 next-deb:
 	echo 1 > debian/PPA
 	echo $$((1+$$(cat debian/VERSION))) > debian/VERSION
 
-emacs:
+utils/abcd-mode.elc: utils/abcd-mode.el
 	emacs -batch -f batch-byte-compile utils/abcd-mode.el
 
 next-ppa:
