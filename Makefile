@@ -14,7 +14,7 @@ all:
 committed:
 	hg summary|grep -q '^commit: (clean)$$'
 
-pip:
+pip: emacs
 	python setup.py sdist bdist_wheel upload
 
 next-deb:

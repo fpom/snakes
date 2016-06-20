@@ -34,15 +34,8 @@ particular, plugins are provided to implement the operations
 usually found in the PBC and M-nets family."""
 
 if __name__ == "__main__" :
-    try :
-        subprocess.check_output(["emacs", "-batch", "-f",
-                                 "batch-byte-compile", "utils/abcd-mode.el"],
-                                stderr=subprocess.STDOUT)
-        emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el",
-                                            "utils/abcd-mode.elc"])]
-    except :
-        emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el"])]
-    #
+    emacs = [("share/emacs/site-lisp", ["utils/abcd-mode.el",
+                                        "utils/abcd-mode.elc"])]
     setup(name="SNAKES",
           version=open("VERSION").read().strip(),
           description="SNAKES is the Net Algebra Kit for Editors and Simulators",
