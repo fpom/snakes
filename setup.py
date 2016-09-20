@@ -15,13 +15,19 @@ def doc_files () :
             result[target_dir].append(os.path.join(root, name))
     return list(result.items())
 
-def abcd_resources () :
-    collected = ["*.txt", "*.html", "*.css", "*.js", "*.png", "*.jpg"]
-    import glob, os.path
+def resources (root) :
+    collected = ["*.txt", "*.html", "*.css", "*.js", "*.png", "*.jpg",
+                 "*.ttf", "*.eot", "*.woff", "*.svg" ,"*.map"]
+    import fnmatch, os.path
     result = []
-    for pattern in collected :
-        for path in glob.glob("snakes/utils/abcd/resources/" + pattern) :
-            result.append(os.path.join("resources", os.path.basename(path)))
+    baselen = len(root.rstrip(os.sep).rsplit(os.sep, 1)[0]) + len(os.sep)
+    def addfiles (_, dirname, filenames) :
+        for name in filenames :
+            for glob in collected :
+                if fnmatch.fnmatch(name, glob) :
+                    result.append(os.path.join(dirname[baselen:], name))
+                    break
+    os.path.walk(root, addfiles, None)
     return result
 
 try :
@@ -51,15 +57,18 @@ if __name__ == "__main__" :
                    ],
           packages=["snakes",
                     "snakes.lang",
-                    "snakes.lang.pylib",
-                    "snakes.lang.python",
                     "snakes.lang.abcd",
                     "snakes.lang.ctlstar",
+                    "snakes.lang.pylib",
+                    "snakes.lang.python",
                     "snakes.plugins",
                     "snakes.utils",
                     "snakes.utils.abcd",
                     "snakes.utils.ctlstar",
+                    "snakes.utils.simul",
                     ],
-          package_data={"snakes.utils.abcd": abcd_resources()},
+          package_data={"snakes.utils.abcd": resources("snakes/utils/abcd/resources/"),
+                        "snakes.utils.simul": resources("snakes/utils/simul/resources/"),
+                    },
           data_files=doc_files() + emacs,
           )
