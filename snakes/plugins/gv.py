@@ -141,7 +141,7 @@ class Graph (Cluster) :
         if not debug :
             os.unlink(outfile.name)
         if dot.returncode != 0 :
-            if stdout.strip() + stderr.strip() :
+            if (stdout or "").strip() + (stderr or "").strip() :
                 stdout = "\n*** Original error message follows ***\n " + stdout
             raise IOError("%s exited with status %s%s"
                           % (engine, dot.returncode, stdout))
