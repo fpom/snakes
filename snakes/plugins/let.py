@@ -77,13 +77,13 @@ class MakeLet (object) :
         exec(match, env)
         for name in set(env) - old :
             binding[name] = env[name]
-    def __call__ (self, __match__=None, __raise__=False, **args) :
+    def __call__ (__self__, __match__=None, __raise__=False, **args) :
         try :
             __binding__ = inspect.stack()[1][0].f_locals["__binding__"]
             for name, value in args.items() :
                 __binding__[name] = value
             if __match__ :
-                self.match(__match__, __binding__)
+                __self__.match(__match__, __binding__)
         except :
             if __raise__ :
                 raise

@@ -87,6 +87,9 @@ opt.add_option("-a", "--all-names",
 opt.add_option("--debug",
                dest="debug", action="store_true", default=False,
                help="launch debugger on compiler error (default: no)")
+opt.add_option("--progress",
+               dest="progress", action="store_true", default=False,
+               help="show progression during long operations (default: no)")
 opt.add_option("-s", "--simul",
                dest="simul", action="store_true", default=False,
                help="launch interactive code simulator")
@@ -295,7 +298,9 @@ def main (args=sys.argv[1:], src=None) :
             bug()
     trace, lineno = [], None
     if options.check :
-        lineno, trace = Checker(net).run()
+        states, lineno, trace = Checker(net, options.progress).run()
+        if options.progress :
+            print("%s states explored" % states)
     if options.simul :
         engine = "dot"
         for eng in gv_engines :
