@@ -30,7 +30,9 @@ def check (_) :
     def bounded (self, marking, max) :
         return all(len(marking(p)) == 1 for p in marking)
     def dead (self) :
-        return not bool(self.g.successors())
+        for _ in self.g.successors() :
+            return False
+        return True
     def run (self) :
         start = last = time.time()
         for state in self.g :

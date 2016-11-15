@@ -360,7 +360,7 @@ def extend (module) :
                 if node_attr :
                     node_attr(state, self, attr)
                 graph.add_node(str(state), attr)
-                for succ, (trans, mode) in self.successors().items() :
+                for succ, trans, mode in self.successors() :
                     attr = dict(arrowhead="normal",
                                 label="%s\\n%s" % (trans.name, mode))
                     if edge_attr :
