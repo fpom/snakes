@@ -4361,8 +4361,10 @@ class StateGraph (object) :
     def _create_edge (self, source, target, label) :
         if target in self._succ[source] :
             self._succ[source][target].add(label)
+            if source == 18 : print "  add", source, "=>", target
         else :
             self._succ[source][target] = set([label])
+            if source == 18 : print "  new", source, "=>", target
         if source in self._pred[target] :
             self._pred[target][source].add(label)
         else :
@@ -4377,10 +4379,10 @@ class StateGraph (object) :
     def __contains__ (self, marking) :
         return marking in self._state
     def successors (self, state=None) :
-        """Return the successors of the current state. The value
-        returned is a dictionnary mapping the numbers of successor
-        states to pairs `(trans, mode)` representing the name of the
-        transition and the binding needed to reach the new state.
+        """Return the successors of the current state. The value returned is a
+        iterator over triples `(succ, trans, mode)` representing the
+        number of the successor, the name of the transition and the
+        binding needed to reach the new state.
 
         >>> n = PetriNet('N')
         >>> n.add_place(Place('p', [0]))
@@ -4390,18 +4392,18 @@ class StateGraph (object) :
         >>> g = StateGraph(n)
         >>> g.build()
         >>> g.goto(2)
-        >>> g.successors()
-        {3: (Transition('t', Expression('x<5')), Substitution(x=2))}
+        >>> list(g.successors())
+        [(3, Transition('t', Expression('x<5')), Substitution(x=2))]
 
-        @return: the dictionnary of successors and transitions to them
-        @rtype: `dict` mapping non-negative `int` to `tuple` holding a
-            `str` and a `Substitution`
+        @return: iterator of triples successor/transition/mode to them
+        @rtype: generator of `(int, str, Substitution)`
+
         """
         if state is None :
             state = self.current()
         self._process(state)
-        return dict((succ, label) for succ in self._succ[state]
-                     for label in self._succ[state][succ])
+        return ((succ, trans, mode) for succ in self._succ[state]
+                for trans, mode in self._succ[state][succ])
     def predecessors (self, state=None) :
         """Return the predecessors states. The returned value is as in
         `successors`. Notice that if the graph is not complete, this
@@ -4416,18 +4418,16 @@ class StateGraph (object) :
         >>> g = StateGraph(n)
         >>> g.build()
         >>> g.goto(2)
-        >>> g.predecessors()
-        {1: (Transition('t', Expression('x<5')), Substitution(x=1))}
+        >>> list(g.predecessors())
+        [(1, Transition('t', Expression('x<5')), Substitution(x=1))]
 
-        @return: the dictionnary of predecessors and transitions to
-            them
-        @rtype: `dict` mapping non-negative `int` to `tuple` holding a
-            `str` and a `Substitution`
+        @return: iterator of triples predecessor/transition/mode to them
+        @rtype: generator of `(int, str, Substitution)`
         """
         if state is None :
             state = self.current()
-        return dict((pred, label) for pred in self._pred[state]
-                     for label in self._pred[state][pred])
+        return ((pred, trans, mode) for pred in self._pred[state]
+                for trans, mode in self._pred[state][pred])
     def _fire (self, trans, mode) :
         "Fire trans with the given mode"
         trans.fire(mode)
@@ -4450,6 +4450,7 @@ class StateGraph (object) :
                 if target is None :
                     target = self._create_state(new_marking, state, trans, mode)
                 if state in self._marking :
+                    if state == 18 : print "+", state, "=>", target, "=", trans
                     self._create_edge(state, target, (trans, mode))
                 self.net.set_marking(marking)
                 if state not in self._marking :
