@@ -4361,10 +4361,8 @@ class StateGraph (object) :
     def _create_edge (self, source, target, label) :
         if target in self._succ[source] :
             self._succ[source][target].add(label)
-            if source == 18 : print "  add", source, "=>", target
         else :
             self._succ[source][target] = set([label])
-            if source == 18 : print "  new", source, "=>", target
         if source in self._pred[target] :
             self._pred[target][source].add(label)
         else :
@@ -4450,7 +4448,6 @@ class StateGraph (object) :
                 if target is None :
                     target = self._create_state(new_marking, state, trans, mode)
                 if state in self._marking :
-                    if state == 18 : print "+", state, "=>", target, "=", trans
                     self._create_edge(state, target, (trans, mode))
                 self.net.set_marking(marking)
                 if state not in self._marking :
