@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import subprocess
 from distutils.core import setup
 
 def doc_files () :
@@ -18,16 +17,17 @@ def doc_files () :
 def resources (root) :
     collected = ["*.txt", "*.html", "*.css", "*.js", "*.png", "*.jpg",
                  "*.ttf", "*.eot", "*.woff", "*.svg" ,"*.map"]
-    import fnmatch, os.path
+    import fnmatch, os, os.path
     result = []
     baselen = len(root.rstrip(os.sep).rsplit(os.sep, 1)[0]) + len(os.sep)
-    def addfiles (_, dirname, filenames) :
+    def addfiles (dirname, filenames) :
         for name in filenames :
             for glob in collected :
                 if fnmatch.fnmatch(name, glob) :
                     result.append(os.path.join(dirname[baselen:], name))
                     break
-    os.path.walk(root, addfiles, None)
+    for dirname, _, files in os.walk(root) :
+        addfiles(dirname, files)
     return result
 
 try :
