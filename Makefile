@@ -8,7 +8,10 @@ all:
 	@echo "  pip        upload to PyPI"
 
 nextver:
+	git diff-index --quiet HEAD --
 	python version.py next
+	git commit -a -m "version $$(var VERSION)"
+	git tag -a version-$$(cat VERSION) -m "version $$(cat VERSION)"
 
 version:
 	python version.py check
