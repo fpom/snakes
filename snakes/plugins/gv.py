@@ -22,6 +22,11 @@ GraphViz; we can also draw the state graph:
 
 >>> for engine in ('neato', 'dot', 'circo', 'twopi', 'fdp') :
 ...     n.draw(',test-gv-%s.png' % engine, engine=engine)
+Graph(...)
+Graph(...)
+Graph(...)
+Graph(...)
+Graph(...)
 >>> s = StateGraph(n)
 >>> s.build()
 >>> s.draw(',test-gv-graph.png')
@@ -204,6 +209,7 @@ def extend (module) :
             ...         attr['label'] = '%s\\n%s' % (trans.name, trans.guard)
             >>> n.draw(',net-with-colors.png',
             ...        place_attr=draw_place, trans_attr=draw_transition)
+            Graph(...)
 
             @param filename: the name of the image file to create
             @type filename: `str`

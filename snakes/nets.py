@@ -2435,12 +2435,12 @@ class Transition (Node) :
         if input :
             for place, label in self.input() :
                 try :
-                    place.check(v.value for v in iterate(label.bind(binding)))
+                    place.check(v for v in iterate(label.flow(binding)))
                 except ValueError :
                     return False
         for place, label in self.output() :
             try :
-                place.check(v.value for v in iterate(label.bind(binding)))
+                place.check(v for v in iterate(label.flow(binding)))
             except ValueError :
                 return False
         return True
