@@ -1182,7 +1182,7 @@ class MultiArc (ArcAnnotation) :
         @type binding: `Substitution`
         @return: a tuple of value
         """
-        return tuple(c.bind(binding) for c in self)
+        return tuple(t for c in self for t in iterate(c.bind(binding)))
     def modes (self, values) :
         """Return the list of modes under which an arc with the
         annotation may flow the tokens in `values`. Each mode is a
@@ -2435,12 +2435,12 @@ class Transition (Node) :
         if input :
             for place, label in self.input() :
                 try :
-                    place.check(v for v in iterate(label.flow(binding)))
+                    place.check(v.value for v in iterate(label.bind(binding)))
                 except ValueError :
                     return False
         for place, label in self.output() :
             try :
-                place.check(v for v in iterate(label.flow(binding)))
+                place.check(v.value for v in iterate(label.bind(binding)))
             except ValueError :
                 return False
         return True
