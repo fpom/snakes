@@ -2044,7 +2044,7 @@ class Place (Node) :
         """Iterate over the tokens in the place, including
         repetitions.
 
-        >>> p = Place('p', range(3)*2)
+        >>> p = Place('p', list(range(3))*2)
         >>> list(sorted([tok for tok in p]))
         [0, 0, 1, 1, 2, 2]
 

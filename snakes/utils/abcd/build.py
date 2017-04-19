@@ -5,6 +5,7 @@ from snakes.lang import unparse
 import snakes.utils.abcd.transform as transform
 from snakes.data import MultiSet
 from snakes import *
+from snakes.compat import *
 
 class Decl (object) :
     OBJECT = "object"

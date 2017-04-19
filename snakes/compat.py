@@ -24,4 +24,14 @@ except NameError :
     def next (obj) :
         return obj.next()
 
+try :
+    unicode
+except NameError :
+    unicode = str
+
+try :
+    reduce
+except NameError :
+    from functools import reduce
+
 PY3 = sys.version > "3"
