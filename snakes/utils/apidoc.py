@@ -270,7 +270,11 @@ class DocExtract (object) :
                 path = os.path.join(dirpath, name)
                 if not self.openout(path) :
                     continue
-                node = parse(open(path).read())
+                try :
+                    node = parse(open(path).read())
+                except :
+                    err("error parsing %r" % path)
+                    continue
                 if ".plugins." in self.module :
                     self.visit_plugin(node)
                 else :

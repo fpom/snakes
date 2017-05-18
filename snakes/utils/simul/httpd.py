@@ -203,4 +203,4 @@ if __name__ == '__main__':
         httpd = HTTPServer(('', 1234), HelloNode(r=DirNode(".")))
         httpd.serve_forever()
     except KeyboardInterrupt :
-        print "\rGoobye"
+        print("\rGoobye")
