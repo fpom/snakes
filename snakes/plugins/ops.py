@@ -1,5 +1,4 @@
-# -*- encoding: latin-1
-"""A plugin to compose nets _à la_ Petri Box Calculus.
+"""A plugin to compose nets _a la_ Petri Box Calculus.
 
 @note: this plugin depends on plugins `clusters` and `status` that are
     automatically loaded

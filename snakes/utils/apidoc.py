@@ -51,11 +51,10 @@ at SNAKES source code. However, let's note a few points:
     it should work in other cases but this may required some work
 """
 
-import sys, os, os.path
-import inspect, fnmatch, collections, re, shlex
+import sys, os, os.path, codecs
+import inspect, fnmatch, re, shlex
 import textwrap, doctest
 import snakes
-from snakes.lang import unparse
 from snakes.lang.python.parser import parse, ast
 
 try :
@@ -118,7 +117,8 @@ def die (message, code=1) :
 class DocExtract (object) :
     """The class that extracts documentation and renders it
     """
-    def __init__ (self, inpath, outpath, exclude=[]) :
+    def __init__ (self, inpath, outpath, exclude=[],
+                  inputenc="utf-8", outputenc="utf-8") :
         """
         @param inpath: directory where the source code is searched for
         @type inpath: `str`
@@ -127,11 +127,17 @@ class DocExtract (object) :
         @param exclude: a list of glob patterns to exclude modules
             (not file names, but Python modules names)
         @type exclude: `list`
+        @param inputenc: encoding of input files
+        @type inputenc: `str`
+        @param outputenc: encoding of output files
+        @type outputenc: `str`
         """
         self.path = inpath.rstrip(os.sep)
         self.outpath = outpath
         self.out = None
         self.exclude = exclude
+        self.inputenc = inputenc
+        self.outputenc = outputenc
         self._last = "\n\n"
     def md (self, text, inline=True) :
         """Return the Markdow rendering of `text`, include `<p>` if
@@ -196,7 +202,7 @@ class DocExtract (object) :
         info("%s -> %r" % (self.module, outpath))
         if not os.path.exists(outdir) :
             os.makedirs(outdir)
-        self.out = open(outpath, "w")
+        self.out = codecs.open(outpath, "w", encoding=self.outputenc)
         self.classname = None
         return True
     def write (self, text) :
@@ -271,9 +277,9 @@ class DocExtract (object) :
                 if not self.openout(path) :
                     continue
                 try :
-                    node = parse(open(path).read())
-                except :
-                    err("error parsing %r" % path)
+                    node = parse(codecs.open(path, encoding=self.inputenc).read())
+                except Exception as e :
+                    err("error parsing %r (%s)" % (path, e))
                     continue
                 if ".plugins." in self.module :
                     self.visit_plugin(node)
@@ -594,7 +600,7 @@ class DocExtract (object) :
             path = os.path.join(os.path.dirname(self.inpath), name)
         if not os.path.exists(path) :
             err("include file %r not found" % name)
-        with open(path) as infile :
+        with codecs.open(path, encoding=self.inputenc) as infile :
             self.newline()
             self.writeline("    :::%s" % lang)
             for i, line in enumerate(infile) :

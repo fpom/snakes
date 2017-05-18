@@ -1,6 +1,5 @@
-#-*- coding: latin-1
 """Add statuses to nodes: a status is a special kind of label that is
-used to define Petri nets compositions _à la_ Petri Box Calculus. See
+used to define Petri nets compositions _a la_ Petri Box Calculus. See
 plugin `ops` to read more about how statuses are used in practice.
 
 Several status are defined by default: `entry`, `internal`, `exit`,
@@ -33,6 +32,7 @@ Place('p1', MultiSet([]), tAll, status=Status('entry'))
 >>> n.add_place(Place('p2', status=exit))
 >>> n.place('p2')
 Place('p2', MultiSet([]), tAll, status=Status('exit'))
+
 """
 
 import operator, weakref
@@ -717,6 +717,6 @@ def extend (module) :
                                 (self.place(s).status for s in sources))
             module.PetriNet.merge_transitions(self, target, sources, **args)
             self.set_status(target, status)
-    return Place, Transition, PetriNet, Status, \
-           ("entry", entry), ("exit", exit), ("internal", internal), \
-           Buffer,  buffer, Safebuffer, safebuffer, Tick, tick
+    return (Place, Transition, PetriNet, Status,
+            ("entry", entry), ("exit", exit), ("internal", internal),
+            Buffer, buffer, Safebuffer, safebuffer, Tick, tick)

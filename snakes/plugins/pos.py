@@ -1,4 +1,3 @@
-#-*- encoding: latin-1
 """A plugin to add positions to the nodes.
 
 `Place` and `Transition` are added an optional argument for the
@@ -388,8 +387,8 @@ def extend (module) :
             for node in self.node() :
                 node.pos.shift(dx, dy)
         def transpose (self) :
-            """Perform a clockwise 90° rotation of node coordinates,
-            ie, change every position `(x, y)` to `(-y, x)`
+            """Perform a clockwise 90 degrees rotation of node coordinates, ie,
+            change every position `(x, y)` to `(-y, x)`
             """
             for node in self.node() :
                 x, y = node.pos()
