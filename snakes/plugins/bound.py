@@ -11,11 +11,11 @@ violate any of a place bound. (But note that direct modifications of a
 >>> import snakes.plugins
 >>> snakes.plugins.load('bound', 'snakes.nets', 'nets')
 <module ...>
+>>> from nets import *
 
 If parameter `bound` is given as a non-negative integer, this is the
 upper bound of the place (and its lower bound is zero).
 
->>> from nets import *
 >>> n = PetriNet('N')
 >>> p = Place('p', [dot], bound=3)
 >>> n.add_place(p)
