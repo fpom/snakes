@@ -110,7 +110,7 @@ def extend (module) :
             """Add new keyword argument `bound`
 
             @param args: plugin options
-            @keyword bound: the place boundaries,
+            @keyword bound: the place boundaries
             @type bound: `int` or `(int, None)` or `(int, int)`
             """
             bound = args.pop("bound", (0, None))
