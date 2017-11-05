@@ -94,7 +94,7 @@ def extend (module) :
             module.PetriNet.merge_places(self, target, sources, **options)
             new = self.place(target)
             new.modules(reduce(set.__or__,
-                               (self.place(p).lmodules()
+                               (self.place(p).modules()
                                 for p in sources),
                                mod))
         def merge_transitions (self, target, sources, **options) :
