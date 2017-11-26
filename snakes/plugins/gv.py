@@ -56,6 +56,14 @@ import os, os.path, subprocess, collections, codecs
 import snakes.plugins
 from snakes.plugins.clusters import Cluster
 from snakes.compat import *
+import sys
+
+# unicode() is no longer supported in Python 3, in which
+# a call to str() now does the job.
+if sys.version_info[0] < 3:
+    unicode_or_str = unicode
+else:
+    unicode_or_str = str
 
 # apidoc skip
 class Graph (Cluster) :
@@ -83,7 +91,7 @@ class Graph (Cluster) :
         else :
             tag = "%s " % tag
         return (["%s[" % tag,
-                 ["%s=%s" % (key, self.escape(unicode(val)))
+                 ["%s=%s" % (key, self.escape(unicode_or_str(val)))
                   for key, val in attr.items()],
                  "];"])
     def _dot (self) :
@@ -102,7 +110,7 @@ class Graph (Cluster) :
         return lines
     def _dot_text (self, lines, indent=0) :
         for l in lines :
-            if isinstance(l, (str, unicode)) :
+            if isinstance(l, (str, unicode_or_str)) :
                 yield " "*indent*2 + l
             else :
                 for x in self._dot_text(l, indent+1) :
