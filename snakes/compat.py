@@ -34,4 +34,9 @@ try :
 except NameError :
     from functools import reduce
 
+try :
+    unicode
+except NameError :
+    unicode = str
+
 PY3 = sys.version > "3"
