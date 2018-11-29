@@ -60,6 +60,7 @@ snakes/lang/python/asdl.py
 snakes/lang/python/parser.py
 snakes/lang/python/pgen.py
 snakes/plugins/__init__.py
+snakes/plugins/bound.py
 snakes/plugins/clusters.py
 snakes/plugins/gv.py
 snakes/plugins/hello.py
