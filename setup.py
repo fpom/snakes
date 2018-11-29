@@ -71,4 +71,13 @@ if __name__ == "__main__" :
                         "snakes.utils.simul": resources("snakes/utils/simul/resources/"),
                     },
           data_files=doc_files() + emacs,
+          classifiers=[
+              "Intended Audience :: Science/Research",
+              "Development Status :: 5 - Production/Stable",
+              "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+              "Operating System :: OS Independent",
+              "Programming Language :: Python",
+              "Topic :: Scientific/Engineering",
+              "Topic :: Software Development :: Libraries :: Python Modules",
+          ],
           )
