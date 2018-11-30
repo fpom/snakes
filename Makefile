@@ -17,7 +17,8 @@ version:
 	python version.py check
 
 pip: emacs version
-	python setup.py sdist upload
+	python setup.py sdist
+	twine upload dist/SNAKES-$$(cat VERSION).tar.gz
 
 emacs: utils/abcd-mode.elc
 
