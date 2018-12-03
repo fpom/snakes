@@ -18,7 +18,7 @@ version:
 
 pip: emacs version
 	python setup.py sdist
-	twine upload dist/SNAKES-$$(cat VERSION).tar.gz
+	source $$HOME/.config/twine/pypi.creds && twine upload -u $$USERNAME -p $$PASSWORD dist/SNAKES-$$(cat VERSION).tar.gz
 
 emacs: utils/abcd-mode.elc
 
