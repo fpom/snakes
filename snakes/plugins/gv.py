@@ -135,13 +135,15 @@ class Graph (Cluster) :
         if debug :
             dot = subprocess.Popen([engine, "-T" + filename.rsplit(".", 1)[-1],
                                     "-o" + filename, outfile.name],
-                                   stdin=subprocess.PIPE)
+                                   stdin=subprocess.PIPE,
+                                   universal_newlines=True)
         else :
             dot = subprocess.Popen([engine, "-T" + filename.rsplit(".", 1)[-1],
                                     "-o" + filename, outfile.name],
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
+                                   stderr=subprocess.STDOUT,
+                                   universal_newlines=True)
         stdout, stderr = dot.communicate()
         if not debug :
             os.unlink(outfile.name)
