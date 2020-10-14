@@ -455,6 +455,19 @@ class ArcAnnotation (NetElement) :
         @return: a value
         """
         raise NotImplementedError("abstract method")
+    def check (self, binding, tokens) :
+        """Check whether the label allows to fire with tokens
+
+        >>> Value(1).check(Substitution(), MultiSet([1, 2, 3]))
+        True
+        >>> Value(4).check(Substitution(), MultiSet([1, 2, 3]))
+        False
+        >>> Variable("x").check(Substitution(x=1), MultiSet([1, 2, 3]))
+        True
+        >>> Variable("x").check(Substitution(x=4), MultiSet([1, 2, 3]))
+        False
+        """
+        return self.flow(binding) <= tokens
     def flow (self, binding) :
         """Return the flow of tokens implied by the annotation evaluated
         through `binding`.
@@ -1502,7 +1515,7 @@ class Test (ArcAnnotation) :
         return self.__class__(self._annotation.replace(old, new))
 
 class Inhibitor (Test) :
-    """This is an inhibitoir arc that forbids the presence of some
+    """This is an inhibitor arc that forbids the presence of some
     tokens in a place.
     """
     input_allowed = True
@@ -1704,6 +1717,20 @@ class Inhibitor (Test) :
         """
         return self.__class__(self._annotation.replace(old, new),
                               self._condition.replace(old, new))
+    def check (self, binding, tokens) :
+        """Check whether the label allows to fire with tokens
+
+        >>> Inhibitor(Value(1)).check(Substitution(), MultiSet([1, 2, 3]))
+        False
+        >>> Inhibitor(Value(4)).check(Substitution(), MultiSet([1, 2, 3]))
+        True
+        >>> Inhibitor(Variable("x")).check(Substitution(x=1), MultiSet([1, 2, 3]))
+        False
+        >>> Inhibitor(Variable("x")).check(Substitution(x=4), MultiSet([1, 2, 3]))
+        True
+        """
+        return (not self._annotation.check(binding, tokens)
+                and self._condition(binding))
 
 class Flush (ArcAnnotation) :
     """A flush arc used as on input arc will consume all the tokens in
@@ -2430,7 +2457,7 @@ class Transition (Node) :
             return False
         if tokens :
             for place, label in self.input() :
-                if not (label.flow(binding) <= place.tokens) :
+                if not label.check(binding, place.tokens) :
                     return False
         if input :
             for place, label in self.input() :
