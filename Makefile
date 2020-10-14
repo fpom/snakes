@@ -10,7 +10,7 @@ all:
 nextver:
 	git diff-index --quiet HEAD --
 	python version.py next
-	git commit -a -m "version $$(var VERSION)"
+	git commit -a -m "version $$(cat VERSION)"
 	git tag -a version-$$(cat VERSION) -m "version $$(cat VERSION)"
 
 version:
