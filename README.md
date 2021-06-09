@@ -25,7 +25,7 @@ Useful links
 ------------
 
 * SNAKES homepage (documentation, tutorial, API reference, ...)
-  http://www.ibisc.univ-evry.fr/~fpommereau/SNAKES/
+  https://snakes.ibisc.univ-evry.fr/
 * SNAKES development page (source repository, history, bug reports,
   feature requests, ...)
   https://github.com/fpom/snakes
@@ -36,7 +36,7 @@ Useful links
 Copyright / Licence
 -------------------
 
-(C) 2007-2014 [Franck Pommereau](mailto:franck.pommereau@ibisc.univ-evry.fr)
+(C) 2007-2021 [Franck Pommereau](mailto:franck.pommereau@ibisc.univ-evry.fr)
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
