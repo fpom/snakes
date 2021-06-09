@@ -50,7 +50,7 @@ if __name__ == "__main__" :
           author_email="franck.pommereau@univ-evry.fr",
           maintainer="Franck Pommereau",
           maintainer_email="franck.pommereau@univ-evry.fr",
-          url="http://snakes.univ-evry.fr/",
+          url="http://snakes.ibisc.univ-evry.fr/",
           scripts=["bin/abcd",
                    "bin/snkc",
                    "bin/snkd",
