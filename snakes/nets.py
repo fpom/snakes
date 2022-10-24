@@ -1729,8 +1729,11 @@ class Inhibitor (Test) :
         >>> Inhibitor(Variable("x")).check(Substitution(x=4), MultiSet([1, 2, 3]))
         True
         """
-        return (not self._annotation.check(binding, tokens)
-                and self._condition(binding))
+        try :
+            modes = self.modes(tokens)
+        except :
+            modes = []
+        return binding in modes
 
 class Flush (ArcAnnotation) :
     """A flush arc used as on input arc will consume all the tokens in
