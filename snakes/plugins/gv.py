@@ -90,7 +90,7 @@ class Graph (Cluster) :
         body = []
         lines = ["subgraph %s {" % self, self._dot_attr(self.attr, "graph"),
                  body, "}"]
-        for node in self.nodes() :
+        for node in sorted(self.nodes()) :
             body.append(node)
             body.append(self._dot_attr(self.attributes[node]))
         for child in self.children() :
