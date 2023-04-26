@@ -162,6 +162,8 @@ def plugin (base, depends=[], conflicts=[]) :
             conf = set(conflicts) & loaded
             if len(conf) > 0 :
                 raise ValueError("plugin conflict (%s)" % ", ".join(conf))
+            if fun.__module__ in loaded :
+                return module
             objects = fun(module)
             if type(objects) is not tuple :
                 objects = (objects,)
