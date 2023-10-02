@@ -16,10 +16,10 @@ for name, cls in inspect.getmembers(_ast, inspect.isclass) :
         class _Ast (cls, AST) :
             def __init__ (self, *larg, **karg) :
                 if len(larg) > 0 and len(larg) != len(self._fields) :
-                    raise TypeError, ("%s constructor takes either 0 or "
-                                      "%u positional arguments"
-                                      % (self.__class__.__name__,
-                                         len(self._fields)))
+                    raise TypeError("%s constructor takes either 0 or "
+                                    "%u positional arguments"
+                                    % (self.__class__.__name__,
+                                       len(self._fields)))
                 for name, arg in zip(self._fields, larg) + karg.items() :
                     if name in self._fields :
                         setattr(self, name, arg)

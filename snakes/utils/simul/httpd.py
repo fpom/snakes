@@ -16,7 +16,10 @@ except :
 try :
     import BaseHTTPServer
 except :
-    import http as BaseHTTPServer
+    try :
+        import http.server as BaseHTTPServer
+    except :
+        import http as BaseHTTPServer
 
 ##
 ##
