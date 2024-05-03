@@ -2,9 +2,10 @@
 @todo: revise (actually make) documentation
 """
 
+from snakes.compat import new_module
 from snakes.plugins import plugin
 from snakes.pnml import Tree, loads, dumps
-import imp, sys, socket, traceback, operator
+import sys, socket, traceback, operator
 
 class QueryError (Exception) :
     pass
@@ -116,7 +117,7 @@ class Query (object) :
     def run (self, envt) :
         """
         >>> import imp
-        >>> env = imp.new_module('environment')
+        >>> env = new_module('environment')
         >>> Query('set', 'x', 'hello').run(env)
         >>> env.x
         'hello'
@@ -156,7 +157,7 @@ class Query (object) :
     def _run_set (self, name, value) :
         """
         >>> import imp
-        >>> env = imp.new_module('environment')
+        >>> env = new_module('environment')
         >>> Query('set', 'x', 1).run(env)
         >>> env.x
         1
@@ -166,7 +167,7 @@ class Query (object) :
     def _run_get (self, name) :
         """
         >>> import imp
-        >>> env = imp.new_module('environment')
+        >>> env = new_module('environment')
         >>> env.x = 2
         >>> Query('get', 'x').run(env)
         2
@@ -176,7 +177,7 @@ class Query (object) :
     def _run_del (self, name) :
         """
         >>> import imp
-        >>> env = imp.new_module('environment')
+        >>> env = new_module('environment')
         >>> env.x = 2
         >>> Query('del', 'x').run(env)
         >>> env.x
@@ -189,7 +190,7 @@ class Query (object) :
     def _run_call (self, fun, *larg, **karg) :
         """
         >>> import imp
-        >>> env = imp.new_module('environment')
+        >>> env = new_module('environment')
         >>> env.x = 'hello'
         >>> Query('call', 'x.center', 7).run(env)
         ' hello '
@@ -211,7 +212,7 @@ def extend (module) :
             self._verbose = verbose
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(("", port))
-            self._env = imp.new_module("snk")
+            self._env = new_module("snk")
             self._env.__dict__.update(__builtins__)
             self._env.__dict__.update(operator.__dict__)
             self._env.__dict__.update(module.__dict__)
@@ -259,7 +260,7 @@ def extend (module) :
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._sock.bind(("", port))
             self._sock.listen(1)
-            self._env = imp.new_module("snk")
+            self._env = new_module("snk")
             self._env.__dict__.update(__builtins__)
             self._env.__dict__.update(operator.__dict__)
             self._env.__dict__.update(module.__dict__)

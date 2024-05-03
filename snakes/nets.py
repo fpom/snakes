@@ -662,7 +662,7 @@ class Value (ArcAnnotation) :
 class Variable (ArcAnnotation) :
     "A variable which may be bound to a token."
     input_allowed = True
-    syntax = re.compile("^[a-zA-Z]\w*$")
+    syntax = re.compile(r"^[a-zA-Z]\w*$")
     def __init__ (self, name) :
         """Variable names must start with a letter and may continue with
         any alphanumeric character.

@@ -12,7 +12,7 @@ abuse the term PNML for the XML produced and read by SNAKES.
 
 import xml.dom.minidom
 import pickle
-import sys, inspect, os, os.path, imp, pkgutil
+import sys, inspect, os, os.path, pkgutil
 import snakes, snakes.plugins
 from snakes import SnakesError
 from snakes.compat import *

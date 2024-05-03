@@ -40,3 +40,10 @@ except NameError :
     unicode = str
 
 PY3 = sys.version > "3"
+
+try:
+    from imp import new_module
+except (NameError, ImportError):
+    import types
+    def new_module(name):
+        return types.ModuleType(name)

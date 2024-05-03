@@ -49,8 +49,9 @@ Hello from a net
 ((0, 0), (0, 0))
 """
 
-import imp, sys, inspect
+import sys, inspect
 from functools import wraps
+from snakes.compat import new_module
 
 # apidoc skip
 def update (module, objects) :
@@ -203,7 +204,7 @@ def build (name, module, *objects) :
     @return: the new module
     @rtype: `module`
     """
-    result = imp.new_module(name)
+    result = new_module(name)
     result.__dict__.update(module.__dict__)
     update(result, objects)
     result.__plugins__ = (module.__dict__.get("__plugins__",
